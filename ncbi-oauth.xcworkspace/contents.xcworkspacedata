@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "group:README.md">
+   </FileRef>
+   <FileRef
+      location = "group:inc">
+   </FileRef>
+   <FileRef
+      location = "group:ncbi-oauth-test/ncbi-oauth-test.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:ncbi-jwt/../ncbi-json/ncbi-json.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:ncbi-jwt/ncbi-jwt.xcodeproj">
+   </FileRef>
+</Workspace>
