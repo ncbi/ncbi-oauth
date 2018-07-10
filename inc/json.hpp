@@ -30,10 +30,37 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 
 namespace ncbi
 {
+    /* JSONParseException
+     **********************************************************************************/
+    class JSONException : public std :: logic_error
+    {
+    public:
+        explicit JSONException ( const char * function, unsigned int line, const char * message )
+        : logic_error ( message )
+        , msg ( function )
+        {
+            msg += ":" + std :: to_string ( line );
+            fl_msg = msg . c_str ();
+        }
+        
+        virtual ~JSONException () throw ()
+        { }
+        
+        virtual const char * what () const throw ()
+        {
+            return fl_msg;
+        }
+        
+    private:
+        std :: string msg;
+        const char * fl_msg;
+    };
+    
     /* JSONValue interface
      **********************************************************************************/
     class JSONValue
@@ -131,6 +158,8 @@ namespace ncbi
         
         friend class JSONValue;
     };
+    
+    
 
 }
 #endif /* _hpp_ncbi_oauth_json_ */

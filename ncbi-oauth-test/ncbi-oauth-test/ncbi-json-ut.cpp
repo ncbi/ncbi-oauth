@@ -13,10 +13,41 @@
 
 namespace ncbi
 {
+    /* JSONException
+     */
+    TEST ( JSONException, JSONObject )
+    {
+        EXPECT_ANY_THROW ( JSONObject :: parse ( "{" ) );
+        EXPECT_ANY_THROW ( JSONObject :: parse ( "}" ) );
+    }
+    
+    TEST ( JSONException, JSONArray )
+    {
+        EXPECT_ANY_THROW ( JSONObject :: parse ( "[" ) );
+        EXPECT_ANY_THROW ( JSONObject :: parse ( "]" ) );
+    }
+    
+    TEST ( JSONException, JSONValue_String )
+    {
+        size_t pos = 0;
+        EXPECT_ANY_THROW ( JSONValue::parse ( "\"", pos ) );
+        pos = 0;
+        EXPECT_ANY_THROW ( JSONValue::parse ( "\"\\", pos ) );
+        pos = 0;
+        EXPECT_ANY_THROW ( JSONValue::parse ( "\"\\y", pos ) );
+        pos = 0;
+        EXPECT_ANY_THROW ( JSONValue::parse ( "\"\\u", pos ) );
+        pos = 0;
+        JSONValue *val = JSONValue::parse ( "\"\\u1fc0", pos );
+        delete val;
+        //EXPECT_ANY_THROW ( JSONValue::parse ( "\"\\u1fc0", pos ) );
+    }
+    
     /* Object
      * {}
      * { members }
      */
+    
     TEST ( JSONObject, Empty )
     {
         JSONObject *obj = JSONObject::parse ( "{}" );
