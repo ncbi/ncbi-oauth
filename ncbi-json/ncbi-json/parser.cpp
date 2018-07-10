@@ -167,6 +167,9 @@ namespace ncbi
         
         assert ( esc == pos );
         assert ( json [ pos ] == '"' );
+        
+        // set pos to point to next token
+        ++ pos;
     
         return new JSONTypedValue < std :: string > ( str );
     }
