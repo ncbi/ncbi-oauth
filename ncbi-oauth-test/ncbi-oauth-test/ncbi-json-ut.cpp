@@ -13,6 +13,43 @@
 
 namespace ncbi
 {
+    class JSONFixture : public :: testing :: Test
+    {
+    public:
+        void SetUp ()
+        {
+            pos = 0;
+            obj = nullptr;
+        }
+        
+        void TearDown ()
+        {
+            delete obj;
+        }
+        
+        void parse ( const std :: string &json, bool consume_all = true )
+        {
+            pos = 0;
+            obj = JSONValue::parse ( json, pos );
+            ASSERT_TRUE ( obj != nullptr );
+            
+            if ( consume_all )
+                ASSERT_TRUE ( pos == json . size () );
+            else
+                ASSERT_TRUE ( pos < json . size () );
+        }
+        
+        void parse_and_verify_eq ( const std :: string &json, const std :: string &expected, bool consume_all = true )
+        {
+            parse ( json, consume_all );
+            EXPECT_STREQ ( obj -> toString() . c_str(), expected . c_str () );
+        }
+    
+    protected:
+        size_t pos;
+        JSONValue *obj;
+    };
+    
     /* JSONException
      */
     TEST ( JSONException, JSONObject )
@@ -47,8 +84,7 @@ namespace ncbi
      * {}
      * { members }
      */
-    
-    TEST ( JSONObject, Empty )
+    TEST_F ( JSONFixture, JSONObject_Empty )
     {
         parse_and_verify_eq( "{}", "{}" );
     }
