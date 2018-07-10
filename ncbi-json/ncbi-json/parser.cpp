@@ -60,15 +60,23 @@ namespace ncbi
     std :: string hex_to_utf8 ( const std :: string &text )
     {
         size_t index;
-        unsigned int val = stoi ( text, &index, 16 );
-        if ( index != 3 )
+        
+        try
+        {
+            unsigned int val = stoi ( text, &index, 16 );
+            if ( index != 4 )
 #pragma warning "This exception doesnt fit within JSONException since its not specific to JSON - unless we dont have another plan for this function."
-            throw JSONException ( __FILE__, __LINE__, "Invalid \\u escape sequence" );
-
-        std :: wstring_convert < std :: codecvt_utf8 < char32_t >, char32_t > conv;
-        std :: string utf8 = conv . to_bytes ( val );
-
-        return utf8;
+                throw JSONException ( __FILE__, __LINE__, "Invalid \\u escape sequence" ); // test hit
+            
+            std :: wstring_convert < std :: codecvt_utf8 < char32_t >, char32_t > conv;
+            std :: string utf8 = conv . to_bytes ( val );
+            
+            return utf8;
+        }
+        catch ( std :: invalid_argument &ex )
+        {
+            throw JSONException ( __FILE__, __LINE__, "Invalid \\u escape sequence" ); // test hit
+        }
     }
     
     /* JSONNullValue
@@ -101,7 +109,7 @@ namespace ncbi
         // Find ending '"' or control characters
         size_t esc = json . find_first_of ( "\\\"", ++ pos );
         if ( esc == std :: string :: npos )
-            throw JSONException ( __FILE__, __LINE__, "Invalid string format" );
+            throw JSONException ( __FILE__, __LINE__, "Invalid begin of string format" ); // test hit
         
         while ( 1 )
         {
@@ -144,7 +152,8 @@ namespace ncbi
                 case 'u':
                 {
                     // start at the element after 'u'
-                    std :: string utf8 = hex_to_utf8 ( json . substr ( pos + 1, 4 ) );
+                    std :: string unicode = json . substr ( pos + 1, 4 );
+                    std :: string utf8 = hex_to_utf8 ( unicode );
                     
                     str += utf8;
                     pos += 4;
@@ -153,7 +162,7 @@ namespace ncbi
                 }
                     
                 default:
-                    throw JSONException ( __FILE__, __LINE__, "Invalid escape character" );
+                    throw JSONException ( __FILE__, __LINE__, "Invalid escape character" ); // test hit
             }
             
             // skip escaped character
@@ -162,7 +171,7 @@ namespace ncbi
             // Find ending '"' or control characters
             esc = json . find_first_of ( "\\\"", pos );
             if ( esc == std :: string :: npos )
-                throw JSONException ( __FILE__, __LINE__, "Invalid string format" );
+                throw JSONException ( __FILE__, __LINE__, "Invalid end of string format" ); // test hit
         }
         
         assert ( esc == pos );
@@ -349,12 +358,12 @@ namespace ncbi
     JSONArray * JSONArray :: parse ( const std :: string & json )
     {
         if ( json . empty () )
-            throw JSONException ( __FILE__, __LINE__, "Empty JSON array" );
+            throw JSONException ( __FILE__, __LINE__, "Empty JSON array" ); // test hit
         
         size_t pos = 0;
         skip_whitespace( json, pos );
         if ( json [ pos ] != '[' )
-            throw JSONException ( __FILE__, __LINE__, "Expected '['" );
+            throw JSONException ( __FILE__, __LINE__, "Expected '['" ); // test hit
         
         return parse ( json, pos );
     }
@@ -372,7 +381,7 @@ namespace ncbi
                 // json [ 0 ] is '[' or ','
                 skip_whitespace ( json, ++ pos );
                 if ( pos == std :: string :: npos )
-                    throw JSONException ( __FILE__, __LINE__, "Expected: ']'" );
+                    throw JSONException ( __FILE__, __LINE__, "Expected: ']'" ); // test hit
                 
                 if ( json [ pos ] == ']' )
                     break;
@@ -409,12 +418,12 @@ namespace ncbi
     JSONObject * JSONObject :: parse ( const std :: string & json )
     {
         if ( json . empty () )
-            throw JSONException ( __FILE__, __LINE__, "Empty JSON object" );
+            throw JSONException ( __FILE__, __LINE__, "Empty JSON object" ); // test hit
         
         size_t pos = 0;
         skip_whitespace( json, pos );
         if ( json [ pos ] != '{' )
-            throw JSONException ( __FILE__, __LINE__, "Expected: '{'" );
+            throw JSONException ( __FILE__, __LINE__, "Expected: '{'" ); // test hit
         
         return parse ( json, pos );
     }
@@ -432,7 +441,7 @@ namespace ncbi
                 // json [ pos ] is '{' or ',', start at json [ pos + 1 ]
                 skip_whitespace ( json, ++ pos );
                 if ( pos == std :: string :: npos )
-                    throw JSONException ( __FILE__, __LINE__, "Expected: '}'" );
+                    throw JSONException ( __FILE__, __LINE__, "Expected: '}'" ); // test hit
 
                 if ( json [ pos ] == '}' )
                     break;
@@ -469,6 +478,7 @@ namespace ncbi
             if ( pos == std :: string :: npos || json [ pos ] != '}' )
                 throw JSONException ( __FILE__, __LINE__, "Expected: '}'" );
             
+            // skip over '}'
             ++ pos;
         }
         catch ( ... )

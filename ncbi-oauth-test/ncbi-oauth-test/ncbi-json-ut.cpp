@@ -16,68 +16,109 @@ namespace ncbi
     class JSONFixture : public :: testing :: Test
     {
     public:
+        enum JSONType { Object, Array, Value };
+        
         void SetUp ()
         {
             pos = 0;
-            obj = nullptr;
+            jObj = nullptr;
         }
         
         void TearDown ()
         {
-            delete obj;
+            delete jObj;
         }
         
-        void parse ( const std :: string &json, bool consume_all = true )
+        void parse_throw ( JSONType type, const std :: string &json )
         {
             pos = 0;
-            obj = JSONValue::parse ( json, pos );
-            ASSERT_TRUE ( obj != nullptr );
             
-            if ( consume_all )
-                ASSERT_TRUE ( pos == json . size () );
-            else
-                ASSERT_TRUE ( pos < json . size () );
+            switch ( type )
+            {
+                case Object:
+                    EXPECT_ANY_THROW ( JSONObject :: parse ( json ) );
+                    break;
+                case Array:
+                    EXPECT_ANY_THROW ( JSONArray :: parse ( json ) );
+                    break;
+                case Value:
+                    EXPECT_ANY_THROW ( JSONValue :: parse ( json, pos ) );
+                    break;
+            }
         }
         
-        void parse_and_verify_eq ( const std :: string &json, const std :: string &expected, bool consume_all = true )
+        void parse ( JSONType type, const std :: string &json, bool consume_all = true )
         {
-            parse ( json, consume_all );
-            EXPECT_STREQ ( obj -> toString() . c_str(), expected . c_str () );
+            pos = 0;
+            
+            switch ( type )
+            {
+                case Object:
+                {
+                    JSONObject *obj = JSONObject::parse ( json );
+                    ASSERT_TRUE ( obj != nullptr );
+                    jObj = obj;
+                    break;
+                }
+                case Array:
+                {
+                    JSONArray *array = JSONArray::parse ( json );
+                    ASSERT_TRUE ( array != nullptr );
+                    jObj = array;
+                    break;
+                }
+                case Value:
+                {
+                    JSONValue *val = JSONValue::parse ( json, pos );
+                    ASSERT_TRUE ( val != nullptr );
+                    if ( consume_all )
+                        ASSERT_TRUE ( pos == json . size () );
+                    else
+                        ASSERT_TRUE ( pos < json . size () );
+                    
+                    jObj = val;
+                    break;
+                }
+            }
+        }
+        
+        void parse_and_verify_eq ( JSONType type, const std :: string &json, const std :: string &expected,
+                                  bool consume_all = true )
+        {
+            parse ( type, json, consume_all );
+            EXPECT_STREQ ( jObj -> toString() . c_str(), expected . c_str () );
         }
     
     protected:
         size_t pos;
-        JSONValue *obj;
+        JSONValue *jObj;
     };
     
     /* JSONException
      */
-    TEST ( JSONException, JSONObject )
+    TEST_F ( JSONFixture, JSONObject_Throw )
     {
-        EXPECT_ANY_THROW ( JSONObject :: parse ( "{" ) );
-        EXPECT_ANY_THROW ( JSONObject :: parse ( "}" ) );
+        parse_throw ( Object, "" );  // Empty JSON object
+        parse_throw ( Object, "{" ); // Expected '}'
+        parse_throw ( Object, "}" ); // Expected '{'
     }
     
-    TEST ( JSONException, JSONArray )
+    TEST_F ( JSONFixture, JSONArray_Throw )
     {
-        EXPECT_ANY_THROW ( JSONObject :: parse ( "[" ) );
-        EXPECT_ANY_THROW ( JSONObject :: parse ( "]" ) );
+        parse_throw ( Array, "" );  // Empty JSON array
+        parse_throw ( Array, "[" ); // Expected ']'
+        parse_throw ( Array, "]" ); // Expected '['
     }
     
-    TEST ( JSONException, JSONValue_String )
+    TEST_F ( JSONFixture, JSONValue_String_Throw )
     {
-        size_t pos = 0;
-        EXPECT_ANY_THROW ( JSONValue::parse ( "\"", pos ) );
-        pos = 0;
-        EXPECT_ANY_THROW ( JSONValue::parse ( "\"\\", pos ) );
-        pos = 0;
-        EXPECT_ANY_THROW ( JSONValue::parse ( "\"\\y", pos ) );
-        pos = 0;
-        EXPECT_ANY_THROW ( JSONValue::parse ( "\"\\u", pos ) );
-        pos = 0;
-        JSONValue *val = JSONValue::parse ( "\"\\u1fc0", pos );
-        delete val;
-        //EXPECT_ANY_THROW ( JSONValue::parse ( "\"\\u1fc0", pos ) );
+        parse_throw ( Value, "\"" ); // Invalid begin of string format
+        parse_throw ( Value, "\"\\" ); // Invalid escape character
+        parse_throw ( Value, "\"\\y" ); // Invalid escape character
+        parse_throw ( Value, "\"\\u" ); // Invalid \u escape sequence
+        parse_throw ( Value, "\"\\uabc" ); // Invalid \u escape sequence
+        parse_throw ( Value, "\"\\uabcz" ); // Invalid \u escape sequence
+        parse_throw ( Value, "\"\\u0061" ); // Invalid end of string format
     }
     
     /* Object
@@ -86,7 +127,7 @@ namespace ncbi
      */
     TEST_F ( JSONFixture, JSONObject_Empty )
     {
-        parse_and_verify_eq( "{}", "{}" );
+        parse_and_verify_eq( Object , "{}", "{}" );
     }
     
     /* Array
@@ -95,7 +136,7 @@ namespace ncbi
      */
     TEST_F ( JSONFixture, JSONArray_Empty )
     {
-        parse_and_verify_eq( "[]", "[]" );
+        parse_and_verify_eq( Array , "[]", "[]" );
     }
     
     /* String
@@ -104,15 +145,15 @@ namespace ncbi
      */
     TEST_F ( JSONFixture, String_Empty )
     {
-        parse_and_verify_eq( "\"\"", "\"\"" );
+        parse_and_verify_eq( Value , "\"\"", "\"\"" );
     }
     TEST_F ( JSONFixture, String_Char )
     {
-        parse_and_verify_eq( "\"a\"", "\"a\"" );
+        parse_and_verify_eq( Value , "\"a\"", "\"a\"" );
     }
     TEST_F ( JSONFixture, String_Chars )
     {
-        parse_and_verify_eq( "\"abc\"", "\"abc\"" );
+        parse_and_verify_eq( Value , "\"abc\"", "\"abc\"" );
     }
     
     /* Bool
@@ -121,11 +162,11 @@ namespace ncbi
      */
     TEST_F ( JSONFixture, Bool_True )
     {
-        parse_and_verify_eq( "true", "true" );
+        parse_and_verify_eq( Value , "true", "true" );
     }
     TEST_F ( JSONFixture, Bool_False )
     {
-        parse_and_verify_eq( "false", "false" );
+        parse_and_verify_eq( Value , "false", "false" );
     }
     
     /* Integer
@@ -136,20 +177,20 @@ namespace ncbi
      */
     TEST_F ( JSONFixture, Integer_Single )
     {
-        parse_and_verify_eq( "0", "0" );
+        parse_and_verify_eq( Value , "0", "0" );
     }
     TEST_F ( JSONFixture, Integer_Multiple )
     {
-        parse_and_verify_eq( "12345", "12345" );
+        parse_and_verify_eq( Value , "12345", "12345" );
     }
     TEST_F ( JSONFixture, Integer_Single_Negative )
     {
-        parse_and_verify_eq( "-0", "0" );
-        parse_and_verify_eq( "-1", "-1" );
+        parse_and_verify_eq( Value , "-0", "0" );
+        parse_and_verify_eq( Value , "-1", "-1" );
     }
     TEST_F ( JSONFixture, Integer_Multiple_Negative )
     {
-        parse_and_verify_eq( "-12345", "-12345" );
+        parse_and_verify_eq( Value , "-12345", "-12345" );
     }
     
     /* Floating point
@@ -159,45 +200,42 @@ namespace ncbi
      */
     TEST_F ( JSONFixture, Float_Frac )
     {
-        parse_and_verify_eq( "0.0", "0" );
-        parse_and_verify_eq( "1.2", "1.2" );
+        parse_and_verify_eq( Value , "0.0", "0" );
+        parse_and_verify_eq( Value , "1.2", "1.2" );
     }
     TEST_F ( JSONFixture, Float_Frac_Precision )
     {
-        parse_and_verify_eq( "1234.56789", "1234.56789" );
+        parse_and_verify_eq( Value , "1234.56789", "1234.56789" );
     }
     
     TEST_F ( JSONFixture, Float_eE_nodigit )
     {
-        // invalid exp format, but  construction should not fail.
-        // as it is the nature of parsers to consume tokens
-        // disregarding context - should return "0" and consumer
+        // invalid exp format, but construction should not fail
+        // as it is the nature of parsers to consume tokens, not
+        // entire strings - should return "0" and consumer
         // only one digit
-        parse_and_verify_eq ( "0E", "0", false );
+        parse_and_verify_eq ( Value , "0E", "0", false );
     }
     TEST_F ( JSONFixture, Float_eE_digit )
     {
-        parse ( "0e0" );
-        parse ( "0E0" );
+        parse ( Value , "0e0" );
+        parse ( Value , "0E0" );
         
     }
     TEST_F ( JSONFixture, Float_eE_plus_digits )
     {
-        parse ( "0e+0" );
-        parse ( "0E+0" );
+        parse ( Value , "0e+0" );
+        parse ( Value , "0E+0" );
     }
     TEST_F ( JSONFixture, Float_eE_minus_digits )
     {
-        parse ( "0e-0" );
-        parse ( "0E-0" );
+        parse ( Value , "0e-0" );
+        parse ( Value , "0E-0" );
     }
 
-    TEST ( JSONValue, Float_Frac_Exp )
+    TEST_F ( JSONFixture, Float_Frac_Exp )
     {
-        size_t pos = 0;
-        JSONValue *val = JSONValue::parse ( "0.0e0", pos );
-        ASSERT_TRUE ( val != nullptr );
-        delete val;
+        parse ( Value, "0.0e0" );
     }
     
 } // ncbi

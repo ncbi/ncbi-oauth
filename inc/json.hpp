@@ -35,6 +35,9 @@
 
 namespace ncbi
 {
+#pragma warning "see if theres a better way to get access to JSONFixture
+    class JSONFixture;
+    
     /* JSONParseException
      **********************************************************************************/
     class JSONException : public std :: logic_error
@@ -68,14 +71,17 @@ namespace ncbi
         //typedef std :: string :: size_type size_t;
         
     public:
-        // Parse/Factory constructor.
-        static JSONValue * parse ( const std :: string & json, size_t & offset );
-        
         // produces a string suitable for JSON output
         virtual std :: string toString () const = 0;
         
         JSONValue () {}
         virtual ~JSONValue () {}
+
+    protected:
+        // Parse/Factory constructor.
+        static JSONValue * parse ( const std :: string & json, size_t & offset );
+      
+        friend class JSONFixture;
     };
         
     /* JSONArray 
