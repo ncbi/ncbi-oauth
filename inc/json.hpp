@@ -35,7 +35,7 @@
 
 namespace ncbi
 {
-#pragma warning "see if theres a better way to get access to JSONFixture
+#pragma warning "see if theres a better way to get access to JSONFixture"
     class JSONFixture;
     
     /* JSONParseException
