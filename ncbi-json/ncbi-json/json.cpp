@@ -104,9 +104,18 @@ namespace ncbi
         
         return quoted;
     }
+    
+    /* JSONValue
+     **********************************************************************************/
+    std :: string JSONValue :: toString () const
+    {
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: toString() is unsupported for this value type" );
+    }
+
+
     /* JSONNullValue
      **********************************************************************************/
-    std :: string JSONNullValue :: toString() const
+    std :: string JSONNullValue :: toJSON() const
     {
         return "null";
     }
@@ -116,13 +125,13 @@ namespace ncbi
      **********************************************************************************/
         
     template <>
-    std :: string JSONTypedValue < bool > :: toString () const
+    std :: string JSONTypedValue < bool > :: toJSON () const
     {
         return std :: string ( val ? "true" : "false" );
     }
     
     template <>
-    std :: string JSONTypedValue < long long int > :: toString () const
+    std :: string JSONTypedValue < long long int > :: toJSON () const
     {
         char buffer [ 1024 ];
         auto size = snprintf ( buffer, sizeof buffer, "%lld", val );
@@ -130,7 +139,7 @@ namespace ncbi
     }
     
     template <>
-    std :: string JSONTypedValue < long double > :: toString () const
+    std :: string JSONTypedValue < long double > :: toJSON () const
     {
         char buffer [ 1024 ];
         auto size = snprintf ( buffer, sizeof buffer, "%.20Lg", val );
@@ -138,16 +147,22 @@ namespace ncbi
     }
     
     template <>
-    std :: string JSONTypedValue < std :: string > :: toString () const
+    std :: string JSONTypedValue < std :: string > :: toJSON () const
     {
         return string_to_json ( val );
+    }
+    
+    template <>
+    std :: string JSONTypedValue < std :: string > :: toString () const
+    {
+        return val;
     }
     
     /* JSONArray
      *
      **********************************************************************************/
     
-    std :: string JSONArray :: toString () const
+    std :: string JSONArray :: toJSON () const
     {
         std :: string to_string = "[";
         
@@ -159,7 +174,7 @@ namespace ncbi
             const JSONValue* value = seq [ i ];
             
             to_string += sep;
-            to_string += value -> toString();
+            to_string += value -> toJSON();
             
             sep = ",";
         }
@@ -214,7 +229,7 @@ namespace ncbi
     /* JSONObject
      **********************************************************************************/
     
-    std :: string JSONObject :: toString () const
+    std :: string JSONObject :: toJSON () const
     {
         std :: string to_string = "{";
         const char* sep = "";
@@ -226,7 +241,7 @@ namespace ncbi
             JSONValue* value = it -> second . second;
             
             to_string += sep;
-            to_string += string_to_json ( key ) + ":" + value -> toString();
+            to_string += string_to_json ( key ) + ":" + value -> toJSON();
             
             sep = ",";
         }

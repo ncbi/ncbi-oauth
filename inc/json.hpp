@@ -72,7 +72,8 @@ namespace ncbi
         
     public:
         // produces a string suitable for JSON output
-        virtual std :: string toString () const = 0;
+        virtual std :: string toJSON () const = 0;
+        virtual std :: string toString () const;
         
         JSONValue () {}
         virtual ~JSONValue () {}
@@ -93,7 +94,7 @@ namespace ncbi
         // Parse/Factory constructor.
         static JSONArray * parse ( const std :: string & json );
         
-        virtual std :: string toString () const;
+        virtual std :: string toJSON () const;
         
         void append ( JSONValue * elem );
         
@@ -127,7 +128,7 @@ namespace ncbi
         static JSONObject * parse ( const std :: string & json );
         
         // required behavior
-        virtual std :: string toString () const;
+        virtual std :: string toJSON () const;
         
         // retrieve a named value
         JSONValue * getValue ( const std :: string & name );

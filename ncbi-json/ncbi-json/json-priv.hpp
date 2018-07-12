@@ -42,7 +42,9 @@ public:
     // Parse/Factory constructor.
     static JSONValue * parse ( const std :: string & json, size_t & offset );
     
-    virtual std :: string toString () const;
+    virtual std :: string toJSON () const;
+    virtual std :: string toString () const
+    { return toJSON (); }
     
     T getValue ()
     {
@@ -89,7 +91,9 @@ class JSONNullValue : public JSONValue
 public:
     static JSONValue * parse ( const std :: string & json, size_t & offset );
 
-    virtual std :: string toString () const;
+    virtual std :: string toJSON () const;
+    virtual std :: string toString () const
+    { return toJSON (); }
 };
     
 } // ncbi

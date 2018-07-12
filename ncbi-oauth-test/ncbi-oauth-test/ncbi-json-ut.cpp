@@ -86,7 +86,7 @@ namespace ncbi
                                   bool consume_all = true )
         {
             parse ( type, json, consume_all );
-            EXPECT_STREQ ( jObj -> toString() . c_str(), expected . c_str () );
+            EXPECT_STREQ ( jObj -> toJSON() . c_str(), expected . c_str () );
         }
     
     protected:
