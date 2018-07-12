@@ -93,56 +93,113 @@ namespace ncbi
         size_t pos;
         JSONValue *jObj;
     };
-    
-    /* JSONException
-     */
-    TEST_F ( JSONFixture, JSONObject_Throw )
-    {
-        parse_throw ( Object, "" );  // Empty JSON object
-        parse_throw ( Object, "{" ); // Expected '}'
-        parse_throw ( Object, "}" ); // Expected '{'
-    }
-    
-    TEST_F ( JSONFixture, JSONArray_Throw )
-    {
-        parse_throw ( Array, "" );  // Empty JSON array
-        parse_throw ( Array, "[" ); // Expected ']'
-        parse_throw ( Array, "]" ); // Expected '['
-    }
-    
-    TEST_F ( JSONFixture, JSONValue_String_Throw )
-    {
-        parse_throw ( Value, "\"" ); // Invalid begin of string format
-        parse_throw ( Value, "\"\\" ); // Invalid escape character
-        parse_throw ( Value, "\"\\y" ); // Invalid escape character
-        parse_throw ( Value, "\"\\u" ); // Invalid \u escape sequence
-        parse_throw ( Value, "\"\\uabc" ); // Invalid \u escape sequence
-        parse_throw ( Value, "\"\\uabcz" ); // Invalid \u escape sequence
-        parse_throw ( Value, "\"\\u0061" ); // Invalid end of string format
-    }
-    
+
     /* Object
      * {}
      * { members }
      */
+    TEST_F ( JSONFixture, JSONObject_Throw_Empty )
+    {
+        parse_throw ( Object, "" );  // Empty JSON object
+    }
+    TEST_F ( JSONFixture, JSONObject_Throw_ExptRightBrace )
+    {
+        parse_throw ( Object, "{" ); // Expected '}'
+    }
+    TEST_F ( JSONFixture, JSONObject_Throw_ExptRightBrace2 )
+    {
+        parse_throw ( Object, "{\"name\":\"value\"" ); // Expected '}'
+    }
+    TEST_F ( JSONFixture, JSONObject_Throw_ExptLeftBrace )
+    {
+        parse_throw ( Object, "}" ); // Expected '{'
+    }
     TEST_F ( JSONFixture, JSONObject_Empty )
     {
         parse_and_verify_eq( Object , "{}", "{}" );
+    }
+    TEST_F ( JSONFixture, JSONObject_EmptyArray )
+    {
+        parse_and_verify_eq( Object , "{\"\":[]}", "{\"\":[]}" );
+    }
+    TEST_F ( JSONFixture, JSONObject_String_Member )
+    {
+        parse_and_verify_eq( Object , "{\"name\":\"value\"}", "{\"name\":\"value\"}" );
     }
     
     /* Array
      * []
      * [ elements ]
      */
+    TEST_F ( JSONFixture, JSONArray_Throw_Empty )
+    {
+        parse_throw ( Array, "" );  // Empty JSON array
+    }
+    TEST_F ( JSONFixture, JSONArray_Throw_ExptRightBracket )
+    {
+        parse_throw ( Array, "[" ); // Expected ']'
+    }
+    TEST_F ( JSONFixture, JSONArray_Throw_ExptRightBracket2 )
+    {
+        parse_throw ( Array, "[\"name\",\"name\"" ); // Expected ']'
+    }
+    TEST_F ( JSONFixture, JSONArray_Throw_ExptLeftBracket )
+    {
+        parse_throw ( Array, "]" ); // Expected '['
+    }
     TEST_F ( JSONFixture, JSONArray_Empty )
     {
         parse_and_verify_eq( Array , "[]", "[]" );
+    }
+  
+    /* JSONValue
+     *
+     */
+    TEST_F ( JSONFixture, JSONValue_InvJSONFmt )
+    {
+        parse_throw ( Value, "a" );
+    }
+    TEST_F ( JSONFixture, JSONValue_InvNullFmt_Missing )
+    {
+        parse_throw ( Value, "n" );
+    }
+    TEST_F ( JSONFixture, JSONValue_InvNullFmt_Bad )
+    {
+        parse_throw ( Value, "nulll" );
     }
     
     /* String
      * ""
      * " chars "
      */
+    TEST_F ( JSONFixture, JSONValue_String_Throw_InvBeginFormat )
+    {
+        parse_throw ( Value, "\"" ); // Invalid begin of string format
+    }
+    TEST_F ( JSONFixture, JSONValue_String_Throw_InvEscChar_Missing )
+    {
+        parse_throw ( Value, "\"\\" ); // Invalid escape character
+    }
+    TEST_F ( JSONFixture, JSONValue_String_Throw_InvEscChar_Bad )
+    {
+        parse_throw ( Value, "\"\\y" ); // Invalid escape character
+    }
+    TEST_F ( JSONFixture, JSONValue_String_Throw_InvUEscSeq_Missing )
+    {
+        parse_throw ( Value, "\"\\u" ); // Invalid \u escape sequence
+    }
+    TEST_F ( JSONFixture, JSONValue_String_Throw_InvUEscSeq_Short )
+    {
+        parse_throw ( Value, "\"\\uabc" ); // Invalid \u escape sequence
+    }
+    TEST_F ( JSONFixture, JSONValue_String_Throw_InvUEscSeq_Bad )
+    {
+        parse_throw ( Value, "\"\\uabcz" ); // Invalid \u escape sequence
+    }
+    TEST_F ( JSONFixture, JSONValue_String_Throw_InvEndFormat )
+    {
+        parse_throw ( Value, "\"\\u0061" ); // Invalid end of string format
+    }
     TEST_F ( JSONFixture, String_Empty )
     {
         parse_and_verify_eq( Value , "\"\"", "\"\"" );
@@ -160,6 +217,22 @@ namespace ncbi
      * true
      * false
      */
+    TEST_F ( JSONFixture, JSONValue_Bool_Throw_True_Missing )
+    {
+        parse_throw ( Value, "t" );
+    }
+    TEST_F ( JSONFixture, JSONValue_Bool_Throw_True_Bad )
+    {
+        parse_throw ( Value, "truee" );
+    }
+    TEST_F ( JSONFixture, JSONValue_Bool_Throw_False_Missing )
+    {
+        parse_throw ( Value, "f" );
+    }
+    TEST_F ( JSONFixture, JSONValue_Bool_Throw_False_Bad )
+    {
+        parse_throw ( Value, "falsee" );
+    }
     TEST_F ( JSONFixture, Bool_True )
     {
         parse_and_verify_eq( Value , "true", "true" );

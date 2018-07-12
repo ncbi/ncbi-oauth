@@ -193,7 +193,19 @@ namespace ncbi
         while ( ! seq . empty() )
         {
             auto elem = seq . back();
+            seq . pop_back();
             delete elem;
+        }
+    }
+    
+    JSONArray :: ~JSONArray()
+    {
+        try
+        {
+            clear ();
+        }
+        catch ( ... )
+        {
         }
     }
     

@@ -105,10 +105,7 @@ namespace ncbi
         }
         
         JSONArray () {}
-        virtual ~JSONArray ()
-        {
-            clear ();
-        }
+        virtual ~JSONArray ();
         
     private:
         static JSONArray * parse ( const std :: string & json, size_t & offset );

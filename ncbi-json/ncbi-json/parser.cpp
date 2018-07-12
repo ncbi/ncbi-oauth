@@ -73,7 +73,7 @@ namespace ncbi
             
             return utf8;
         }
-        catch ( std :: invalid_argument &ex )
+        catch ( ... )
         {
             throw JSONException ( __FILE__, __LINE__, "Invalid \\u escape sequence" ); // test hit
         }
@@ -88,10 +88,10 @@ namespace ncbi
         if ( json . compare ( pos, sizeof "null" - 1, "null" ) == 0 )
             pos += sizeof "null" - 1;
         else
-            throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'null'") ;
+            throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'null'") ; // test hit
         
         if ( pos < json . size () && isalnum ( json [ pos ] ) )
-            throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'null'" );
+            throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'null'" ); // test hit
         
         return new JSONNullValue ();
     }
@@ -190,28 +190,30 @@ namespace ncbi
         assert ( json [ pos ] == 'f' || json [ pos ] == 't' );
         
         bool val;
+        size_t start = pos;
         
-        if ( json . compare ( pos, sizeof "false" - 1, "false" ) == 0 )
+        if ( json . compare ( start, sizeof "false" - 1, "false" ) == 0 )
         {
             val = false;
             pos += sizeof "false" - 1;
         }
-        else if ( json . compare ( pos, sizeof "true" - 1, "true" ) == 0 )
+        else if ( json . compare ( start, sizeof "true" - 1, "true" ) == 0 )
         {
             val = true;
             pos += sizeof "true" - 1;
         }
-        else if ( json [ pos ] == 'f' )
-            throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'false'" );
+        else if ( json [ start ] == 'f' )
+            throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'false'" ); // test hit
         else
-            throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'true'" );
+            throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'true'" ); // test hit
         
+        // if there was any extra characters following identification of a valid bool token
         if ( pos < json . size () && isalnum ( json [ pos ] ) )
         {
-            if ( json [ pos ] == 'f' )
-                throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'false'" );
+            if ( json [ start ] == 'f' )
+                throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'false'" ); // test hit
             else
-                throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'true'" );
+                throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'true'" ); // test hit
         }
         
         return new JSONTypedValue < bool > ( val );
@@ -346,7 +348,7 @@ namespace ncbi
                         return JSONTypedValue < long long int > :: parse ( json, pos );
                     
                     // garbage
-                    throw JSONException ( __FILE__, __LINE__, "Invalid JSON format" );
+                    throw JSONException ( __FILE__, __LINE__, "Invalid JSON format" ); // test hit
             }
         }
 
@@ -385,12 +387,16 @@ namespace ncbi
                 
                 if ( json [ pos ] == ']' )
                     break;
-                
-                JSONValue *value = JSONValue :: parse ( json, pos );
-                if ( value == nullptr )
-                    throw JSONException ( __FILE__, __LINE__, "Failed to create JSON object" );
-                
-                array -> append ( value );
+             
+                // use scope to invalidate value 
+                {
+                    std :: string sub = json . substr(pos);
+                    JSONValue *value = JSONValue :: parse ( json, pos );
+                    if ( value == nullptr )
+                        throw JSONException ( __FILE__, __LINE__, "Failed to create JSON object" );
+                    sub = json . substr(pos);
+                    array -> append ( value );
+                }
                 
                 // find and skip over ',' and skip any whitespace
                 // exit loop if no ',' found
@@ -401,7 +407,7 @@ namespace ncbi
             
             // must end on ']'
             if ( pos == std :: string :: npos || json [ pos ] != ']' )
-                throw JSONException ( __FILE__, __LINE__, "Excpected: ']'" );
+                throw JSONException ( __FILE__, __LINE__, "Excpected: ']'" ); // Test hit
             
             // skip over ']'
             ++ pos;
@@ -476,7 +482,7 @@ namespace ncbi
             
             // must end on '}'
             if ( pos == std :: string :: npos || json [ pos ] != '}' )
-                throw JSONException ( __FILE__, __LINE__, "Expected: '}'" );
+                throw JSONException ( __FILE__, __LINE__, "Expected: '}'" ); // test hit
             
             // skip over '}'
             ++ pos;
