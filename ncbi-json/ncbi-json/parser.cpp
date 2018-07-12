@@ -240,7 +240,7 @@ namespace ncbi
             ++ pos;
         
         if ( ! isdigit ( json [ pos ] ) )
-            throw JSONException ( __FILE__, __LINE__, "Expected: digit" );
+            throw JSONException ( __FILE__, __LINE__, "Expected: digit" ); // test hit
         
         // check for 0
         if ( json [ pos ] == '0' )
@@ -460,7 +460,7 @@ namespace ncbi
                 // skip to ':'
                 skip_whitespace ( json, pos );
                 if ( pos == std :: string :: npos || json [ pos ] != ':' )
-                    throw JSONException ( __FILE__, __LINE__, "Expected: ':'" );
+                    throw JSONException ( __FILE__, __LINE__, "Expected: ':'" ); // test hit
                 
                 // skip over ':'
                 ++ pos;

@@ -102,17 +102,21 @@ namespace ncbi
     {
         parse_throw ( Object, "" );  // Empty JSON object
     }
-    TEST_F ( JSONFixture, JSONObject_Throw_ExptRightBrace )
+    TEST_F ( JSONFixture, JSONObject_Throw_ExpecttRightBrace )
     {
         parse_throw ( Object, "{" ); // Expected '}'
     }
-    TEST_F ( JSONFixture, JSONObject_Throw_ExptRightBrace2 )
-    {
-        parse_throw ( Object, "{\"name\":\"value\"" ); // Expected '}'
-    }
-    TEST_F ( JSONFixture, JSONObject_Throw_ExptLeftBrace )
+    TEST_F ( JSONFixture, JSONObject_Throw_ExpectLeftBrace )
     {
         parse_throw ( Object, "}" ); // Expected '{'
+    }
+    TEST_F ( JSONFixture, JSONObject_Throw_ExpectColon )
+    {
+        parse_throw ( Object, "{\"name\"\"value\"" ); // Expected ':'
+    }
+    TEST_F ( JSONFixture, JSONObject_Throw_ExpectRightBrace2 )
+    {
+        parse_throw ( Object, "{\"name\":\"value\"" ); // Expected '}'
     }
     TEST_F ( JSONFixture, JSONObject_Empty )
     {
@@ -135,21 +139,25 @@ namespace ncbi
     {
         parse_throw ( Array, "" );  // Empty JSON array
     }
-    TEST_F ( JSONFixture, JSONArray_Throw_ExptRightBracket )
+    TEST_F ( JSONFixture, JSONArray_Throw_ExpectRightBracket )
     {
         parse_throw ( Array, "[" ); // Expected ']'
     }
-    TEST_F ( JSONFixture, JSONArray_Throw_ExptRightBracket2 )
+    TEST_F ( JSONFixture, JSONArray_Throw_ExpectRightBracket2 )
     {
         parse_throw ( Array, "[\"name\",\"name\"" ); // Expected ']'
     }
-    TEST_F ( JSONFixture, JSONArray_Throw_ExptLeftBracket )
+    TEST_F ( JSONFixture, JSONArray_Throw_ExpectLeftBracket )
     {
         parse_throw ( Array, "]" ); // Expected '['
     }
     TEST_F ( JSONFixture, JSONArray_Empty )
     {
         parse_and_verify_eq( Array , "[]", "[]" );
+    }
+    TEST_F ( JSONFixture, JSONArray_String_Elems )
+    {
+        parse_and_verify_eq( Array , "[\"name\",\"name\"]", "[\"name\",\"name\"]" );
     }
   
     /* JSONValue
@@ -248,9 +256,17 @@ namespace ncbi
      * -digit
      * -digit1-9 digits
      */
+    TEST_F ( JSONFixture, JSONValue_Integer_Throw_Negative_Missing )
+    {
+        parse_throw ( Value, "-" ); // Expected digit
+    }
+    TEST_F ( JSONFixture, JSONValue_Integer_Throw_Negative_Bad )
+    {
+        parse_throw ( Value, "-a" ); // Expected digit
+    }
     TEST_F ( JSONFixture, Integer_Single )
     {
-        parse_and_verify_eq( Value , "0", "0" );
+        parse_and_verify_eq ( Value , "0", "0" );
     }
     TEST_F ( JSONFixture, Integer_Multiple )
     {
@@ -285,7 +301,7 @@ namespace ncbi
     {
         // invalid exp format, but construction should not fail
         // as it is the nature of parsers to consume tokens, not
-        // entire strings - should return "0" and consumer
+        // entire strings - should return "0" and consumed
         // only one digit
         parse_and_verify_eq ( Value , "0E", "0", false );
     }
