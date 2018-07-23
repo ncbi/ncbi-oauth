@@ -68,12 +68,29 @@ namespace ncbi
      **********************************************************************************/
     class JSONValue
     {
-        //typedef std :: string :: size_type size_t;
-        
     public:
-        // produces a string suitable for JSON output
-        virtual std :: string toJSON () const = 0;
+        virtual JSONValue & operator [] ( int idx );
+        virtual JSONValue & operator [] ( const std :: string & mbr );
+        
+        virtual JSONValue & operator = ( bool val );
+        virtual JSONValue & operator = ( long long int val );
+        virtual JSONValue & operator = ( long double val );
+        virtual JSONValue & operator = ( const std :: string & val );
+        virtual JSONValue & operator = ( const void * val );
+        
+        virtual const JSONValue & operator [] ( int idx ) const;
+        virtual const JSONValue & operator [] ( const std :: string & mbr ) const;
+        
+        virtual bool toBool () const;
+        virtual long long toInt () const;
+        virtual long double toReal () const;
         virtual std :: string toString () const;
+        virtual std :: string toJSON () const = 0;
+        
+        operator bool () const { return toBool (); }
+        operator long long () const { return toInt (); }
+        operator long double () const { return toReal (); }
+        operator std :: string () const { return toString (); }
         
         JSONValue () {}
         virtual ~JSONValue () {}
@@ -93,6 +110,14 @@ namespace ncbi
     public:
         // Parse/Factory constructor.
         static JSONArray * parse ( const std :: string & json );
+        
+        // these are implemented
+        virtual JSONValue & operator [] ( int idx );
+        virtual const JSONValue & operator [] ( int idx ) const;
+        
+        // these fall through to parent
+        virtual JSONValue & operator [] ( const std :: string & mbr );
+        virtual const JSONValue & operator [] ( const std :: string & mbr ) const;
         
         virtual std :: string toJSON () const;
         
@@ -127,7 +152,14 @@ namespace ncbi
         // Parse/Factory constructor.
         static JSONObject * parse ( const std :: string & json );
         
-        // required behavior
+        // these are implemented
+        virtual JSONValue & operator [] ( const std :: string & mbr );
+        virtual const JSONValue & operator [] ( const std :: string & mbr ) const;
+        
+        // these fall through to parent
+        virtual JSONValue & operator [] ( int idx );
+        virtual const JSONValue & operator [] ( int idx ) const;
+        
         virtual std :: string toJSON () const;
         
         // retrieve a named value

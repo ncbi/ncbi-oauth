@@ -107,19 +107,96 @@ namespace ncbi
     
     /* JSONValue
      **********************************************************************************/
+    JSONValue & JSONValue :: operator [] ( int idx )
+    {
+        throw JSONException ( __FILE__, __LINE__,
+                             "INTERNAL ERROR: operator [] is unsupported for this value type" );
+    }
+    
+    JSONValue & JSONValue :: operator [] ( const std :: string &mbr )
+    {
+        throw JSONException ( __FILE__, __LINE__,
+                             "INTERNAL ERROR: operator [] is unsupported for this value type" );
+    }
+    
+    JSONValue & JSONValue :: operator = ( bool val )
+    {
+        JSONValue *jval = nullptr;
+        return *jval;
+    }
+    
+    JSONValue & JSONValue :: operator = ( long long int val )
+    {
+        JSONValue *jval = nullptr;
+        return *jval;
+    }
+    
+    JSONValue & JSONValue :: operator = ( long double val )
+    {
+        JSONValue *jval = nullptr;
+        return *jval;
+    }
+    
+    JSONValue & JSONValue :: operator = ( const std :: string & val )
+    {
+        JSONValue *jval = nullptr;
+        return *jval;
+    }
+    
+    JSONValue & JSONValue :: operator = ( const void *val )
+    {
+        JSONValue *jval = nullptr; 
+        return *jval;
+    }
+    
+    const JSONValue & JSONValue :: operator [] ( int idx ) const
+    {
+        JSONValue *jval = nullptr;
+        return *jval;
+    }
+    
+    const JSONValue & JSONValue :: operator [] ( const std :: string &mbr ) const
+    {
+        JSONValue *jval = nullptr;
+        return *jval;
+    }
+    
+    bool JSONValue :: toBool () const
+    {
+        return false;
+    }
+    
+    long long int JSONValue :: toInt () const
+    {
+        return 0;
+    }
+    
+    long double JSONValue :: toReal () const
+    {
+        return 0.0;
+    }
+    
     std :: string JSONValue :: toString () const
     {
         throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: toString() is unsupported for this value type" );
     }
 
+    /* JSONTmpValue
+     **********************************************************************************/
+    std :: string JSONTmpValue :: toJSON () const
+    {
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: toJSON() is unsupported for this value type" );
+    }
+    
+    JSONTmpValue :: JSONTmpValue ( JSONValue *parent, int idx )
+    : parent ( parent )
+    , index ( idx )
+    {
+    }
 
     /* JSONNullValue
      **********************************************************************************/
-    std :: string JSONNullValue :: toJSON() const
-    {
-        return "null";
-    }
-    
+
     
     /* JSONTypedValue
      **********************************************************************************/
@@ -161,6 +238,38 @@ namespace ncbi
     /* JSONArray
      *
      **********************************************************************************/
+    JSONValue & JSONArray :: operator [] ( int idx )
+    {
+        if ( idx >= 0 && idx < seq . size () )
+        {
+            if ( idx == seq . size () )
+                seq [ idx ] = new JSONTmpValue ( this, idx );
+            
+            return * seq [ idx ];
+        }
+        
+        throw JSONException ( __FILE__, __LINE__,
+                             "INTERNAL ERROR: TBD" );
+    }
+    
+    const JSONValue & JSONArray :: operator [] ( int idx ) const
+    {
+        if ( idx > 0 && idx < seq . size () )
+            return * seq [ idx ];
+        
+        throw JSONException ( __FILE__, __LINE__,
+                             "INTERNAL ERROR: TBD" );
+    }
+    
+    JSONValue & JSONArray :: operator [] ( const std :: string & mbr )
+    {
+        return JSONValue :: operator [] ( mbr );
+    }
+    
+    const JSONValue & JSONArray :: operator [] ( const std :: string & mbr ) const
+    {
+        return JSONValue :: operator [] ( mbr );
+    }
     
     std :: string JSONArray :: toJSON () const
     {
@@ -228,6 +337,27 @@ namespace ncbi
     
     /* JSONObject
      **********************************************************************************/
+    JSONValue & JSONObject :: operator [] ( const std :: string & mbr )
+    {
+        JSONValue *jval = nullptr;
+        return *jval;
+    }
+    
+    const JSONValue & JSONObject :: operator [] ( const std :: string & mbr ) const
+    {
+        JSONValue *jval = nullptr;
+        return *jval;
+    }
+    
+    JSONValue & JSONObject :: operator [] ( int idx )
+    {
+        return JSONValue :: operator [] ( idx );
+    }
+    
+    const JSONValue & JSONObject :: operator [] ( int idx ) const
+    {
+        return JSONValue :: operator [] ( idx );
+    }
     
     std :: string JSONObject :: toJSON () const
     {

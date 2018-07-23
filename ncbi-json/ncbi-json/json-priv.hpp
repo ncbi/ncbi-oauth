@@ -31,71 +31,89 @@
 
 namespace ncbi
 {
-
-/* JSONTypedValue
- * template types: <bool> <int> <float> <string>
- **********************************************************************************/
-template < class T >
-class JSONTypedValue : public JSONValue
-{
-public:
-    // Parse/Factory constructor.
-    static JSONValue * parse ( const std :: string & json, size_t & offset );
-    
-    virtual std :: string toJSON () const;
-    virtual std :: string toString () const
-    { return toJSON (); }
-    
-    T getValue ()
+    /* JSONTmpValue
+     * a temporary value that is used in the operator [] overloading for assignments
+     **********************************************************************************/
+    class JSONTmpValue : public JSONValue
     {
-        return val;
-    }
+    public:
+        virtual std :: string toJSON () const;
+        
+        JSONTmpValue ( JSONValue *parent, int index );
+        ~JSONTmpValue ();
+        
+    private:
+        JSONValue *parent;
+        int index;
+    };
     
-    const T getValue () const
+    /* JSONNullValue
+     **********************************************************************************/
+    class JSONNullValue : public JSONValue
     {
-        return val;
-    }
+    public:
+        static JSONValue * parse ( const std :: string & json, size_t & offset );
+        
+        virtual std :: string toJSON () const
+        { return "null"; }
+        virtual std :: string toString () const
+        { return toJSON (); }
+    };
     
-    // TBD - keep?
-    void setValue ( const T & value )
+    
+    /* JSONTypedValue
+     * template types: <bool> <int> <float> <string>
+     **********************************************************************************/
+    template < class T >
+    class JSONTypedValue : public JSONValue
     {
-        val = value;
-    }
-    
-    // Constructors
-    JSONTypedValue ( const T & value )
-    : val ( value )
-    {}
-    
-    JSONTypedValue ( const JSONTypedValue < T > & copy )
-    : val ( copy . val )
-    {}
-    
-    JSONTypedValue < T > & operator = ( const JSONTypedValue < T > & orig )
-    {
-        val = orig . val;
-        return *this;
-    }
-    
-    virtual ~JSONTypedValue ()
-    {}
-    
-    
-private:
-    
-    T val;
-};
-    
-class JSONNullValue : public JSONValue
-{
-public:
-    static JSONValue * parse ( const std :: string & json, size_t & offset );
-
-    virtual std :: string toJSON () const;
-    virtual std :: string toString () const
-    { return toJSON (); }
-};
-    
+    public:
+        // Parse/Factory constructor.
+        static JSONValue * parse ( const std :: string & json, size_t & offset );
+        
+        virtual std :: string toJSON () const;
+        virtual std :: string toString () const
+        { return toJSON (); }
+        
+        T getValue ()
+        {
+            return val;
+        }
+        
+        const T getValue () const
+        {
+            return val;
+        }
+        
+        // TBD - keep?
+        void setValue ( const T & value )
+        {
+            val = value;
+        }
+        
+        // Constructors
+        JSONTypedValue ( const T & value )
+        : val ( value )
+        {}
+        
+        JSONTypedValue ( const JSONTypedValue < T > & copy )
+        : val ( copy . val )
+        {}
+        
+        JSONTypedValue < T > & operator = ( const JSONTypedValue < T > & orig )
+        {
+            val = orig . val;
+            return *this;
+        }
+        
+        virtual ~JSONTypedValue ()
+        {}
+        
+        
+    private:
+        
+        T val;
+    };
 } // ncbi
 
 #endif /* _hpp_ncbi_oauth_json_priv_ */
