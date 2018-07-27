@@ -13,7 +13,10 @@
 
 namespace ncbi
 {
-    class JSONFixture : public :: testing :: Test
+    /* JSON Construction
+     *
+     **********************************************************************************/
+    class JSONFixture_JSONConstruction : public :: testing :: Test
     {
     public:
         enum JSONType { Object, Array, Value };
@@ -29,17 +32,17 @@ namespace ncbi
             delete jObj;
         }
         
-        void parse_throw ( JSONType type, const std :: string &json )
+        void make_throw ( JSONType type, const std :: string &json )
         {
             pos = 0;
             
             switch ( type )
             {
                 case Object:
-                    EXPECT_ANY_THROW ( JSONObject :: parse ( json ) );
+                    EXPECT_ANY_THROW ( JSONObject :: make ( json ) );
                     break;
                 case Array:
-                    EXPECT_ANY_THROW ( JSONArray :: parse ( json ) );
+                    EXPECT_ANY_THROW ( JSONArray :: make ( json ) );
                     break;
                 case Value:
                     EXPECT_ANY_THROW ( JSONValue :: parse ( json, pos ) );
@@ -47,7 +50,7 @@ namespace ncbi
             }
         }
         
-        void parse ( JSONType type, const std :: string &json, bool consume_all = true )
+        void make ( JSONType type, const std :: string &json, bool consume_all = true )
         {
             pos = 0;
             
@@ -55,21 +58,21 @@ namespace ncbi
             {
                 case Object:
                 {
-                    JSONObject *obj = JSONObject::parse ( json );
+                    JSONObject *obj = JSONObject :: make ( json );
                     ASSERT_TRUE ( obj != nullptr );
                     jObj = obj;
                     break;
                 }
                 case Array:
                 {
-                    JSONArray *array = JSONArray::parse ( json );
+                    JSONArray *array = JSONArray :: make ( json );
                     ASSERT_TRUE ( array != nullptr );
                     jObj = array;
                     break;
                 }
                 case Value:
                 {
-                    JSONValue *val = JSONValue::parse ( json, pos );
+                    JSONValue *val = JSONValue :: parse ( json, pos );
                     ASSERT_TRUE ( val != nullptr );
                     if ( consume_all )
                         ASSERT_TRUE ( pos == json . size () );
@@ -82,10 +85,10 @@ namespace ncbi
             }
         }
         
-        void parse_and_verify_eq ( JSONType type, const std :: string &json, const std :: string &expected,
+        void make_and_verify_eq ( JSONType type, const std :: string &json, const std :: string &expected,
                                   bool consume_all = true )
         {
-            parse ( type, json, consume_all );
+            make ( type, json, consume_all );
             EXPECT_STREQ ( jObj -> toJSON() . c_str(), expected . c_str () );
         }
     
@@ -98,156 +101,177 @@ namespace ncbi
      * {}
      * { members }
      */
-    TEST_F ( JSONFixture, JSONObject_Throw_Empty )
+    TEST_F ( JSONFixture_JSONConstruction, JSONObject_Throw_Empty )
     {
-        parse_throw ( Object, "" );  // Empty JSON object
+        make_throw ( Object, "" );  // Empty JSON object
     }
-    TEST_F ( JSONFixture, JSONObject_Throw_ExpecttRightBrace )
+    TEST_F ( JSONFixture_JSONConstruction, JSONObject_Throw_ExpecttRightBrace )
     {
-        parse_throw ( Object, "{" ); // Expected '}'
+        make_throw ( Object, "{" ); // Expected '}'
     }
-    TEST_F ( JSONFixture, JSONObject_Throw_ExpectLeftBrace )
+    TEST_F ( JSONFixture_JSONConstruction, JSONObject_Throw_ExpectLeftBrace )
     {
-        parse_throw ( Object, "}" ); // Expected '{'
+        make_throw ( Object, "}" ); // Expected '{'
     }
-    TEST_F ( JSONFixture, JSONObject_Throw_ExpectColon )
+    TEST_F ( JSONFixture_JSONConstruction, JSONObject_Throw_ExpectColon )
     {
-        parse_throw ( Object, "{\"name\"\"value\"" ); // Expected ':'
+        make_throw ( Object, "{\"name\"\"value\"" ); // Expected ':'
     }
-    TEST_F ( JSONFixture, JSONObject_Throw_ExpectRightBrace2 )
+    TEST_F ( JSONFixture_JSONConstruction, JSONObject_Throw_ExpectRightBrace2 )
     {
-        parse_throw ( Object, "{\"name\":\"value\"" ); // Expected '}'
+        make_throw ( Object, "{\"name\":\"value\"" ); // Expected '}'
     }
-    TEST_F ( JSONFixture, JSONObject_Empty )
+    TEST_F ( JSONFixture_JSONConstruction, JSONObject_Empty )
     {
-        parse_and_verify_eq( Object , "{}", "{}" );
+        make_and_verify_eq ( Object , "{}", "{}" );
     }
-    TEST_F ( JSONFixture, JSONObject_EmptyArray )
+    TEST_F ( JSONFixture_JSONConstruction, JSONObject_EmptyArray )
     {
-        parse_and_verify_eq( Object , "{\"\":[]}", "{\"\":[]}" );
+        make_and_verify_eq ( Object , "{\"\":[]}", "{\"\":[]}" );
     }
-    TEST_F ( JSONFixture, JSONObject_String_Member )
+    TEST_F ( JSONFixture_JSONConstruction, JSONObject_String_Member )
     {
-        parse_and_verify_eq( Object , "{\"name\":\"value\"}", "{\"name\":\"value\"}" );
+        make_and_verify_eq ( Object , "{\"name\":\"value\"}", "{\"name\":\"value\"}" );
     }
     
     /* Array
      * []
      * [ elements ]
      */
-    TEST_F ( JSONFixture, JSONArray_Throw_Empty )
+    TEST_F ( JSONFixture_JSONConstruction, JSONArray_Throw_Empty )
     {
-        parse_throw ( Array, "" );  // Empty JSON array
+        make_throw ( Array, "" );  // Empty JSON array
     }
-    TEST_F ( JSONFixture, JSONArray_Throw_ExpectRightBracket )
+    TEST_F ( JSONFixture_JSONConstruction, JSONArray_Throw_ExpectRightBracket )
     {
-        parse_throw ( Array, "[" ); // Expected ']'
+        make_throw ( Array, "[" ); // Expected ']'
     }
-    TEST_F ( JSONFixture, JSONArray_Throw_ExpectRightBracket2 )
+    TEST_F ( JSONFixture_JSONConstruction, JSONArray_Throw_ExpectRightBracket2 )
     {
-        parse_throw ( Array, "[\"name\",\"name\"" ); // Expected ']'
+        make_throw ( Array, "[\"name\",\"name\"" ); // Expected ']'
     }
-    TEST_F ( JSONFixture, JSONArray_Throw_ExpectLeftBracket )
+    TEST_F ( JSONFixture_JSONConstruction, JSONArray_Throw_ExpectLeftBracket )
     {
-        parse_throw ( Array, "]" ); // Expected '['
+        make_throw ( Array, "]" ); // Expected '['
     }
-    TEST_F ( JSONFixture, JSONArray_Empty )
+    TEST_F ( JSONFixture_JSONConstruction, JSONArray_Empty )
     {
-        parse_and_verify_eq( Array , "[]", "[]" );
+        make_and_verify_eq ( Array , "[]", "[]" );
     }
-    TEST_F ( JSONFixture, JSONArray_String_Elems )
+    TEST_F ( JSONFixture_JSONConstruction, JSONArray_String_Elems )
     {
-        parse_and_verify_eq( Array , "[\"name\",\"name\"]", "[\"name\",\"name\"]" );
+        make_and_verify_eq( Array , "[\"name\",\"name\"]", "[\"name\",\"name\"]" );
     }
   
     /* JSONValue
      *
      */
-    TEST_F ( JSONFixture, JSONValue_InvJSONFmt )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_InvJSONFmt )
     {
-        parse_throw ( Value, "a" );
+        make_throw ( Value, "a" );
     }
-    TEST_F ( JSONFixture, JSONValue_InvNullFmt_Missing )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_InvNullFmt_Missing )
     {
-        parse_throw ( Value, "n" );
+        make_throw ( Value, "n" );
     }
-    TEST_F ( JSONFixture, JSONValue_InvNullFmt_Bad )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_InvNullFmt_Bad )
     {
-        parse_throw ( Value, "nulll" );
+        make_throw ( Value, "nulll" );
+    }
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_Throw_toBool )
+    {
+        jObj = new JSONObject ();
+        EXPECT_ANY_THROW ( jObj -> toBool() );
+    }
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_Throw_toInt )
+    {
+        jObj = new JSONObject ();
+        EXPECT_ANY_THROW ( jObj -> toInt() );
+    }
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_Throw_toReal )
+    {
+        jObj = new JSONObject ();
+        EXPECT_ANY_THROW ( jObj -> toReal() );
+    }
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_Throw_setNullValue )
+    {
+        jObj = new JSONObject ();
+        std :: string val = std :: string ( "not null" );
+        //EXPECT_ANY_THROW ( jObj -> setNullValue ( val ) );
     }
     
     /* String
      * ""
      * " chars "
      */
-    TEST_F ( JSONFixture, JSONValue_String_Throw_InvBeginFormat )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_String_Throw_InvBeginFormat )
     {
-        parse_throw ( Value, "\"" ); // Invalid begin of string format
+        make_throw ( Value, "\"" ); // Invalid begin of string format
     }
-    TEST_F ( JSONFixture, JSONValue_String_Throw_InvEscChar_Missing )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_String_Throw_InvEscChar_Missing )
     {
-        parse_throw ( Value, "\"\\" ); // Invalid escape character
+        make_throw ( Value, "\"\\" ); // Invalid escape character
     }
-    TEST_F ( JSONFixture, JSONValue_String_Throw_InvEscChar_Bad )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_String_Throw_InvEscChar_Bad )
     {
-        parse_throw ( Value, "\"\\y" ); // Invalid escape character
+        make_throw ( Value, "\"\\y" ); // Invalid escape character
     }
-    TEST_F ( JSONFixture, JSONValue_String_Throw_InvUEscSeq_Missing )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_String_Throw_InvUEscSeq_Missing )
     {
-        parse_throw ( Value, "\"\\u" ); // Invalid \u escape sequence
+        make_throw ( Value, "\"\\u" ); // Invalid \u escape sequence
     }
-    TEST_F ( JSONFixture, JSONValue_String_Throw_InvUEscSeq_Short )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_String_Throw_InvUEscSeq_Short )
     {
-        parse_throw ( Value, "\"\\uabc" ); // Invalid \u escape sequence
+        make_throw ( Value, "\"\\uabc" ); // Invalid \u escape sequence
     }
-    TEST_F ( JSONFixture, JSONValue_String_Throw_InvUEscSeq_Bad )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_String_Throw_InvUEscSeq_Bad )
     {
-        parse_throw ( Value, "\"\\uabcz" ); // Invalid \u escape sequence
+        make_throw ( Value, "\"\\uabcz" ); // Invalid \u escape sequence
     }
-    TEST_F ( JSONFixture, JSONValue_String_Throw_InvEndFormat )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_String_Throw_InvEndFormat )
     {
-        parse_throw ( Value, "\"\\u0061" ); // Invalid end of string format
+        make_throw ( Value, "\"\\u0061" ); // Invalid end of string format
     }
-    TEST_F ( JSONFixture, String_Empty )
+    TEST_F ( JSONFixture_JSONConstruction, String_Empty )
     {
-        parse_and_verify_eq( Value , "\"\"", "\"\"" );
+        make_and_verify_eq( Value , "\"\"", "\"\"" );
     }
-    TEST_F ( JSONFixture, String_Char )
+    TEST_F ( JSONFixture_JSONConstruction, String_Char )
     {
-        parse_and_verify_eq( Value , "\"a\"", "\"a\"" );
+        make_and_verify_eq( Value , "\"a\"", "\"a\"" );
     }
-    TEST_F ( JSONFixture, String_Chars )
+    TEST_F ( JSONFixture_JSONConstruction, String_Chars )
     {
-        parse_and_verify_eq( Value , "\"abc\"", "\"abc\"" );
+        make_and_verify_eq( Value , "\"abc\"", "\"abc\"" );
     }
     
     /* Bool
      * true
      * false
      */
-    TEST_F ( JSONFixture, JSONValue_Bool_Throw_True_Missing )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_Bool_Throw_True_Missing )
     {
-        parse_throw ( Value, "t" );
+        make_throw ( Value, "t" );
     }
-    TEST_F ( JSONFixture, JSONValue_Bool_Throw_True_Bad )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_Bool_Throw_True_Bad )
     {
-        parse_throw ( Value, "truee" );
+        make_throw ( Value, "truee" );
     }
-    TEST_F ( JSONFixture, JSONValue_Bool_Throw_False_Missing )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_Bool_Throw_False_Missing )
     {
-        parse_throw ( Value, "f" );
+        make_throw ( Value, "f" );
     }
-    TEST_F ( JSONFixture, JSONValue_Bool_Throw_False_Bad )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_Bool_Throw_False_Bad )
     {
-        parse_throw ( Value, "falsee" );
+        make_throw ( Value, "falsee" );
     }
-    TEST_F ( JSONFixture, Bool_True )
+    TEST_F ( JSONFixture_JSONConstruction, Bool_True )
     {
-        parse_and_verify_eq( Value , "true", "true" );
+        make_and_verify_eq( Value , "true", "true" );
     }
-    TEST_F ( JSONFixture, Bool_False )
+    TEST_F ( JSONFixture_JSONConstruction, Bool_False )
     {
-        parse_and_verify_eq( Value , "false", "false" );
+        make_and_verify_eq( Value , "false", "false" );
     }
     
     /* Integer
@@ -256,30 +280,30 @@ namespace ncbi
      * -digit
      * -digit1-9 digits
      */
-    TEST_F ( JSONFixture, JSONValue_Integer_Throw_Negative_Missing )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_Integer_Throw_Negative_Missing )
     {
-        parse_throw ( Value, "-" ); // Expected digit
+        make_throw ( Value, "-" ); // Expected digit
     }
-    TEST_F ( JSONFixture, JSONValue_Integer_Throw_Negative_Bad )
+    TEST_F ( JSONFixture_JSONConstruction, JSONValue_Integer_Throw_Negative_Bad )
     {
-        parse_throw ( Value, "-a" ); // Expected digit
+        make_throw ( Value, "-a" ); // Expected digit
     }
-    TEST_F ( JSONFixture, Integer_Single )
+    TEST_F ( JSONFixture_JSONConstruction, Integer_Single )
     {
-        parse_and_verify_eq ( Value , "0", "0" );
+        make_and_verify_eq ( Value , "0", "0" );
     }
-    TEST_F ( JSONFixture, Integer_Multiple )
+    TEST_F ( JSONFixture_JSONConstruction, Integer_Multiple )
     {
-        parse_and_verify_eq( Value , "12345", "12345" );
+        make_and_verify_eq( Value , "12345", "12345" );
     }
-    TEST_F ( JSONFixture, Integer_Single_Negative )
+    TEST_F ( JSONFixture_JSONConstruction, Integer_Single_Negative )
     {
-        parse_and_verify_eq( Value , "-0", "0" );
-        parse_and_verify_eq( Value , "-1", "-1" );
+        make_and_verify_eq( Value , "-0", "0" );
+        make_and_verify_eq( Value , "-1", "-1" );
     }
-    TEST_F ( JSONFixture, Integer_Multiple_Negative )
+    TEST_F ( JSONFixture_JSONConstruction, Integer_Multiple_Negative )
     {
-        parse_and_verify_eq( Value , "-12345", "-12345" );
+        make_and_verify_eq( Value , "-12345", "-12345" );
     }
     
     /* Floating point
@@ -287,44 +311,225 @@ namespace ncbi
      * int exp
      * int frac exp
      */
-    TEST_F ( JSONFixture, Float_Frac )
+    TEST_F ( JSONFixture_JSONConstruction, Float_Frac )
     {
-        parse_and_verify_eq( Value , "0.0", "0" );
-        parse_and_verify_eq( Value , "1.2", "1.2" );
+        make_and_verify_eq( Value , "0.0", "0.0" );
+        make_and_verify_eq( Value , "1.2", "1.2" );
     }
-    TEST_F ( JSONFixture, Float_Frac_Precision )
+    TEST_F ( JSONFixture_JSONConstruction, Float_Frac_Precision )
     {
-        parse_and_verify_eq( Value , "1234.56789", "1234.56789" );
+        make_and_verify_eq( Value , "1234.56789", "1234.56789" );
     }
     
-    TEST_F ( JSONFixture, Float_eE_nodigit )
+    TEST_F ( JSONFixture_JSONConstruction, Float_eE_nodigit )
     {
         // invalid exp format, but construction should not fail
         // as it is the nature of parsers to consume tokens, not
         // entire strings - should return "0" and consumed
         // only one digit
-        parse_and_verify_eq ( Value , "0E", "0", false );
+        make_and_verify_eq ( Value , "0E", "0", false );
     }
-    TEST_F ( JSONFixture, Float_eE_digit )
+    TEST_F ( JSONFixture_JSONConstruction, Float_eE_digit )
     {
-        parse ( Value , "0e0" );
-        parse ( Value , "0E0" );
+        make ( Value , "0e0" );
+        make ( Value , "0E0" );
         
     }
-    TEST_F ( JSONFixture, Float_eE_plus_digits )
+    TEST_F ( JSONFixture_JSONConstruction, Float_eE_plus_digits )
     {
-        parse ( Value , "0e+0" );
-        parse ( Value , "0E+0" );
+        make ( Value , "0e+0" );
+        make ( Value , "0E+0" );
     }
-    TEST_F ( JSONFixture, Float_eE_minus_digits )
+    TEST_F ( JSONFixture_JSONConstruction, Float_eE_minus_digits )
     {
-        parse ( Value , "0e-0" );
-        parse ( Value , "0E-0" );
+        make ( Value , "0e-0" );
+        make ( Value , "0E-0" );
     }
 
-    TEST_F ( JSONFixture, Float_Frac_Exp )
+    TEST_F ( JSONFixture_JSONConstruction, Float_Frac_Exp )
     {
-        parse ( Value, "0.0e0" );
+        make ( Value, "0.0e0" );
     }
+    
+    /* Operator Assingments
+     *
+     **********************************************************************************/
+    class JSONFixture_OperatorAssingments : public :: testing :: Test
+    {
+    public:
+        enum JSONType { Object, Array, Value };
+        
+        void SetUp ()
+        {
+            pos = 0;
+        }
+        
+        void TearDown ()
+        {
+        }
+        
+        
+    protected:
+        size_t pos;
+        JSONObject jObj;
+    };
+    
+    /* Object
+     */
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Bool_Values )
+    {
+        jObj [ "true" ] = true;
+        jObj [ "false" ] = false;
+        EXPECT_EQ ( ( bool ) jObj [ "true" ], true );
+        EXPECT_EQ ( ( bool ) jObj [ "false" ], false );
+        EXPECT_STREQ( jObj . toJSON () . c_str (), "{\"false\":false,\"true\":true}" );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Bool_String_Values )
+    {
+        jObj [ "true" ] = "true";
+        jObj [ "false" ] = "false";
+        EXPECT_EQ ( ( bool ) jObj [ "true" ], true );
+        EXPECT_EQ ( ( bool ) jObj [ "false" ], false );
+        EXPECT_STREQ( jObj . toJSON () . c_str (), "{\"false\":\"false\",\"true\":\"true\"}" );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Int_Values )
+    {
+        jObj [ "int" ] = 0;
+        jObj [ "int1" ] = 1;
+        EXPECT_EQ ( ( long long int ) jObj [ "int" ], 0 );
+        EXPECT_EQ ( ( long long int ) jObj [ "int1" ], 1 );
+        EXPECT_STREQ ( jObj . toJSON () . c_str (), "{\"int\":0,\"int1\":1}" );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Int_String_Values )
+    {
+        jObj [ "int" ] = "0";
+        jObj [ "int1" ] = "1";
+        EXPECT_EQ ( ( long long int ) jObj [ "int" ], 0 );
+        EXPECT_EQ ( ( long long int ) jObj [ "int1" ], 1 );
+        EXPECT_STREQ ( jObj . toJSON () . c_str (), "{\"int\":\"0\",\"int1\":\"1\"}" );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Negative_Int_Values )
+    {
+        jObj [ "int" ] = -1;
+        jObj [ "int1" ] = -2;
+        EXPECT_EQ ( ( long long int ) jObj [ "int" ], -1 );
+        EXPECT_EQ ( ( long long int ) jObj [ "int1" ], -2 );
+        EXPECT_STREQ ( jObj . toJSON () . c_str (), "{\"int\":-1,\"int1\":-2}" );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Negative_Int_String_Values )
+    {
+        jObj [ "int" ] = "-1";
+        jObj [ "int1" ] = "-2";
+        EXPECT_EQ ( ( long long int ) jObj [ "int" ], -1 );
+        EXPECT_EQ ( ( long long int ) jObj [ "int1" ], -2 );
+        EXPECT_STREQ ( jObj . toJSON () . c_str (), "{\"int\":\"-1\",\"int1\":\"-2\"}" );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Real_Values )
+    {
+        jObj [ "real" ] = 0.0;
+        jObj [ "real1" ] = 1.5;
+        EXPECT_FLOAT_EQ( ( long double ) jObj ["real"], 0.0 );
+        EXPECT_FLOAT_EQ( ( long double ) jObj ["real1"], 1.5 );
+        EXPECT_STREQ ( jObj . toJSON () . c_str (), "{\"real\":0,\"real1\":1.5}" );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Real_String_Values )
+    {
+        jObj [ "real" ] = "0.0";
+        jObj [ "real1" ] = "1.5";
+        EXPECT_FLOAT_EQ( ( long double ) jObj ["real"], 0.0 );
+        EXPECT_FLOAT_EQ( ( long double ) jObj ["real1"], 1.5 );
+        EXPECT_STREQ ( jObj . toJSON () . c_str (), "{\"real\":\"0.0\",\"real1\":\"1.5\"}" );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Single_Real_Epsilon )
+    {
+        jObj [ "float" ] = 0.1;
+        EXPECT_FLOAT_EQ( ( long double ) jObj ["float"], 0.1 );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Single_String_Pair )
+    {
+        jObj [ "name" ] = "value";
+        EXPECT_STREQ( jObj . toJSON () . c_str (), "{\"name\":\"value\"}" );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Multiple_String_Pairs )
+    {
+        jObj [ "name" ] = "value";
+        jObj [ "name1" ] = "value1";
+        EXPECT_STREQ( jObj . toJSON () . c_str (), "{\"name\":\"value\",\"name1\":\"value1\"}" );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Nested_Obj )
+    {
+        jObj [ "name" ] [ "nested" ] = "value";
+        EXPECT_STREQ( jObj . toJSON () . c_str (), "{\"name\":{\"nested\":\"value\"}}" );
+    }
+    
+    /* Array
+     */
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Bool_Array )
+    {
+        jObj [ "name" ] [ 0 ] = true;
+        jObj [ "name" ] [ 1 ] = false;
+        EXPECT_EQ ( ( bool ) jObj [ "name" ] [ 0 ], true );
+        EXPECT_EQ ( ( bool ) jObj [ "name" ] [ 1 ], false );
+        EXPECT_STREQ( jObj . toJSON () . c_str (), "{\"name\":[true,false]}" );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Int_Array )
+    {
+        jObj [ "name" ] [ 0 ] = 0;
+        jObj [ "name" ] [ 1 ] = 1;
+        EXPECT_STREQ( jObj . toJSON () . c_str (), "{\"name\":[0,1]}" );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_Real_Array )
+    {
+        jObj [ "name" ] [ 0 ] = 0;
+        jObj [ "name" ] [ 1 ] = 1;
+        EXPECT_STREQ( jObj . toJSON () . c_str (), "{\"name\":[0,1]}" );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONObject_String_Array )
+    {
+        jObj [ "name" ] [ 0 ] = "value";
+        jObj [ "name" ] [ 1 ] = "value1";
+        EXPECT_STREQ ( jObj . toJSON () . c_str (), "{\"name\":[\"value\",\"value1\"]}" );
+    }
+    
+    /* JSONValue
+     *
+     */
+    TEST_F ( JSONFixture_OperatorAssingments, JSONValue_InvJSONFmt )
+    {
+        //make_throw ( Value, "a" );
+    }
+    
+    /* TmpValue
+     */
+    TEST_F ( JSONFixture_OperatorAssingments, JSONTmpValue_Throw_InvalidIndex )
+    {
+        EXPECT_ANY_THROW ( jObj [ "name" ][-1]; );
+    }
+    
+    TEST_F ( JSONFixture_OperatorAssingments, JSONTmpValue_Throw_InvalidString )
+    {
+        EXPECT_ANY_THROW ( jObj [ "" ] );
+    }
+    
+    /* NullValue
+     */
+    TEST_F ( JSONFixture_OperatorAssingments, Throw_setNullValue )
+    {
+    }
+
     
 } // ncbi

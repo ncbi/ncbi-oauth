@@ -96,96 +96,9 @@ namespace ncbi
         return new JSONNullValue ();
     }
     
-    /* JSONTypedValue
+    /* JSONBoolValue
      **********************************************************************************/
-    template<>
-    JSONValue * JSONTypedValue < std :: string >
-    :: parse ( const std::string &json, size_t & pos )
-    {
-        assert ( json [ pos ] == '"' );
-
-        std :: string str;
-        
-        // Find ending '"' or control characters
-        size_t esc = json . find_first_of ( "\\\"", ++ pos );
-        if ( esc == std :: string :: npos )
-            throw JSONException ( __FILE__, __LINE__, "Invalid begin of string format" ); // test hit
-        
-        while ( 1 )
-        {
-            // add everything before the escape in
-            // to the new string
-            str += json . substr ( pos, esc - pos );
-            pos = esc;
-            
-            // found end of string
-            if ( json [ pos ] != '\\' )
-                break;
-            
-            // found '\'
-            switch ( json [ ++ pos ] )
-            {
-                case '"':
-                    str += '"';
-                    break;
-                case '\\':
-                    str += '\\';
-                    break;
-                case '/':
-                    str += '/';
-                    break;
-                case 'b':
-                    str += '\b';
-                    break;
-                case 'f':
-                    str += '\f';
-                    break;
-                case 'n':
-                    str += '\n';
-                    break;
-                case 'r':
-                    str += '\r';
-                    break;
-                case 't':
-                    str += '\t';
-                    break;
-                case 'u':
-                {
-                    // start at the element after 'u'
-                    std :: string unicode = json . substr ( pos + 1, 4 );
-                    std :: string utf8 = hex_to_utf8 ( unicode );
-                    
-                    str += utf8;
-                    pos += 4;
-                    
-                    break;
-                }
-                    
-                default:
-                    throw JSONException ( __FILE__, __LINE__, "Invalid escape character" ); // test hit
-            }
-            
-            // skip escaped character
-            ++ pos;
-            
-            // Find ending '"' or control characters
-            esc = json . find_first_of ( "\\\"", pos );
-            if ( esc == std :: string :: npos )
-                throw JSONException ( __FILE__, __LINE__, "Invalid end of string format" ); // test hit
-        }
-        
-        assert ( esc == pos );
-        assert ( json [ pos ] == '"' );
-        
-        // set pos to point to next token
-        ++ pos;
-    
-        return new JSONTypedValue < std :: string > ( str );
-    }
-    
-    template<>
-    JSONValue * JSONTypedValue < bool >
-    :: parse ( const std::string &json, size_t & pos )
+    JSONValue * JSONBoolValue :: parse ( const std::string &json, size_t & pos )
     {
         assert ( json [ pos ] == 'f' || json [ pos ] == 't' );
         
@@ -216,21 +129,12 @@ namespace ncbi
                 throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'true'" ); // test hit
         }
         
-        return new JSONTypedValue < bool > ( val );
+        return new JSONBoolValue ( val );
     }
-    
-    // This will not be called, taken care of in
-    // JSONValue * JSONTypedValue <long long int> :: parse
-    template<>
-    JSONValue * JSONTypedValue < long double >
-    :: parse ( const std::string &json, size_t & pos )
-    {
-        return nullptr;
-    }
-    
-    template<>
-    JSONValue * JSONTypedValue < long long int >
-    :: parse ( const std::string &json, size_t & pos )
+   
+    /* JSONIntegerValue
+     **********************************************************************************/
+    JSONValue * JSONIntegerValue :: parse  ( const std::string &json, size_t & pos )
     {
         assert ( isdigit ( json [ pos ] ) || json [ pos ] == '-' );
         
@@ -304,7 +208,7 @@ namespace ncbi
                 long long int num = std :: stoll ( num_str, &num_len );
                 pos = start + num_len;
                 
-                return new JSONTypedValue < long long int > ( num );
+                return new JSONIntegerValue ( num );
             }
             catch ( std :: out_of_range &e )
             {
@@ -313,12 +217,104 @@ namespace ncbi
         }
         
         // must be floating point
-        long double num = std :: stold ( num_str, &num_len );
+        std :: stold ( num_str, &num_len );
         pos = start + num_len;
-
-        return new JSONTypedValue < long double > ( num );
+        
+        return new JSONRealValue ( num_str . substr ( 0, num_len ) );
     }
     
+    /* JSONRealValue
+     **********************************************************************************/
+    JSONValue * JSONRealValue :: parse  ( const std::string &json, size_t & pos )
+    {
+        return nullptr;
+    }
+    
+    /* JSONStringValue
+     **********************************************************************************/
+    JSONValue * JSONStringValue :: parse  ( const std::string &json, size_t & pos )
+    {
+        assert ( json [ pos ] == '"' );
+        
+        std :: string str;
+        
+        // Find ending '"' or control characters
+        size_t esc = json . find_first_of ( "\\\"", ++ pos );
+        if ( esc == std :: string :: npos )
+            throw JSONException ( __FILE__, __LINE__, "Invalid begin of string format" ); // test hit
+        
+        while ( 1 )
+        {
+            // add everything before the escape in
+            // to the new string
+            str += json . substr ( pos, esc - pos );
+            pos = esc;
+            
+            // found end of string
+            if ( json [ pos ] != '\\' )
+                break;
+            
+            // found '\'
+            switch ( json [ ++ pos ] )
+            {
+                case '"':
+                    str += '"';
+                    break;
+                case '\\':
+                    str += '\\';
+                    break;
+                case '/':
+                    str += '/';
+                    break;
+                case 'b':
+                    str += '\b';
+                    break;
+                case 'f':
+                    str += '\f';
+                    break;
+                case 'n':
+                    str += '\n';
+                    break;
+                case 'r':
+                    str += '\r';
+                    break;
+                case 't':
+                    str += '\t';
+                    break;
+                case 'u':
+                {
+                    // start at the element after 'u'
+#pragma warning "still need to deal with this properly"
+                    std :: string unicode = json . substr ( pos + 1, 4 );
+                    std :: string utf8 = hex_to_utf8 ( unicode );
+                    
+                    str += utf8;
+                    pos += 4;
+                    
+                    break;
+                }
+                    
+                default:
+                    throw JSONException ( __FILE__, __LINE__, "Invalid escape character" ); // test hit
+            }
+            
+            // skip escaped character
+            ++ pos;
+            
+            // Find ending '"' or control characters
+            esc = json . find_first_of ( "\\\"", pos );
+            if ( esc == std :: string :: npos )
+                throw JSONException ( __FILE__, __LINE__, "Invalid end of string format" ); // test hit
+        }
+        
+        assert ( esc == pos );
+        assert ( json [ pos ] == '"' );
+        
+        // set pos to point to next token
+        ++ pos;
+        
+        return new JSONStringValue ( str );
+    }
 
     /* JSONValue
      **********************************************************************************/
@@ -334,18 +330,18 @@ namespace ncbi
                 case '[':
                     return JSONArray :: parse ( json, pos );
                 case '"':
-                    return JSONTypedValue < std :: string > :: parse ( json, pos );
+                    return JSONStringValue :: parse ( json, pos );
                 case 'f':
                 case 't':
-                    return JSONTypedValue < bool > :: parse ( json, pos );
+                    return JSONBoolValue :: parse ( json, pos );
                 case '-':
-                    return JSONTypedValue < long long int > :: parse ( json, pos );
+                    return JSONIntegerValue :: parse ( json, pos );
                 case 'n':
                     return JSONNullValue :: parse ( json, pos );
                     break;
                 default:
                     if ( isdigit ( json [ pos ] ) )
-                        return JSONTypedValue < long long int > :: parse ( json, pos );
+                        return JSONIntegerValue :: parse ( json, pos );
                     
                     // garbage
                     throw JSONException ( __FILE__, __LINE__, "Invalid JSON format" ); // test hit
@@ -357,7 +353,7 @@ namespace ncbi
    
     /* JSONArray
      **********************************************************************************/
-    JSONArray * JSONArray :: parse ( const std :: string & json )
+    JSONArray * JSONArray :: make ( const std :: string & json )
     {
         if ( json . empty () )
             throw JSONException ( __FILE__, __LINE__, "Empty JSON array" ); // test hit
@@ -421,7 +417,7 @@ namespace ncbi
         return array;
     }
     
-    JSONObject * JSONObject :: parse ( const std :: string & json )
+    JSONObject * JSONObject :: make ( const std :: string & json )
     {
         if ( json . empty () )
             throw JSONException ( __FILE__, __LINE__, "Empty JSON object" ); // test hit
@@ -453,7 +449,7 @@ namespace ncbi
                     break;
                 
                 // get the name/key
-                JSONValue *name = JSONTypedValue < std::string > :: parse ( json, pos );
+                JSONValue *name = JSONStringValue :: parse ( json, pos );
                 if ( name == nullptr )
                     throw JSONException ( __FILE__, __LINE__, "Failed to create JSON object" );
                 

@@ -35,8 +35,8 @@
 
 namespace ncbi
 {
-#pragma warning "see if theres a better way to get access to JSONFixture"
-    class JSONFixture;
+    class JSONFixture_JSONConstruction;
+    class JSONTmpValue;
     
     /* JSONParseException
      **********************************************************************************/
@@ -44,10 +44,10 @@ namespace ncbi
     {
     public:
         explicit JSONException ( const char * function, unsigned int line, const char * message )
-        : logic_error ( message )
+        : std :: logic_error ( message )
         , msg ( function )
         {
-            msg += ":" + std :: to_string ( line );
+            msg += ":" + std :: to_string ( line ) + " - " + message;
             fl_msg = msg . c_str ();
         }
         
@@ -69,18 +69,22 @@ namespace ncbi
     class JSONValue
     {
     public:
-        virtual JSONValue & operator [] ( int idx );
-        virtual JSONValue & operator [] ( const std :: string & mbr );
+        JSONValue & operator [] ( int idx ) { return getValueByIndex ( idx ); }
+        JSONValue & operator [] ( const char * mbr ) { return getValueByName ( mbr ); }
+        JSONValue & operator [] ( const std :: string & mbr ) { return getValueByName ( mbr ); }
+
+        JSONValue & operator = ( bool val ) { return setBooleanValue ( val ); }
+        JSONValue & operator = ( int val ) { return setIntegerValue ( val ); }
+        JSONValue & operator = ( long long int val ) { return setIntegerValue ( val ); }
+        JSONValue & operator = ( double val ) { return setRealValue ( val ); }
+        JSONValue & operator = ( long double val ) { return setRealValue ( val ); }
+        JSONValue & operator = ( const char * val ) { return setPointerValue ( val ); }
+        JSONValue & operator = ( const std :: string & val ) { return setStringValue ( val ); }
         
-        virtual JSONValue & operator = ( bool val );
-        virtual JSONValue & operator = ( long long int val );
-        virtual JSONValue & operator = ( long double val );
-        virtual JSONValue & operator = ( const std :: string & val );
-        virtual JSONValue & operator = ( const void * val );
-        
-        virtual const JSONValue & operator [] ( int idx ) const;
-        virtual const JSONValue & operator [] ( const std :: string & mbr ) const;
-        
+        const JSONValue & operator [] ( int idx ) const { return getConstValueByIndex ( idx ); }
+        const JSONValue & operator [] ( const char * mbr ) const { return getConstValueByName ( mbr ); }
+        const JSONValue & operator [] ( const std :: string & mbr ) const { return getConstValueByName ( mbr ); }
+
         virtual bool toBool () const;
         virtual long long toInt () const;
         virtual long double toReal () const;
@@ -92,14 +96,30 @@ namespace ncbi
         operator long double () const { return toReal (); }
         operator std :: string () const { return toString (); }
         
-        JSONValue () {}
         virtual ~JSONValue () {}
-
+        
     protected:
+        virtual JSONValue & getValueByIndex ( int idx );
+        virtual JSONValue & getValueByName ( const std :: string & mbr );
+        
+        virtual JSONValue & setBooleanValue ( bool val );
+        virtual JSONValue & setIntegerValue ( long long int val );
+        virtual JSONValue & setRealValue ( long double val );
+        virtual JSONValue & setStringValue ( const std :: string & val );
+        virtual JSONValue & setToNull ();
+        
+        virtual const JSONValue & getConstValueByIndex ( int idx ) const;
+        virtual const JSONValue & getConstValueByName ( const std :: string & mbr ) const;
+
         // Parse/Factory constructor.
         static JSONValue * parse ( const std :: string & json, size_t & offset );
       
-        friend class JSONFixture;
+    private:
+        JSONValue & setPointerValue ( const char * val );
+        
+        friend class JSONFixture_OperatorAssingments;
+        friend class JSONFixture_JSONConstruction;
+        friend class JSONTmpValue;
     };
         
     /* JSONArray 
@@ -109,16 +129,8 @@ namespace ncbi
     {
     public:
         // Parse/Factory constructor.
-        static JSONArray * parse ( const std :: string & json );
-        
-        // these are implemented
-        virtual JSONValue & operator [] ( int idx );
-        virtual const JSONValue & operator [] ( int idx ) const;
-        
-        // these fall through to parent
-        virtual JSONValue & operator [] ( const std :: string & mbr );
-        virtual const JSONValue & operator [] ( const std :: string & mbr ) const;
-        
+        static JSONArray * make ( const std :: string & json );
+
         virtual std :: string toJSON () const;
         
         void append ( JSONValue * elem );
@@ -130,16 +142,22 @@ namespace ncbi
             * this = a;
         }
         
-        JSONArray () {}
         virtual ~JSONArray ();
         
     private:
         static JSONArray * parse ( const std :: string & json, size_t & offset );
+        
+        virtual JSONValue & getValueByIndex ( int idx );
+        virtual const JSONValue & getConstValueByIndex ( int idx ) const;
+
         void clear ();
+
+        JSONArray () {}
         
         std :: vector < JSONValue * > seq;
         
         friend class JSONValue;
+        friend class JSONTmpValue;
         
     };
     
@@ -150,19 +168,12 @@ namespace ncbi
     {
     public:
         // Parse/Factory constructor.
-        static JSONObject * parse ( const std :: string & json );
-        
-        // these are implemented
-        virtual JSONValue & operator [] ( const std :: string & mbr );
-        virtual const JSONValue & operator [] ( const std :: string & mbr ) const;
-        
-        // these fall through to parent
-        virtual JSONValue & operator [] ( int idx );
-        virtual const JSONValue & operator [] ( int idx ) const;
+        static JSONObject * make ( const std :: string & json );
         
         virtual std :: string toJSON () const;
         
         // retrieve a named value
+        // TBD - these might be confusing with respect to the private accessors...
         JSONValue * getValue ( const std :: string & name );
         const JSONValue * getValue ( const std :: string & name ) const;
         
@@ -185,14 +196,18 @@ namespace ncbi
         
     private:
         static JSONObject * parse ( const std :: string & json, size_t & offset );
+        
+        virtual JSONValue & getValueByName ( const std :: string & mbr );
+        virtual const JSONValue & getConstValueByName ( const std :: string & mbr ) const;
+        
 
         // string is the key, pair ( is_final, val ) is the associated value
         // "val" can be NULL
         // if "is_final" is true, then entry cannot be deleted or overwritten
         std :: map < std :: string, std :: pair < bool, JSONValue * > > members;
-        mutable std :: atomic < bool > writable; // this should probably be a mutex
         
         friend class JSONValue;
+        friend class JSONTmpValue;
     };
     
     

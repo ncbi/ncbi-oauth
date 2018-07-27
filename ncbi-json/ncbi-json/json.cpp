@@ -78,7 +78,8 @@ namespace ncbi
                         {
                             // unicode escape hex sequence
                             char buff [ 32 ];
-                            size_t len = snprintf( buff, sizeof buff, "\\u%04x", ( unsigned int ) ( unsigned char ) ch );
+                            size_t len = snprintf( buff, sizeof buff, "\\u%04x",
+                                                  ( unsigned int ) ( unsigned char ) ch );
 
                             assert ( len == 6 );
                             
@@ -107,168 +108,403 @@ namespace ncbi
     
     /* JSONValue
      **********************************************************************************/
-    JSONValue & JSONValue :: operator [] ( int idx )
-    {
-        throw JSONException ( __FILE__, __LINE__,
-                             "INTERNAL ERROR: operator [] is unsupported for this value type" );
-    }
-    
-    JSONValue & JSONValue :: operator [] ( const std :: string &mbr )
-    {
-        throw JSONException ( __FILE__, __LINE__,
-                             "INTERNAL ERROR: operator [] is unsupported for this value type" );
-    }
-    
-    JSONValue & JSONValue :: operator = ( bool val )
-    {
-        JSONValue *jval = nullptr;
-        return *jval;
-    }
-    
-    JSONValue & JSONValue :: operator = ( long long int val )
-    {
-        JSONValue *jval = nullptr;
-        return *jval;
-    }
-    
-    JSONValue & JSONValue :: operator = ( long double val )
-    {
-        JSONValue *jval = nullptr;
-        return *jval;
-    }
-    
-    JSONValue & JSONValue :: operator = ( const std :: string & val )
-    {
-        JSONValue *jval = nullptr;
-        return *jval;
-    }
-    
-    JSONValue & JSONValue :: operator = ( const void *val )
-    {
-        JSONValue *jval = nullptr; 
-        return *jval;
-    }
-    
-    const JSONValue & JSONValue :: operator [] ( int idx ) const
-    {
-        JSONValue *jval = nullptr;
-        return *jval;
-    }
-    
-    const JSONValue & JSONValue :: operator [] ( const std :: string &mbr ) const
-    {
-        JSONValue *jval = nullptr;
-        return *jval;
-    }
     
     bool JSONValue :: toBool () const
     {
-        return false;
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                             toBool() is unsupported for this value type" ); // test hit
     }
     
     long long int JSONValue :: toInt () const
     {
-        return 0;
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                             toInt() is unsupported for this value type" ); // test hit
     }
     
     long double JSONValue :: toReal () const
     {
-        return 0.0;
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                             toReal() is unsupported for this value type" ); // test hit
     }
     
     std :: string JSONValue :: toString () const
     {
-        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: toString() is unsupported for this value type" );
+        return toJSON ();
+    }
+    
+    JSONValue & JSONValue :: setPointerValue ( const char * val )
+    {
+        if ( val != nullptr )
+        {
+            return setStringValue ( val );
+        }
+        
+        return setToNull ();
+    }
+    
+    JSONValue & JSONValue :: getValueByIndex ( int idx )
+    {
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                             operator [] is unsupported for this value type" );
+    }
+    
+    JSONValue & JSONValue :: getValueByName ( const std :: string &mbr )
+    {
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                             operator [] is unsupported for this value type" );
+    }
+    
+    JSONValue & JSONValue :: setBooleanValue ( bool val )
+    {
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                             operator = is unsupported for Boolean" );
+    }
+    
+    JSONValue & JSONValue :: setIntegerValue ( long long int val )
+    {
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                             operator = is unsupported for integers" );
+    }
+    
+    JSONValue & JSONValue :: setRealValue ( long double val )
+    {
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                             operator = is unsupported for real numbers" );
+    }
+    
+    JSONValue & JSONValue :: setStringValue ( const std :: string & val )
+    {
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                             operator = is unsupported for strings" );
+    }
+    
+    JSONValue & JSONValue :: setToNull ()
+    {
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                             operator = is unsupported for 'null''" );
+    }
+    
+    const JSONValue & JSONValue :: getConstValueByIndex ( int idx ) const
+    {
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                             operator = is unsupported for this value type" );
+    }
+    
+    const JSONValue & JSONValue :: getConstValueByName ( const std :: string &mbr ) const
+    {
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                             operator = is unsupported for this value type" );
     }
 
     /* JSONTmpValue
      **********************************************************************************/
     std :: string JSONTmpValue :: toJSON () const
     {
-        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: toJSON() is unsupported for this value type" );
+        return "null";
     }
     
-    JSONTmpValue :: JSONTmpValue ( JSONValue *parent, int idx )
-    : parent ( parent )
+    JSONTmpValue :: JSONTmpValue ( JSONArray *par, int idx )
+    : parent ( par )
     , index ( idx )
     {
+        if ( idx < 0 || ( size_t ) idx > par -> seq . size () )
+        {
+            throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                                 Invalid tmp array index" ); // Test hit
+        }
+    }
+    
+    JSONTmpValue :: JSONTmpValue ( JSONObject *par, const std :: string & _mbr )
+    : parent ( par )
+    , mbr ( _mbr )
+    , index ( -1 )
+    {
+        if ( _mbr . empty () )
+        {
+            throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                                 Invalid temporary object value" ); // Test hit
+        }
+    }
+    
+    // replace self with JSONArray
+    JSONValue & JSONTmpValue :: getValueByIndex ( int idx )
+    {
+        JSONValue & val = replaceSelf ( new JSONArray );
+        return val . getValueByIndex ( idx );
+    }
+    
+    // replace self with JSONObject
+    JSONValue & JSONTmpValue :: getValueByName ( const std :: string & mbr )
+    {
+        JSONValue & val = replaceSelf ( new JSONObject );
+        return val . getValueByName ( mbr );
+    }
+    
+    // replace self with JSONBoolValue
+    JSONValue & JSONTmpValue :: setBooleanValue ( bool val )
+    {
+        return replaceSelf ( new JSONBoolValue ( val ) );
+    }
+    
+    // replace self with JSONIntegerValue
+    JSONValue & JSONTmpValue :: setIntegerValue ( long long int val )
+    {
+        return replaceSelf ( new JSONIntegerValue ( val ) );
+    }
+    
+    JSONValue & JSONTmpValue :: setRealValue ( long double val )
+    {
+        return replaceSelf ( new JSONRealValue ( val ) );
+    }
+    
+    JSONValue & JSONTmpValue :: setStringValue ( const std :: string & val )
+    {
+        return replaceSelf ( new JSONStringValue ( val ) );
+    }
+    
+    JSONValue & JSONTmpValue :: setToNull ()
+    {
+        return replaceSelf ( new JSONNullValue );
+    }
+    
+    JSONValue & JSONTmpValue :: replaceSelf ( JSONValue * val )
+    {
+        if ( index >= 0 )
+        {
+            JSONArray * dad = ( JSONArray * ) parent;
+            dad -> seq [ index ] = val;
+        }
+        else
+        {
+            JSONObject * dad = ( JSONObject * ) parent;
+            dad -> addMember ( mbr, val );
+        }
+        
+        delete this;
+        return * val;
     }
 
     /* JSONNullValue
      **********************************************************************************/
-
+    std :: string JSONNullValue :: toJSON () const
+    {
+        return "null";
+    }
     
-    /* JSONTypedValue
+    JSONValue & JSONNullValue :: setToNull ()
+    {
+        return * this;
+    }
+    
+    /* JSONBoolValue
      **********************************************************************************/
-        
-    template <>
-    std :: string JSONTypedValue < bool > :: toJSON () const
+    std :: string JSONBoolValue :: toJSON () const
     {
-        return std :: string ( val ? "true" : "false" );
+        return std :: string ( value ? "true" : "false" );
     }
     
-    template <>
-    std :: string JSONTypedValue < long long int > :: toJSON () const
+    bool JSONBoolValue :: toBool () const
     {
-        char buffer [ 1024 ];
-        auto size = snprintf ( buffer, sizeof buffer, "%lld", val );
-        return std :: string ( buffer, size );
+        return value;
     }
     
-    template <>
-    std :: string JSONTypedValue < long double > :: toJSON () const
+    JSONValue & JSONBoolValue :: setBooleanValue ( bool val )
+    {
+        value = val;
+        return * this;
+    }
+    
+    JSONBoolValue :: JSONBoolValue ( bool val )
+    : value ( val )
+    {}
+    
+    JSONBoolValue :: JSONBoolValue ( const JSONBoolValue & copy )
+    : value ( copy . value )
+    {}
+    
+    JSONBoolValue & JSONBoolValue :: operator = ( const JSONBoolValue & orig )
+    {
+        value = orig . value;
+        return *this;
+    }
+    
+    /* JSONIntegerValue
+     **********************************************************************************/
+    std :: string JSONIntegerValue :: toJSON () const
+    {
+        return std :: to_string ( value );
+    }
+    
+    JSONValue & JSONIntegerValue :: setIntegerValue ( long long int val )
+    {
+        value = val;
+        return * this;
+    }
+    
+    long long JSONIntegerValue :: toInt () const
+    {
+        return value;
+    }
+    
+    long double JSONIntegerValue :: toReal () const
+    {
+        return ( long double ) value;
+    }
+    
+    JSONIntegerValue :: JSONIntegerValue ( long long int val )
+    : value ( val )
+    {}
+    
+    JSONIntegerValue :: JSONIntegerValue ( const JSONIntegerValue & copy )
+    : value ( copy . value )
+    {}
+    
+    JSONIntegerValue & JSONIntegerValue :: operator = ( const JSONIntegerValue & orig )
+    {
+        value = orig . value;
+        return *this;
+    }
+    
+    /* JSONReadValue
+     **********************************************************************************/
+    std :: string JSONRealValue :: toJSON () const
+    {
+        return value;
+    }
+    
+    JSONValue & JSONRealValue :: setRealValue ( long double val )
+    {
+        // TBD - determine best setting with precision
+        value = std :: to_string ( val );
+        return * this;
+    }
+    
+    long long int JSONRealValue :: toInt () const
+    {
+        return std :: stoll ( value );
+    }
+    
+    long double JSONRealValue :: toReal () const
+    {
+        return std :: stold ( value );
+    }
+    
+    JSONRealValue :: JSONRealValue ( long double val )
     {
         char buffer [ 1024 ];
         auto size = snprintf ( buffer, sizeof buffer, "%.20Lg", val );
-        return std :: string ( buffer, size );
+        value = std :: string ( buffer, size );
     }
     
-    template <>
-    std :: string JSONTypedValue < std :: string > :: toJSON () const
+    JSONRealValue :: JSONRealValue ( const std :: string & val )
+    : value ( val )
+    {}
+    
+    JSONRealValue :: JSONRealValue ( const JSONRealValue & copy )
+    : value ( copy . value )
+    {}
+    
+    JSONRealValue & JSONRealValue :: operator = ( const JSONRealValue & orig )
     {
-        return string_to_json ( val );
+        value = orig . value;
+        return *this;
     }
     
-    template <>
-    std :: string JSONTypedValue < std :: string > :: toString () const
+    /* JSONStringValue
+     **********************************************************************************/
+    std :: string JSONStringValue :: toJSON () const
     {
-        return val;
+        return string_to_json ( value );
+    }
+    
+    std :: string JSONStringValue :: toString () const
+    {
+        return value;
+    }
+    
+    bool JSONStringValue :: toBool () const
+    {
+        if ( value . compare ( "true" ) == 0 )
+            return true;
+        else if ( value . compare ( "false" ) == 0 )
+            return false;
+        
+        throw JSONException ( __FILE__, __LINE__, "Not a boolean value" );
+    }
+    
+    long long JSONStringValue :: toInt () const
+    {
+        size_t num_len;
+
+        long long int int_val = std :: stoll ( value, &num_len );
+        if ( num_len == value . size () )
+            return int_val;
+        else if ( num_len > 0 )
+        {
+            num_len = 0;
+            std :: stold ( value, &num_len );
+            if ( num_len == value . size () )
+                return int_val;
+        }
+        
+        throw JSONException ( __FILE__, __LINE__, "Not an integer value" );
+    }
+    
+    long double JSONStringValue :: toReal () const
+    {
+        size_t num_len;
+        
+        long double val = std :: stold ( value, &num_len );
+        if ( num_len == value . size () )
+            return val;
+        
+        throw JSONException ( __FILE__, __LINE__, "Not a floating point value" );
+    }
+    
+    JSONValue & JSONStringValue :: setStringValue ( const std :: string & val )
+    {
+        value = val;
+        return * this;
+    }
+    
+    JSONStringValue :: JSONStringValue ( const std :: string & val )
+    : value ( val )
+    {}
+    
+    JSONStringValue :: JSONStringValue ( const JSONStringValue & copy )
+    : value ( copy . value )
+    {}
+    
+    JSONStringValue & JSONStringValue :: operator = ( const JSONStringValue & orig )
+    {
+        value = orig . value;
+        return *this;
     }
     
     /* JSONArray
      *
      **********************************************************************************/
-    JSONValue & JSONArray :: operator [] ( int idx )
+    JSONValue & JSONArray :: getValueByIndex ( int idx )
     {
-        if ( idx >= 0 && idx < seq . size () )
+        if ( idx >= 0 && idx <= seq . size () )
         {
             if ( idx == seq . size () )
-                seq [ idx ] = new JSONTmpValue ( this, idx );
+                seq . push_back ( new JSONTmpValue ( this, idx ) ); 
             
             return * seq [ idx ];
         }
         
-        throw JSONException ( __FILE__, __LINE__,
-                             "INTERNAL ERROR: TBD" );
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                             Array index out of bounds" ); // Test hit
     }
     
-    const JSONValue & JSONArray :: operator [] ( int idx ) const
+    const JSONValue & JSONArray :: getConstValueByIndex ( int idx ) const
     {
         if ( idx > 0 && idx < seq . size () )
             return * seq [ idx ];
         
-        throw JSONException ( __FILE__, __LINE__,
-                             "INTERNAL ERROR: TBD" );
-    }
-    
-    JSONValue & JSONArray :: operator [] ( const std :: string & mbr )
-    {
-        return JSONValue :: operator [] ( mbr );
-    }
-    
-    const JSONValue & JSONArray :: operator [] ( const std :: string & mbr ) const
-    {
-        return JSONValue :: operator [] ( mbr );
+        throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
+                             Array index out of bounds" );
     }
     
     std :: string JSONArray :: toJSON () const
@@ -337,26 +573,34 @@ namespace ncbi
     
     /* JSONObject
      **********************************************************************************/
-    JSONValue & JSONObject :: operator [] ( const std :: string & mbr )
+    JSONValue & JSONObject :: getValueByName ( const std :: string & name )
     {
         JSONValue *jval = nullptr;
+        std :: pair < bool, JSONValue * > a_member;
+        
+        auto it = members . find ( name );
+        
+        // if doesnt exist, add
+        if ( it == members . end () )
+        {
+            jval = new JSONTmpValue ( this, name );
+            std :: pair < bool, JSONValue * > pair ( false, jval );
+            members . emplace ( name, pair );
+        }
+        else
+        {
+            // retrieve existing value
+            jval = it -> second . second;
+        }
+        
+        return * jval;
+    }
+    
+    const JSONValue & JSONObject :: getConstValueByName ( const std :: string & name ) const
+    {
+        auto it = members . find ( name );
+        JSONValue *jval = it -> second . second;
         return *jval;
-    }
-    
-    const JSONValue & JSONObject :: operator [] ( const std :: string & mbr ) const
-    {
-        JSONValue *jval = nullptr;
-        return *jval;
-    }
-    
-    JSONValue & JSONObject :: operator [] ( int idx )
-    {
-        return JSONValue :: operator [] ( idx );
-    }
-    
-    const JSONValue & JSONObject :: operator [] ( int idx ) const
-    {
-        return JSONValue :: operator [] ( idx );
     }
     
     std :: string JSONObject :: toJSON () const
@@ -415,7 +659,7 @@ namespace ncbi
         {
             // if non modifiable, throw
             if ( it -> second . first )
-                throw "Cannot overrite final member";
+                throw JSONException ( __FILE__, __LINE__, "Cannot overrite final member" );
 
             // overwrite value
             it -> second . second = value;
@@ -429,7 +673,7 @@ namespace ncbi
         if ( it != members . end () )
         {
             if ( it -> second . first )
-                throw "This member is final";
+                throw JSONException ( __FILE__, __LINE__, "Cannot overrite final member" );
             else
             {
                 members . erase ( it );

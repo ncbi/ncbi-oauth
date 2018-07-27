@@ -37,13 +37,28 @@ namespace ncbi
     class JSONTmpValue : public JSONValue
     {
     public:
+        // behave as keyword null
         virtual std :: string toJSON () const;
-        
-        JSONTmpValue ( JSONValue *parent, int index );
-        ~JSONTmpValue ();
+
+        // we are an array element
+        JSONTmpValue ( JSONArray *parent, int index );
+        // we are an object member
+        JSONTmpValue ( JSONObject *parent, const std :: string & mbr );
+        virtual ~JSONTmpValue () {}
         
     private:
+        virtual JSONValue & getValueByIndex ( int idx );
+        virtual JSONValue & getValueByName ( const std :: string & mbr );
+        virtual JSONValue & setBooleanValue ( bool val );
+        virtual JSONValue & setIntegerValue ( long long int val );
+        virtual JSONValue & setRealValue ( long double val );
+        virtual JSONValue & setStringValue ( const std :: string & val );
+        virtual JSONValue & setToNull ();
+        
+        JSONValue & replaceSelf ( JSONValue * val );
+        
         JSONValue *parent;
+        std :: string mbr;
         int index;
     };
     
@@ -54,66 +69,96 @@ namespace ncbi
     public:
         static JSONValue * parse ( const std :: string & json, size_t & offset );
         
-        virtual std :: string toJSON () const
-        { return "null"; }
-        virtual std :: string toString () const
-        { return toJSON (); }
+        virtual std :: string toJSON () const;
+        virtual JSONValue & setToNull ();
     };
     
-    
-    /* JSONTypedValue
-     * template types: <bool> <int> <float> <string>
-     **********************************************************************************/
-    template < class T >
-    class JSONTypedValue : public JSONValue
+    class JSONBoolValue : public JSONValue
     {
     public:
         // Parse/Factory constructor.
         static JSONValue * parse ( const std :: string & json, size_t & offset );
         
+        virtual JSONValue & setBooleanValue ( bool val );
+        virtual bool toBool () const;
         virtual std :: string toJSON () const;
-        virtual std :: string toString () const
-        { return toJSON (); }
         
-        T getValue ()
-        {
-            return val;
-        }
         
-        const T getValue () const
-        {
-            return val;
-        }
-        
-        // TBD - keep?
-        void setValue ( const T & value )
-        {
-            val = value;
-        }
-        
-        // Constructors
-        JSONTypedValue ( const T & value )
-        : val ( value )
-        {}
-        
-        JSONTypedValue ( const JSONTypedValue < T > & copy )
-        : val ( copy . val )
-        {}
-        
-        JSONTypedValue < T > & operator = ( const JSONTypedValue < T > & orig )
-        {
-            val = orig . val;
-            return *this;
-        }
-        
-        virtual ~JSONTypedValue ()
-        {}
-        
+        JSONBoolValue ( bool value );
+        JSONBoolValue ( const JSONBoolValue & copy );
+        JSONBoolValue & operator = ( const JSONBoolValue & orig );
+        virtual ~JSONBoolValue () {}
         
     private:
-        
-        T val;
+        bool value;
+
     };
+    
+    class JSONIntegerValue : public JSONValue
+    {
+    public:
+        // Parse/Factory constructor.
+        static JSONValue * parse ( const std :: string & json, size_t & offset );
+        
+        virtual JSONValue & setIntegerValue ( long long int val );
+        virtual long long toInt () const;
+        virtual long double toReal () const;
+        virtual std :: string toJSON () const;
+        
+        JSONIntegerValue ( long long int value );
+        JSONIntegerValue ( const JSONIntegerValue & copy );
+        JSONIntegerValue & operator = ( const JSONIntegerValue & orig );
+        virtual ~JSONIntegerValue () {}
+        
+    private:
+        long long int value;
+
+    };
+    
+    class JSONRealValue : public JSONValue
+    {
+    public:
+        // Parse/Factory constructor.
+        static JSONValue * parse ( const std :: string & json, size_t & offset );
+        
+        virtual JSONValue & setRealValue ( long double val );
+        virtual long long toInt () const;
+        virtual long double toReal () const;
+        virtual std :: string toJSON () const;
+        
+        JSONRealValue ( long double value );
+        JSONRealValue ( const std :: string & value );
+        JSONRealValue ( const JSONRealValue & copy );
+        JSONRealValue & operator = ( const JSONRealValue & orig );
+        virtual ~JSONRealValue () {}
+        
+    private:
+        std :: string value;
+
+    };
+    
+    class JSONStringValue : public JSONValue
+    {
+    public:
+        // Parse/Factory constructor.
+        static JSONValue * parse ( const std :: string & json, size_t & offset );
+        
+        virtual bool toBool () const;
+        virtual long long toInt () const;
+        virtual long double toReal () const;
+        virtual std :: string toString () const;
+        virtual std :: string toJSON () const;
+        virtual JSONValue & setStringValue ( const std :: string & val );
+        
+        JSONStringValue ( const std :: string & value );
+        JSONStringValue ( const JSONStringValue & copy );
+        JSONStringValue & operator = ( const JSONStringValue & orig );
+        virtual ~JSONStringValue () {}
+        
+    private:
+        std :: string value;
+    };
+
 } // ncbi
 
 #endif /* _hpp_ncbi_oauth_json_priv_ */
