@@ -145,55 +145,55 @@ namespace ncbi
     JSONValue & JSONValue :: getValueByIndex ( int idx )
     {
         throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
-                             operator [] is unsupported for this value type" );
+                             operator [] is unsupported for this value type" ); // test hit
     }
     
     JSONValue & JSONValue :: getValueByName ( const std :: string &mbr )
     {
         throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
-                             operator [] is unsupported for this value type" );
+                             operator [] is unsupported for this value type" ); // test hit
     }
     
     JSONValue & JSONValue :: setBooleanValue ( bool val )
     {
         throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
-                             operator = is unsupported for Boolean" );
+                             operator = is unsupported for Boolean" ); // test hit
     }
     
     JSONValue & JSONValue :: setIntegerValue ( long long int val )
     {
         throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
-                             operator = is unsupported for integers" );
+                             operator = is unsupported for integers" ); // test hit
     }
     
     JSONValue & JSONValue :: setRealValue ( long double val )
     {
         throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
-                             operator = is unsupported for real numbers" );
+                             operator = is unsupported for real numbers" ); // test hit
     }
     
     JSONValue & JSONValue :: setStringValue ( const std :: string & val )
     {
         throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
-                             operator = is unsupported for strings" );
+                             operator = is unsupported for strings" ); // test hit
     }
     
     JSONValue & JSONValue :: setToNull ()
     {
         throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
-                             operator = is unsupported for 'null''" );
+                             operator = is unsupported for 'null''" ); // test hit
     }
     
     const JSONValue & JSONValue :: getConstValueByIndex ( int idx ) const
     {
         throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
-                             operator = is unsupported for this value type" );
+                             operator = is unsupported for this value type" ); // test hit
     }
     
     const JSONValue & JSONValue :: getConstValueByName ( const std :: string &mbr ) const
     {
         throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
-                             operator = is unsupported for this value type" );
+                             operator = is unsupported for this value type" ); // test hit
     }
 
     /* JSONTmpValue
@@ -209,8 +209,9 @@ namespace ncbi
     {
         if ( idx < 0 || ( size_t ) idx > par -> seq . size () )
         {
+#pragma warning "no currently available way to get here. This same check is done just before this constructor is called"
             throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
-                                 Invalid tmp array index" ); // Test hit
+                                 Invalid tmp array index" ); 
         }
     }
     
@@ -222,7 +223,7 @@ namespace ncbi
         if ( _mbr . empty () )
         {
             throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
-                                 Invalid temporary object value" ); // Test hit
+                                 Invalid temporary object value" ); // test hit
         }
     }
     
@@ -429,36 +430,47 @@ namespace ncbi
         else if ( value . compare ( "false" ) == 0 )
             return false;
         
-        throw JSONException ( __FILE__, __LINE__, "Not a boolean value" );
+        throw JSONException ( __FILE__, __LINE__, "Not a boolean value" ); // test hit
     }
     
     long long JSONStringValue :: toInt () const
     {
         size_t num_len;
-
-        long long int int_val = std :: stoll ( value, &num_len );
-        if ( num_len == value . size () )
-            return int_val;
-        else if ( num_len > 0 )
+        try
         {
-            num_len = 0;
-            std :: stold ( value, &num_len );
+            long long int int_val = std :: stoll ( value, &num_len );
             if ( num_len == value . size () )
                 return int_val;
+            else if ( num_len > 0 )
+            {
+                num_len = 0;
+                std :: stold ( value, &num_len );
+                if ( num_len == value . size () )
+                    return int_val;
+            }
+        }
+        catch ( ... )
+        {
         }
         
-        throw JSONException ( __FILE__, __LINE__, "Not an integer value" );
+        throw JSONException ( __FILE__, __LINE__, "Not an integer value" ); // test hit
     }
     
     long double JSONStringValue :: toReal () const
     {
         size_t num_len;
         
-        long double val = std :: stold ( value, &num_len );
-        if ( num_len == value . size () )
-            return val;
+        try
+        {
+            long double val = std :: stold ( value, &num_len );
+            if ( num_len == value . size () )
+                return val;
+        }
+        catch ( ... )
+        {
+        }
         
-        throw JSONException ( __FILE__, __LINE__, "Not a floating point value" );
+        throw JSONException ( __FILE__, __LINE__, "Not a floating point value" ); // test hit
     }
     
     JSONValue & JSONStringValue :: setStringValue ( const std :: string & val )
@@ -504,7 +516,7 @@ namespace ncbi
             return * seq [ idx ];
         
         throw JSONException ( __FILE__, __LINE__, "INTERNAL ERROR: \
-                             Array index out of bounds" );
+                             Array index out of bounds" ); // test hit
     }
     
     std :: string JSONArray :: toJSON () const

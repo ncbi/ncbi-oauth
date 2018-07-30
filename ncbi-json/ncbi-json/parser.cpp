@@ -65,7 +65,6 @@ namespace ncbi
         {
             unsigned int val = stoi ( text, &index, 16 );
             if ( index != 4 )
-#pragma warning "This exception doesnt fit within JSONException since its not specific to JSON - unless we dont have another plan for this function."
                 throw JSONException ( __FILE__, __LINE__, "Invalid \\u escape sequence" ); // test hit
             
             std :: wstring_convert < std :: codecvt_utf8 < char32_t >, char32_t > conv;
