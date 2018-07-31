@@ -108,6 +108,37 @@ namespace ncbi
     
     /* JSONValue
      **********************************************************************************/
+    JSONValue * JSONValue :: makeBool ( bool val )
+    {
+        return new JSONBoolValue ( val );
+    }
+    
+    JSONValue * JSONValue :: makeInteger ( long long int val )
+    {
+        return new JSONIntegerValue ( val );
+    }
+    
+    JSONValue * JSONValue :: makeReal ( long double val )
+    {
+        return new JSONRealValue ( val );
+    }
+
+    JSONValue * JSONValue :: makeNumeral ( const std :: string & val )
+    {
+        //return new JSONBoolValue ( val );
+        return nullptr;
+    }
+
+    JSONValue * JSONValue :: makeString ( const std :: string & val )
+    {
+        return new JSONStringValue ( val );
+    }
+
+    JSONValue * JSONValue :: makeNull ()
+    {
+        return new JSONNullValue ();
+    }
+
     
     bool JSONValue :: toBool () const
     {
@@ -366,7 +397,7 @@ namespace ncbi
         return *this;
     }
     
-    /* JSONReadValue
+    /* JSONRealValue
      **********************************************************************************/
     std :: string JSONRealValue :: toJSON () const
     {

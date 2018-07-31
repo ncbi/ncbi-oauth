@@ -21,31 +21,26 @@ namespace ncbi
     public:
         void SetUp ()
         {
-            jwt = nullptr;
+            jwt = JWT :: make ();
         }
         
         void TearDown ()
         {
-            delete jwt;
         }
         
-        void make ()
+        JWTFixture_BasicConstruction ()
         {
-            jwt = JWT :: make ();
-            ASSERT_TRUE ( jwt != nullptr );
         }
         
     protected:
-        JWT *jwt;
+        JWT jwt;
     };
     
     TEST_F ( JWTFixture_BasicConstruction, JWT_Parse_Member )
     {
-        make ();
+        jwt . payload [ "ncbi" ] = "specifics";
         
-        jwt -> addClaim ( "zJustice League", "{\"superman\":\"says hi\"}" );
-        
-        std :: cout << jwt -> encode () << std :: endl;
+        std :: cout << jwt . encode () << std :: endl;
     }
 
 } // namespace

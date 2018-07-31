@@ -69,6 +69,13 @@ namespace ncbi
     class JSONValue
     {
     public:
+        static JSONValue * makeBool ( bool val );
+        static JSONValue * makeInteger ( long long int val );
+        static JSONValue * makeReal ( long double val );
+        static JSONValue * makeNumeral ( const std :: string & val );
+        static JSONValue * makeString ( const std :: string & val );
+        static JSONValue * makeNull ();
+        
         JSONValue & operator [] ( int idx ) { return getValueByIndex ( idx ); }
         JSONValue & operator [] ( const char * mbr ) { return getValueByName ( mbr ); }
         JSONValue & operator [] ( const std :: string & mbr ) { return getValueByName ( mbr ); }

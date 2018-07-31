@@ -33,33 +33,30 @@
 
 namespace ncbi
 {
+    class JWTFixture_BasicConstruction;
+    
     class JWT
     {
     public:
-        static JWT * make ();
-        static JWT * make ( const std :: string & encoding );
+        static JWT make ();
+        static JWT make ( const std :: string & encoding );
         
         std :: string encode () const;
         
-        void addClaim ( const std :: string & name, bool value );
-        void addClaim ( const std :: string & name, long long int value );
-        void addClaim ( const std :: string & name, long double value );
-        void addClaim ( const std :: string & name, const char * value );
-        void addClaim ( const std :: string & name, const std :: string & value );
+        JWT & operator = ( const JWT & jwt );
+        JWT ( const JWT & jwt );
         
-        virtual ~JWT () {};
+        virtual ~JWT ();
+        
+        JSONObject header;
+        JSONObject payload;
         
     private:
         void decode ( const std :: string &encoding );
         
         JWT () {};
-        
-        std :: string json;
-        std :: string encoding;
-        
-        JSONObject header;
-        JSONObject payload;
-        //Signature sig;
+
+        friend class JWTFixture_BasicConstruction;
     };
 }
 
