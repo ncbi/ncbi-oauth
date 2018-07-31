@@ -24,44 +24,15 @@
  *
  */
 
-#ifndef _hpp_ncbi_oauth_jwt_
-#define _hpp_ncbi_oauth_jwt_
-
-#include "json.hpp"
+#ifndef _hpp_ncbi_oauth_base64_priv_
+#define _hpp_ncbi_oauth_base64_priv_
 
 #include <string>
 
 namespace ncbi
 {
-    class JWT
-    {
-    public:
-        static JWT * make ();
-        static JWT * make ( const std :: string & encoding );
-        
-        std :: string encode () const;
-        
-        void addClaim ( const std :: string & name, bool value );
-        void addClaim ( const std :: string & name, long long int value );
-        void addClaim ( const std :: string & name, long double value );
-        void addClaim ( const std :: string & name, const char * value );
-        void addClaim ( const std :: string & name, const std :: string & value );
-        
-        virtual ~JWT () {};
-        
-    private:
-        void decode ( const std :: string &encoding );
-        
-        JWT () {};
-        
-        std :: string json;
-        std :: string encoding;
-        
-        JSONObject header;
-        JSONObject payload;
-        //Signature sig;
-    };
-}
+    const std :: string encodeBase64URL ( const std :: string &json );
+    const std :: string decodeBase64URL ( const std :: string &encoding );
+} // namespace ncbi
 
-#endif /* _hpp_ncbi_oauth_jwt_ */
-
+#endif /* _hpp_ncbi_oauth_base64_priv_ */

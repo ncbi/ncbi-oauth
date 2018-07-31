@@ -25,31 +25,71 @@
  */
 
 #include "jwt.hpp"
+#include "base64-priv.hpp"
 
+#include <iostream>
 
 namespace ncbi
 {
-    std :: string JWT :: encode ()
+    JWT * JWT :: make ()
     {
-        std :: string encoding;
+        // make the header
+        JWT *jwt = new JWT ();
+        if ( jwt )
+        {
+            jwt -> header [ "alg" ] = "RS512";
+            jwt -> header [ "typ" ] = "JWT";
+            
+            jwt -> payload [ "iss" ] = "Batman";
+            jwt -> payload [ "sub" ] = "Joker";
+            jwt -> payload [ "aud" ] = "Gotham";
+            jwt -> payload [ "iat" ] = 0;
+            jwt -> payload [ "exp" ] = 10;
+        }
+        
+        return jwt;
+    }
     
-        // TBD
+    JWT * JWT :: make ( const std :: string & encoding )
+    {
+        return nullptr;
+    }
+    
+    std :: string JWT :: encode () const
+    {
+        std :: string encoding = encodeBase64URL ( header . toJSON () ) + ".";
+        encoding += encodeBase64URL( payload.toJSON() );
         
         return encoding;
     }
     
-    void JWT :: decode ( std :: string &encoding )
-    {
-        // TBD
-    }
-    
-    JWT :: JWT ()
+    void JWT :: decode ( const std :: string &encoding )
     {
     }
     
-    JWT :: ~JWT ()
+    void JWT :: addClaim ( const std :: string & name, bool value )
     {
+        payload [ name ] = value;
     }
     
+    void JWT :: addClaim ( const std :: string & name, long long int value )
+    {
+        payload [ name ] = value;
+    }
+    
+    void JWT :: addClaim ( const std :: string & name, long double value )
+    {
+        payload [ name ] = value;
+    }
+    
+    void JWT :: addClaim ( const std :: string & name, const char * value )
+    {
+        payload [ name ] = value;
+    }
+    
+    void JWT :: addClaim ( const std :: string & name, const std :: string & value )
+    {
+        payload [ name ] = value;
+    }
 }
 
