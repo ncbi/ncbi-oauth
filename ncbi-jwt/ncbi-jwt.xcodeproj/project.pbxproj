@@ -24,6 +24,9 @@
 		DE69BB902110FC60009E60F3 /* rfc7519.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = rfc7519.txt; sourceTree = "<group>"; };
 		DE69BB912110FC60009E60F3 /* rfc7516.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = rfc7516.txt; sourceTree = "<group>"; };
 		DE69BB942110FFC3009E60F3 /* rfc4648.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = rfc4648.txt; sourceTree = "<group>"; };
+		DE69BB9621110689009E60F3 /* rfc3218.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = rfc3218.txt; sourceTree = "<group>"; };
+		DE69BB9721110695009E60F3 /* rfc7515.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = rfc7515.txt; sourceTree = "<group>"; };
+		DE69BB982111069E009E60F3 /* rfc7520.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = rfc7520.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -49,11 +52,14 @@
 		CE720D8420E549DE00FDB587 = {
 			isa = PBXGroup;
 			children = (
+				DE69BB9621110689009E60F3 /* rfc3218.txt */,
 				DE69BB942110FFC3009E60F3 /* rfc4648.txt */,
+				DE69BB9721110695009E60F3 /* rfc7515.txt */,
 				DE69BB912110FC60009E60F3 /* rfc7516.txt */,
 				DE69BB8D2110FC60009E60F3 /* rfc7517.txt */,
 				DE69BB8F2110FC60009E60F3 /* rfc7518.txt */,
 				DE69BB902110FC60009E60F3 /* rfc7519.txt */,
+				DE69BB982111069E009E60F3 /* rfc7520.txt */,
 				CEE54A44210FA6B0009ECFD8 /* base64-priv.hpp */,
 				CEE54A43210FA6B0009ECFD8 /* base64.cpp */,
 				CE081C0920E54DBB00CA40D8 /* jwt.cpp */,
