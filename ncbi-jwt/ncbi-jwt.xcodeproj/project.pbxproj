@@ -20,7 +20,6 @@
 		CEE54A43210FA6B0009ECFD8 /* base64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = base64.cpp; sourceTree = "<group>"; };
 		CEE54A44210FA6B0009ECFD8 /* base64-priv.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "base64-priv.hpp"; sourceTree = "<group>"; };
 		DE69BB8D2110FC60009E60F3 /* rfc7517.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = rfc7517.txt; sourceTree = "<group>"; };
-		DE69BB8E2110FC60009E60F3 /* rfc7159.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = rfc7159.txt; sourceTree = "<group>"; };
 		DE69BB8F2110FC60009E60F3 /* rfc7518.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = rfc7518.txt; sourceTree = "<group>"; };
 		DE69BB902110FC60009E60F3 /* rfc7519.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = rfc7519.txt; sourceTree = "<group>"; };
 		DE69BB912110FC60009E60F3 /* rfc7516.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = rfc7516.txt; sourceTree = "<group>"; };
@@ -49,7 +48,6 @@
 		CE720D8420E549DE00FDB587 = {
 			isa = PBXGroup;
 			children = (
-				DE69BB8E2110FC60009E60F3 /* rfc7159.txt */,
 				DE69BB912110FC60009E60F3 /* rfc7516.txt */,
 				DE69BB8D2110FC60009E60F3 /* rfc7517.txt */,
 				DE69BB8F2110FC60009E60F3 /* rfc7518.txt */,
