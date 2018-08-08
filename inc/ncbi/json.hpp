@@ -30,103 +30,87 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <stdexcept>
-
 
 namespace ncbi
 {
-    class JSONFixture_JSONConstruction;
-    class JSONTmpValue;
+    class JSONArray;
+    class JSONObject;
     
-    /* JSONParseException
+    /* JSONException
      **********************************************************************************/
     class JSONException : public std :: logic_error
     {
     public:
-        explicit JSONException ( const char * function, unsigned int line, const char * message )
-        : std :: logic_error ( message )
-        , msg ( function )
-        {
-            msg += ":" + std :: to_string ( line ) + " - " + message;
-            fl_msg = msg . c_str ();
-        }
+
+        virtual const char * what () const
+            throw ();
         
-        virtual ~JSONException () throw ()
-        { }
-        
-        virtual const char * what () const throw ()
-        {
-            return fl_msg;
-        }
+        explicit JSONException ( const char * function, unsigned int line, const char * message );
+        virtual ~JSONException ()
+            throw ();
         
     private:
+        
         std :: string msg;
         const char * fl_msg;
     };
-    
+
     /* JSONValue interface
      **********************************************************************************/
     class JSONValue
     {
     public:
+
+        // make various value types
+        static JSONValue * makeNull ();
         static JSONValue * makeBool ( bool val );
         static JSONValue * makeInteger ( long long int val );
-        static JSONValue * makeReal ( long double val );
-        static JSONValue * makeNumeral ( const std :: string & val );
+        static JSONValue * makeDouble ( long double val, unsigned int precision );
+        static JSONValue * makeNumber ( const std :: string & val );
         static JSONValue * makeString ( const std :: string & val );
-        static JSONValue * makeNull ();
-        
-        JSONValue & operator [] ( int idx ) { return getValueByIndex ( idx ); }
-        JSONValue & operator [] ( const char * mbr ) { return getValueByName ( mbr ); }
-        JSONValue & operator [] ( const std :: string & mbr ) { return getValueByName ( mbr ); }
 
-        JSONValue & operator = ( bool val ) { return setBooleanValue ( val ); }
-        JSONValue & operator = ( int val ) { return setIntegerValue ( val ); }
-        JSONValue & operator = ( long long int val ) { return setIntegerValue ( val ); }
-        JSONValue & operator = ( double val ) { return setRealValue ( val ); }
-        JSONValue & operator = ( long double val ) { return setRealValue ( val ); }
-        JSONValue & operator = ( const char * val ) { return setPointerValue ( val ); }
-        JSONValue & operator = ( const std :: string & val ) { return setStringValue ( val ); }
-        
-        const JSONValue & operator [] ( int idx ) const { return getConstValueByIndex ( idx ); }
-        const JSONValue & operator [] ( const char * mbr ) const { return getConstValueByName ( mbr ); }
-        const JSONValue & operator [] ( const std :: string & mbr ) const { return getConstValueByName ( mbr ); }
+        // query value type
+        virtual bool isNull () const;
+        virtual bool isBool () const;
+        virtual bool isInteger () const;        // a number that is an integer
+        virtual bool isNumber () const;         // is any type of number
+        virtual bool isString () const;         // is specifically a string
+        virtual bool isArray () const;
+        virtual bool isObject () const;
 
+        // set value - can change value type
+        virtual JSONValue & setNull ();
+        virtual JSONValue & setBool ( bool val );
+        virtual JSONValue & setInteger ( long long int val );
+        virtual JSONValue & setDouble ( long double val, unsigned int precision );
+        virtual JSONValue & setNumber ( const std :: string & val );
+        virtual JSONValue & setString ( const std :: string & val );
+
+        // retrieve a value - will attempt to convert if possible
+        // throws an exception if conversion is not supported
         virtual bool toBool () const;
-        virtual long long toInt () const;
-        virtual long double toReal () const;
+        virtual long long toInteger () const;
+        virtual std :: string toNumber () const;
         virtual std :: string toString () const;
         virtual std :: string toJSON () const = 0;
-        
-        operator bool () const { return toBool (); }
-        operator long long () const { return toInt (); }
-        operator long double () const { return toReal (); }
-        operator std :: string () const { return toString (); }
-        
-        virtual ~JSONValue () {}
-        
-    protected:
-        virtual JSONValue & getValueByIndex ( int idx );
-        virtual JSONValue & getValueByName ( const std :: string & mbr );
-        
-        virtual JSONValue & setBooleanValue ( bool val );
-        virtual JSONValue & setIntegerValue ( long long int val );
-        virtual JSONValue & setRealValue ( long double val );
-        virtual JSONValue & setStringValue ( const std :: string & val );
-        virtual JSONValue & setToNull ();
-        
-        virtual const JSONValue & getConstValueByIndex ( int idx ) const;
-        virtual const JSONValue & getConstValueByName ( const std :: string & mbr ) const;
 
-        // Parse/Factory constructor.
-        static JSONValue * parse ( const std :: string & json, size_t & offset );
-      
-    private:
-        JSONValue & setPointerValue ( const char * val );
+        // retrieve as structured value - will not convert
+        // throws an exception if not of the correct container type
+        virtual JSONArray & toArray ();
+        virtual const JSONArray & toArray () const;
+        virtual JSONObject & toObject ();
+        virtual const JSONObject & toObject () const;
+
+        // create a copy
+        virtual JSONValue * clone () const;
         
-        friend class JSONFixture_OperatorAssingments;
-        friend class JSONFixture_JSONConstruction;
-        friend class JSONTmpValue;
+        virtual ~JSONValue ();
+
+    protected:
+        
+        static JSONValue * parse ( const std :: string & json, size_t & pos );
+        
+        JSONValue ();
     };
         
     /* JSONArray 
@@ -135,37 +119,66 @@ namespace ncbi
     class JSONArray : public JSONValue
     {
     public:
-        // Parse/Factory constructor.
-        static JSONArray * make ( const std :: string & json );
 
+        // make an empty array
+        static JSONArray * make ();
+
+        // JSONValue interface implementations
+        virtual bool isArray () const
+        { return true; }
         virtual std :: string toJSON () const;
-        
-        void append ( JSONValue * elem );
-        
+        virtual JSONArray & toArray ()
+        { return * this; }
+        virtual const JSONArray & toArray () const
+        { return * this; }
+        virtual JSONValue * clone ();
+
+        // asks whether array is empty
+        bool isEmpty () const;
+
+        // return the number of elements
+        unsigned long int count () const;
+
+        // does an element exist
+        bool exists ( long int idx ) const;
+
+        // add a new element to end of array
+        void appendValue ( JSONValue * elem );
+
+        // set entry to a new value
+        // will fill any undefined intermediate elements with null values
+        // throws exception on negative index
+        void setValue ( long int idx, JSONValue * elem );
+
+        // get value at index
+        // throws exception on negative index or when element is undefined
+        JSONValue & getValue ( long int idx );
+        const JSONValue & getValue ( long int idx ) const;
+
+        // remove and return an entry if valid
+        // returns nullptr if index was negative or element undefined
+        // replaces valid internal entries with null element
+        // deletes trailing null elements making them undefined
+        JSONValue * removeValue ( long int idx );
+
+        // C++ assignment
         JSONArray & operator = ( const JSONArray & array );
-        
-        JSONArray ( const JSONArray & a )
-        {
-            * this = a;
-        }
+        JSONArray ( const JSONArray & a );
         
         virtual ~JSONArray ();
         
     private:
-        static JSONArray * parse ( const std :: string & json, size_t & offset );
-        
-        virtual JSONValue & getValueByIndex ( int idx );
-        virtual const JSONValue & getConstValueByIndex ( int idx ) const;
 
+        static JSONArray * parse ( const std :: string & json, size_t & pos );
+        
+        // used to empty out the array before copy
         void clear ();
 
-        JSONArray () {}
-        
-        std :: vector < JSONValue * > seq;
+        JSONArray ();
+
+        std :: vector < JSONValue * > array;
         
         friend class JSONValue;
-        friend class JSONTmpValue;
-        
     };
     
     /* JSONObject
@@ -174,50 +187,68 @@ namespace ncbi
     class JSONObject : public JSONValue
     {
     public:
-        // Parse/Factory constructor.
+
+        // make an empty object
+        static JSONObject * make ();
+
+        // make an object from JSON source
         static JSONObject * make ( const std :: string & json );
-        
+
+        // JSONValue interface implementations
+        virtual bool isObject () const
+        { return true; }
         virtual std :: string toJSON () const;
-        
-        // retrieve a named value
-        // TBD - these might be confusing with respect to the private accessors...
-        JSONValue * getValue ( const std :: string & name );
-        const JSONValue * getValue ( const std :: string & name ) const;
-        
-        // set an entry
-        // if "is_final" is true, then this name cannot be modified after the fact
-        void addMember ( const std :: string & name, JSONValue * value, bool is_final = false );
-        
-        // remove a named value
-        // returns true if found and removed
-        // throws an exception if found and final
-        // returns false otherwise
-        bool removeMember ( const std :: string & name );
+        virtual JSONObject & toObject ()
+        { return * this; }
+        virtual const JSONObject & toObject () const
+        { return * this; }
+        virtual JSONValue * clone ();
+
+        // asks whether object is empty
+        bool isEmpty () const;
+
+        // does a member exist
+        bool exists ( const std :: string & name ) const;
+
+        // return the number of members
+        unsigned long int count () const;
         
         // return names/keys
         std :: vector < std :: string > getNames () const;
         
-        JSONObject () {}
-        virtual ~JSONObject ()
-        {}
+        // set entry to a new value
+        // throws exception if entry exists and is final
+        void setValue ( const std :: string & name, JSONValue * val );
+
+        // set entry to a final value
+        // throws exception if entry exists and is final
+        void setFinalValue ( const std :: string & name, JSONValue * val );
+
+        // get named value
+        JSONValue & getValue ( const std :: string & name );
+        const JSONValue & getValue ( const std :: string & name ) const;
+        
+        // remove a named value
+        // returns nullptr if not found
+        JSONValue * removeValue ( const std :: string & name );
+
+        // C++ assignment
+        JSONObject & operator = ( const JSONObject & obj );
+        JSONObject ( const JSONObject & obj );
+
+        virtual ~JSONObject ();
+
         
     private:
-        static JSONObject * parse ( const std :: string & json, size_t & offset );
         
-        virtual JSONValue & getValueByName ( const std :: string & mbr );
-        virtual const JSONValue & getConstValueByName ( const std :: string & mbr ) const;
-        
+        static JSONObject * parse ( const std :: string & json, size_t & pos );
 
-        // string is the key, pair ( is_final, val ) is the associated value
-        // "val" can be NULL
-        // if "is_final" is true, then entry cannot be deleted or overwritten
+        JSONObject ();
+
         std :: map < std :: string, std :: pair < bool, JSONValue * > > members;
         
         friend class JSONValue;
-        friend class JSONTmpValue;
     };
-    
-    
 
 }
 #endif /* _hpp_ncbi_oauth_json_ */

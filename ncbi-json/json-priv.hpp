@@ -24,141 +24,157 @@
  *
  */
 
-#ifndef _hpp_ncbi_oauth_json_priv_
-#define _hpp_ncbi_oauth_json_priv_
+#ifndef _hpp_ncbi_json_priv_
+#define _hpp_ncbi_json_priv_
 
+#ifndef _hpp_ncbi_json_
 #include <ncbi/json.hpp>
+#endif
 
 namespace ncbi
 {
-    /* JSONTmpValue
-     * a temporary value that is used in the operator [] overloading for assignments
-     **********************************************************************************/
-    class JSONTmpValue : public JSONValue
-    {
-    public:
-        // behave as keyword null
-        virtual std :: string toJSON () const;
+    std :: string double_to_string ( long double val, unsigned int precision );
+    std :: string string_to_json ( const std :: string & string );
 
-        // we are an array element
-        JSONTmpValue ( JSONArray *parent, int index );
-        // we are an object member
-        JSONTmpValue ( JSONObject *parent, const std :: string & mbr );
-        virtual ~JSONTmpValue () {}
-        
-    private:
-        virtual JSONValue & getValueByIndex ( int idx );
-        virtual JSONValue & getValueByName ( const std :: string & mbr );
-        virtual JSONValue & setBooleanValue ( bool val );
-        virtual JSONValue & setIntegerValue ( long long int val );
-        virtual JSONValue & setRealValue ( long double val );
-        virtual JSONValue & setStringValue ( const std :: string & val );
-        virtual JSONValue & setToNull ();
-        
-        JSONValue & replaceSelf ( JSONValue * val );
-        
-        JSONValue *parent;
-        std :: string mbr;
-        int index;
+    enum JSONValType
+    {
+        jvt_null,
+        jvt_bool,
+        jvt_int,
+        jvt_num,
+        jvt_str
     };
     
-    /* JSONNullValue
-     **********************************************************************************/
-    class JSONNullValue : public JSONValue
+    struct JSONPrimitive
     {
-    public:
-        static JSONValue * parse ( const std :: string & json, size_t & offset );
-        
+        virtual std :: string toString () const = 0;
         virtual std :: string toJSON () const;
-        virtual JSONValue & setToNull ();
+        virtual JSONPrimitive * clone () const = 0;
+        virtual ~ JSONPrimitive () {}
     };
     
-    class JSONBoolValue : public JSONValue
+    struct JSONBoolean : JSONPrimitive
     {
-    public:
-        // Parse/Factory constructor.
-        static JSONValue * parse ( const std :: string & json, size_t & offset );
+        static JSONValue * parse ( const std::string &json, size_t & pos );
         
-        virtual JSONValue & setBooleanValue ( bool val );
-        virtual bool toBool () const;
-        virtual std :: string toJSON () const;
+        bool toBool () const
+        { return value; }
+
+        virtual std :: string toString () const;
+
+        virtual JSONPrimitive * clone () const
+        { return new JSONBoolean ( value ); }
         
-        
-        JSONBoolValue ( bool value );
-        JSONBoolValue ( const JSONBoolValue & copy );
-        JSONBoolValue & operator = ( const JSONBoolValue & orig );
-        virtual ~JSONBoolValue () {}
-        
-    private:
+        JSONBoolean ( bool val )
+            : value ( val )
+        {
+        }
+
         bool value;
-
     };
-    
-    class JSONIntegerValue : public JSONValue
+
+    struct JSONInteger : JSONPrimitive
     {
-    public:
-        // Parse/Factory constructor.
-        static JSONValue * parse ( const std :: string & json, size_t & offset );
+        long long int toInteger () const
+        { return value; }
+
+        virtual std :: string toString () const;
+
+        virtual JSONPrimitive * clone () const
+        { return new JSONInteger ( value ); }
         
-        virtual JSONValue & setIntegerValue ( long long int val );
-        virtual long long toInt () const;
-        virtual long double toReal () const;
-        virtual std :: string toJSON () const;
-        
-        JSONIntegerValue ( long long int value );
-        JSONIntegerValue ( const JSONIntegerValue & copy );
-        JSONIntegerValue & operator = ( const JSONIntegerValue & orig );
-        virtual ~JSONIntegerValue () {}
-        
-    private:
+        JSONInteger ( long long int val )
+            : value ( val )
+        {
+        }
+
         long long int value;
-
     };
-    
-    class JSONRealValue : public JSONValue
+
+    struct JSONNumber : JSONPrimitive
     {
-    public:
-        // Parse/Factory constructor.
-        static JSONValue * parse ( const std :: string & json, size_t & offset );
+        static JSONValue * parse ( const std::string &json, size_t & pos );
         
-        virtual JSONValue & setRealValue ( long double val );
-        virtual long long toInt () const;
-        virtual long double toReal () const;
-        virtual std :: string toJSON () const;
+        virtual std :: string toString () const
+        { return value; }
+
+        virtual JSONPrimitive * clone () const
+        { return new JSONNumber ( value ); }
         
-        JSONRealValue ( long double value );
-        JSONRealValue ( const std :: string & value );
-        JSONRealValue ( const JSONRealValue & copy );
-        JSONRealValue & operator = ( const JSONRealValue & orig );
-        virtual ~JSONRealValue () {}
-        
-    private:
+        JSONNumber ( const std :: string & val )
+            : value ( val )
+        {
+        }
+
+        ~ JSONNumber ()
+        {
+        }
+
         std :: string value;
+    };
 
+    struct JSONString : JSONPrimitive
+    {
+        static JSONValue * parse ( const std::string &json, size_t & pos );
+        
+        virtual std :: string toString () const
+        { return value; }
+
+        virtual std :: string toJSON () const;
+
+        virtual JSONPrimitive * clone () const
+        { return new JSONString ( value ); }
+        
+        JSONString ( const std :: string & val )
+            : value ( val )
+        {
+        }
+
+        ~ JSONString ()
+        {
+        }
+
+        std :: string value;
     };
     
-    class JSONStringValue : public JSONValue
+    struct JSONWrapper : JSONValue
     {
-    public:
-        // Parse/Factory constructor.
-        static JSONValue * parse ( const std :: string & json, size_t & offset );
+        virtual bool isNull () const;
+        virtual bool isBool () const;
+        virtual bool isInteger () const;        // a number that is an integer
+        virtual bool isNumber () const;         // is any type of number
+        virtual bool isString () const;         // is specifically a string
+
+        virtual JSONValue & setNull ();
+        virtual JSONValue & setBool ( bool val );
+        virtual JSONValue & setInteger ( long long int val );
+        virtual JSONValue & setDouble ( long double val, unsigned int precision );
+        virtual JSONValue & setNumber ( const std :: string & val );
+        virtual JSONValue & setString ( const std :: string & val );
         
         virtual bool toBool () const;
-        virtual long long toInt () const;
-        virtual long double toReal () const;
+        virtual long long toInteger () const;
+        virtual std :: string toNumber () const;
         virtual std :: string toString () const;
         virtual std :: string toJSON () const;
-        virtual JSONValue & setStringValue ( const std :: string & val );
+
+        virtual JSONValue * clone () const;
         
-        JSONStringValue ( const std :: string & value );
-        JSONStringValue ( const JSONStringValue & copy );
-        JSONStringValue & operator = ( const JSONStringValue & orig );
-        virtual ~JSONStringValue () {}
-        
-    private:
-        std :: string value;
+        // parses "null"
+        static JSONValue * parse ( const std :: string & json, size_t & pos );
+
+        // C++ assignment
+        JSONWrapper & operator = ( const JSONWrapper & val );
+        JSONWrapper ( const JSONWrapper & val );
+
+        JSONWrapper ( JSONValType type );
+        JSONWrapper ( JSONValType type, JSONPrimitive * value );
+        virtual ~ JSONWrapper ();
+
+        JSONPrimitive * value; // wrapped value from library
+        JSONValType type;
     };
+}
 
-} // ncbi
+#endif // _hpp_ncbi_json_priv_
 
-#endif /* _hpp_ncbi_oauth_json_priv_ */

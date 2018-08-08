@@ -7,14 +7,24 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5C5505E1211B7D1D000F4666 /* json-array.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5C5505DC211B7D1C000F4666 /* json-array.cpp */; };
+		5C5505E2211B7D1D000F4666 /* json-primitive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5C5505DD211B7D1C000F4666 /* json-primitive.cpp */; };
+		5C5505E3211B7D1D000F4666 /* json-object.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5C5505DE211B7D1C000F4666 /* json-object.cpp */; };
+		5C5505E4211B7D1D000F4666 /* json-value.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5C5505DF211B7D1C000F4666 /* json-value.cpp */; };
+		5C5505E5211B7D1D000F4666 /* json-wrapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5C5505E0211B7D1C000F4666 /* json-wrapper.cpp */; };
+		5C5505E7211B89F6000F4666 /* json-exception.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5C5505E6211B89F5000F4666 /* json-exception.cpp */; };
 		5C89ABCC211B591300936B79 /* json-priv.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 5C89ABCB211B591200936B79 /* json-priv.hpp */; };
-		5C89ABCE211B591D00936B79 /* json.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5C89ABCD211B591D00936B79 /* json.cpp */; };
 		5C89ABD0211B593100936B79 /* parser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5C89ABCF211B593000936B79 /* parser.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		5C5505DC211B7D1C000F4666 /* json-array.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "json-array.cpp"; sourceTree = "<group>"; };
+		5C5505DD211B7D1C000F4666 /* json-primitive.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "json-primitive.cpp"; sourceTree = "<group>"; };
+		5C5505DE211B7D1C000F4666 /* json-object.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "json-object.cpp"; sourceTree = "<group>"; };
+		5C5505DF211B7D1C000F4666 /* json-value.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "json-value.cpp"; sourceTree = "<group>"; };
+		5C5505E0211B7D1C000F4666 /* json-wrapper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "json-wrapper.cpp"; sourceTree = "<group>"; };
+		5C5505E6211B89F5000F4666 /* json-exception.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "json-exception.cpp"; sourceTree = "<group>"; };
 		5C89ABCB211B591200936B79 /* json-priv.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = "json-priv.hpp"; sourceTree = "<group>"; };
-		5C89ABCD211B591D00936B79 /* json.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = json.cpp; sourceTree = "<group>"; };
 		5C89ABCF211B593000936B79 /* parser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = parser.cpp; sourceTree = "<group>"; };
 		CEA84F2E20E679D800A5608C /* libncbi-json.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libncbi-json.dylib"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE69BB932110FDAD009E60F3 /* rfc7159.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = rfc7159.txt; sourceTree = "<group>"; };
@@ -35,8 +45,13 @@
 		CEA84F2520E679D800A5608C = {
 			isa = PBXGroup;
 			children = (
+				5C5505E6211B89F5000F4666 /* json-exception.cpp */,
+				5C5505DC211B7D1C000F4666 /* json-array.cpp */,
+				5C5505DE211B7D1C000F4666 /* json-object.cpp */,
+				5C5505DD211B7D1C000F4666 /* json-primitive.cpp */,
+				5C5505DF211B7D1C000F4666 /* json-value.cpp */,
+				5C5505E0211B7D1C000F4666 /* json-wrapper.cpp */,
 				5C89ABCF211B593000936B79 /* parser.cpp */,
-				5C89ABCD211B591D00936B79 /* json.cpp */,
 				5C89ABCB211B591200936B79 /* json-priv.hpp */,
 				DE69BB9521110100009E60F3 /* rfc3629.txt */,
 				DE69BB932110FDAD009E60F3 /* rfc7159.txt */,
@@ -121,7 +136,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				5C89ABD0211B593100936B79 /* parser.cpp in Sources */,
-				5C89ABCE211B591D00936B79 /* json.cpp in Sources */,
+				5C5505E5211B7D1D000F4666 /* json-wrapper.cpp in Sources */,
+				5C5505E3211B7D1D000F4666 /* json-object.cpp in Sources */,
+				5C5505E4211B7D1D000F4666 /* json-value.cpp in Sources */,
+				5C5505E7211B89F6000F4666 /* json-exception.cpp in Sources */,
+				5C5505E1211B7D1D000F4666 /* json-array.cpp in Sources */,
+				5C5505E2211B7D1D000F4666 /* json-primitive.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

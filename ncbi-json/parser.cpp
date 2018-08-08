@@ -78,9 +78,9 @@ namespace ncbi
         }
     }
     
-    /* JSONNullValue
+    /* JSONWrapper
      **********************************************************************************/
-    JSONValue * JSONNullValue :: parse ( const std::string & json, size_t & pos )
+    JSONValue * JSONWrapper :: parse ( const std::string & json, size_t & pos )
     {
         assert ( json [ pos ] == 'n' );
         
@@ -92,12 +92,12 @@ namespace ncbi
         if ( pos < json . size () && isalnum ( json [ pos ] ) )
             throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'null'" ); // test hit
         
-        return new JSONNullValue ();
+        return JSONValue :: makeNull ();
     }
     
-    /* JSONBoolValue
+    /* JSONBoolean
      **********************************************************************************/
-    JSONValue * JSONBoolValue :: parse ( const std::string &json, size_t & pos )
+    JSONValue * JSONBoolean :: parse ( const std::string &json, size_t & pos )
     {
         assert ( json [ pos ] == 'f' || json [ pos ] == 't' );
         
@@ -128,12 +128,12 @@ namespace ncbi
                 throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'true'" ); // test hit
         }
         
-        return new JSONBoolValue ( val );
+        return JSONValue :: makeBool ( val );
     }
    
-    /* JSONIntegerValue
+    /* JSONNumber
      **********************************************************************************/
-    JSONValue * JSONIntegerValue :: parse  ( const std::string &json, size_t & pos )
+    JSONValue * JSONNumber :: parse  ( const std::string &json, size_t & pos )
     {
         assert ( isdigit ( json [ pos ] ) || json [ pos ] == '-' );
         
@@ -207,7 +207,7 @@ namespace ncbi
                 long long int num = std :: stoll ( num_str, &num_len );
                 pos = start + num_len;
                 
-                return new JSONIntegerValue ( num );
+                return JSONValue :: makeInteger ( num );
             }
             catch ( std :: out_of_range &e )
             {
@@ -219,19 +219,12 @@ namespace ncbi
         std :: stold ( num_str, &num_len );
         pos = start + num_len;
         
-        return new JSONRealValue ( num_str . substr ( 0, num_len ) );
+        return JSONValue :: makeNumber ( num_str . substr ( 0, num_len ) );
     }
     
-    /* JSONRealValue
+    /* JSONString
      **********************************************************************************/
-    JSONValue * JSONRealValue :: parse  ( const std::string &json, size_t & pos )
-    {
-        return nullptr;
-    }
-    
-    /* JSONStringValue
-     **********************************************************************************/
-    JSONValue * JSONStringValue :: parse  ( const std::string &json, size_t & pos )
+    JSONValue * JSONString :: parse  ( const std::string &json, size_t & pos )
     {
         assert ( json [ pos ] == '"' );
         
@@ -312,7 +305,7 @@ namespace ncbi
         // set pos to point to next token
         ++ pos;
         
-        return new JSONStringValue ( str );
+        return JSONValue :: makeString ( str );
     }
 
     /* JSONValue
@@ -329,18 +322,17 @@ namespace ncbi
                 case '[':
                     return JSONArray :: parse ( json, pos );
                 case '"':
-                    return JSONStringValue :: parse ( json, pos );
+                    return JSONString :: parse ( json, pos );
                 case 'f':
                 case 't':
-                    return JSONBoolValue :: parse ( json, pos );
+                    return JSONBoolean :: parse ( json, pos );
                 case '-':
-                    return JSONIntegerValue :: parse ( json, pos );
+                    return JSONNumber :: parse ( json, pos );
                 case 'n':
-                    return JSONNullValue :: parse ( json, pos );
-                    break;
+                    return JSONWrapper :: parse ( json, pos );
                 default:
                     if ( isdigit ( json [ pos ] ) )
-                        return JSONIntegerValue :: parse ( json, pos );
+                        return JSONNumber :: parse ( json, pos );
                     
                     // garbage
                     throw JSONException ( __FILE__, __LINE__, "Invalid JSON format" ); // test hit
@@ -352,19 +344,6 @@ namespace ncbi
    
     /* JSONArray
      **********************************************************************************/
-    JSONArray * JSONArray :: make ( const std :: string & json )
-    {
-        if ( json . empty () )
-            throw JSONException ( __FILE__, __LINE__, "Empty JSON array" ); // test hit
-        
-        size_t pos = 0;
-        skip_whitespace( json, pos );
-        if ( json [ pos ] != '[' )
-            throw JSONException ( __FILE__, __LINE__, "Expected '['" ); // test hit
-        
-        return parse ( json, pos );
-    }
-    
     JSONArray * JSONArray :: parse ( const std :: string & json, size_t & pos )
     {
         assert ( json [ pos ] == '[' );
@@ -390,7 +369,7 @@ namespace ncbi
                     if ( value == nullptr )
                         throw JSONException ( __FILE__, __LINE__, "Failed to create JSON object" );
                     sub = json . substr(pos);
-                    array -> append ( value );
+                    array -> appendValue ( value );
                 }
                 
                 // find and skip over ',' and skip any whitespace
@@ -416,6 +395,7 @@ namespace ncbi
         return array;
     }
     
+    // make an object from JSON source
     JSONObject * JSONObject :: make ( const std :: string & json )
     {
         if ( json . empty () )
@@ -448,7 +428,7 @@ namespace ncbi
                     break;
                 
                 // get the name/key
-                JSONValue *name = JSONStringValue :: parse ( json, pos );
+                JSONValue *name = JSONString :: parse ( json, pos );
                 if ( name == nullptr )
                     throw JSONException ( __FILE__, __LINE__, "Failed to create JSON object" );
                 
@@ -465,7 +445,7 @@ namespace ncbi
                 if ( value == nullptr )
                     throw JSONException ( __FILE__, __LINE__, "Failed to create JSON object" );
                 
-                obj -> addMember ( name -> toString(), value );
+                obj -> setValue ( name -> toString(), value );
                 delete name;
                 
                 // find and skip over ',' and skip any whitespace
