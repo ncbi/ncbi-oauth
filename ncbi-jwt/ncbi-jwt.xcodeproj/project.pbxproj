@@ -7,14 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CE081C0A20E54DBB00CA40D8 /* jwt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE081C0920E54DBB00CA40D8 /* jwt.cpp */; };
+		5CAE9CA5211B5AC6009DFE05 /* jwt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5CAE9CA4211B5AC6009DFE05 /* jwt.cpp */; };
 		CE0C38FB20E68B1B003E7D51 /* libncbi-json.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = CE0C38FA20E68B1B003E7D51 /* libncbi-json.dylib */; };
 		CEE54A45210FA6B0009ECFD8 /* base64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CEE54A43210FA6B0009ECFD8 /* base64.cpp */; };
 		CEE54A46210FA6B0009ECFD8 /* base64-priv.hpp in Headers */ = {isa = PBXBuildFile; fileRef = CEE54A44210FA6B0009ECFD8 /* base64-priv.hpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		CE081C0920E54DBB00CA40D8 /* jwt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = jwt.cpp; path = "ncbi-jwt/jwt.cpp"; sourceTree = "<group>"; };
+		5CAE9CA4211B5AC6009DFE05 /* jwt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = jwt.cpp; sourceTree = "<group>"; };
 		CE0C38FA20E68B1B003E7D51 /* libncbi-json.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libncbi-json.dylib"; path = "../../../../../Users/user/Library/Developer/Xcode/DerivedData/ncbi-oauth-ccqkmtescumnuuanmckichlndcup/Build/Products/Debug/libncbi-json.dylib"; sourceTree = "<group>"; };
 		CE720D8D20E549DF00FDB587 /* libncbi-jwt.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libncbi-jwt.dylib"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CEE54A43210FA6B0009ECFD8 /* base64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = base64.cpp; sourceTree = "<group>"; };
@@ -52,6 +52,7 @@
 		CE720D8420E549DE00FDB587 = {
 			isa = PBXGroup;
 			children = (
+				5CAE9CA4211B5AC6009DFE05 /* jwt.cpp */,
 				DE69BB9621110689009E60F3 /* rfc3218.txt */,
 				DE69BB942110FFC3009E60F3 /* rfc4648.txt */,
 				DE69BB9721110695009E60F3 /* rfc7515.txt */,
@@ -62,7 +63,6 @@
 				DE69BB982111069E009E60F3 /* rfc7520.txt */,
 				CEE54A44210FA6B0009ECFD8 /* base64-priv.hpp */,
 				CEE54A43210FA6B0009ECFD8 /* base64.cpp */,
-				CE081C0920E54DBB00CA40D8 /* jwt.cpp */,
 				CE720D8E20E549DF00FDB587 /* Products */,
 				CE0C38F920E68B1B003E7D51 /* Frameworks */,
 			);
@@ -146,7 +146,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CEE54A45210FA6B0009ECFD8 /* base64.cpp in Sources */,
-				CE081C0A20E54DBB00CA40D8 /* jwt.cpp in Sources */,
+				5CAE9CA5211B5AC6009DFE05 /* jwt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
