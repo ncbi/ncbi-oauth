@@ -7,7 +7,7 @@
 //
 
 #include "gtest/gtest.h"
-#include "../../inc/json.hpp"
+#include <ncbi/json.hpp>
 
 #include <iostream>
 

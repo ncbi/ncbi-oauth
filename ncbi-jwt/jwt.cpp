@@ -24,7 +24,7 @@
  *
  */
 
-#include "jwt.hpp"
+#include <ncbi/jwt.hpp>
 #include "base64-priv.hpp"
 
 #include <iostream>

@@ -27,7 +27,7 @@
 #ifndef _hpp_ncbi_oauth_json_priv_
 #define _hpp_ncbi_oauth_json_priv_
 
-#include "json.hpp"
+#include <ncbi/json.hpp>
 
 namespace ncbi
 {

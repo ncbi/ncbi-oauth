@@ -7,7 +7,7 @@
 //
 
 #include "gtest/gtest.h"
-#include "../../inc/jwt.hpp"
+#include <ncbi/jwt.hpp>
 
 #include <iostream>
 
