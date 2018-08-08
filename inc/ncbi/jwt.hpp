@@ -27,7 +27,9 @@
 #ifndef _hpp_ncbi_oauth_jwt_
 #define _hpp_ncbi_oauth_jwt_
 
-#include "json.hpp"
+#ifndef _hpp_ncbi_oauth_json_
+#include <ncbi/json.hpp>
+#endif
 
 #include <string>
 
@@ -38,23 +40,37 @@ namespace ncbi
     class JWT
     {
     public:
+        
+        // make an empty JWT
         static JWT make ();
+        
+        // make a JWT from an encoded string
         static JWT make ( const std :: string & encoding );
         
+        // create a simple, unsigned JWT
         std :: string encode () const;
         
+        // access the JOSE header
+        const JSONObject & header () const;
+        
+        // access the payload
+        JSONObject & payload ();
+        const JSONObject & payload () const;
+        
+        // C++ assignment
         JWT & operator = ( const JWT & jwt );
         JWT ( const JWT & jwt );
         
         virtual ~JWT ();
         
-        JSONObject header;
-        JSONObject payload;
-        
     private:
+        
         void decode ( const std :: string &encoding );
         
-        JWT () {};
+        JWT ( JSONObject * hdr, JSONObject * pay );
+
+        JSONObject * hdr;
+        JSONObject * pay;
 
         friend class JWTFixture_BasicConstruction;
     };
