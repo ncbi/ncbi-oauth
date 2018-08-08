@@ -31,8 +31,12 @@
 
 namespace ncbi
 {
-    const std :: string encodeBase64URL ( const std :: string &json );
+    const std :: string encodeBase64 ( const std :: string &text );
+    const std :: string decodeBase64 ( const std :: string &encoding );
+    
+    const std :: string encodeBase64URL ( const std :: string &text );
     const std :: string decodeBase64URL ( const std :: string &encoding );
+    
 } // namespace ncbi
 
 #endif /* _hpp_ncbi_oauth_base64_priv_ */

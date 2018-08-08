@@ -11,14 +11,41 @@
 namespace ncbi
 {
     static
-    const char encode_table [] =
+    const char encode_std_table [] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "0123456789"
+    "+/";
+    
+    static
+    const char decode_std_table [] =
+    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x00 .. \x0F
+    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x10 .. \x1F
+    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x3e\xff\xff\xff\x3f" // \x20 .. \x2F
+    "\x34\x35\x36\x37\x38\x39\x3a\x3b\x3c\x3d\xff\xff\xff\xfe\xff\xff" // \x30 .. \x3F
+    "\xff\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e" // \x40 .. \x4F
+    "\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\xff\xff\xff\xff\xff" // \x50 .. \x5F
+    "\xff\x1a\x1b\x1c\x1d\x1e\x1f\x20\x21\x22\x23\x24\x25\x26\x27\x28" // \x60 .. \x6F
+    "\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30\x31\x32\x33\xff\xff\xff\xff\xff" // \x70 .. \x7F
+    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x80 .. \x8F
+    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x90 .. \x9F
+    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xA0 .. \xAF
+    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xB0 .. \xBF
+    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xC0 .. \xCF
+    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xD0 .. \xDF
+    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xE0 .. \xEF
+    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xF0 .. \xFF
+    ;
+    
+    static
+    const char encode_url_table [] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789"
     "-_";
     
     static
-    const char decode_table [] =
+    const char decode_url_table [] =
     "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x00 .. \x0F
     "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x10 .. \x1F
     "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x3e\xff\xff" // \x20 .. \x2F
@@ -37,7 +64,8 @@ namespace ncbi
     "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xF0 .. \xFF
     ;
     
-    const std :: string encodeBase64URL ( const std :: string &json )
+    static
+    const std :: string encodeBase64Impl ( const std :: string &json, const char encode_table [] )
     {
         std :: string encoding;
         
@@ -133,7 +161,8 @@ namespace ncbi
         return encoding;
     }
     
-    const std :: string decodeBase64URL ( const std :: string &encoding )
+    static
+    const std :: string decodeBase64Impl ( const std :: string &encoding, const char decode_table [] )
     {
         std :: string json;
         
@@ -171,7 +200,6 @@ namespace ncbi
             else
             {
                 // have to take a decision about illegal characters
-                // white-space and line endings should be okay
                 // when okay, just skip them
                 // otherwise, consider the string corrupt
             }
@@ -227,6 +255,26 @@ namespace ncbi
             json += std :: string ( buff, j );
         
         return json;
+    }
+    
+    const std :: string encodeBase64 ( const std :: string &text )
+    {
+        return encodeBase64Impl ( text, encode_std_table );
+    }
+    
+    const std :: string decodeBase64 ( const std :: string &encoding )
+    {
+        return decodeBase64Impl ( encoding, decode_std_table );
+    }
+    
+    const std :: string encodeBase64URL ( const std :: string &text )
+    {
+        return encodeBase64Impl ( text, encode_url_table );
+    }
+    
+    const std :: string decodeBase64URL ( const std :: string &encoding )
+    {
+        return decodeBase64Impl ( encoding, decode_url_table );
     }
     
 } // namespace
