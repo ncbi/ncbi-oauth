@@ -23,7 +23,6 @@ namespace ncbi
         
         void SetUp ()
         {
-            pos = 0;
             jObj = nullptr;
         }
         
@@ -34,8 +33,6 @@ namespace ncbi
         
         void make_throw ( JSONType type, const std :: string &json, bool consume_all = true )
         {
-            pos = 0;
-            
             switch ( type )
             {
                 case Object:
@@ -52,8 +49,6 @@ namespace ncbi
         
         void make ( JSONType type, const std :: string &json, bool consume_all = true )
         {
-            pos = 0;
-            
             switch ( type )
             {
                 case Object:
@@ -63,7 +58,7 @@ namespace ncbi
                 }
                 case Array:
                 {
-                    jObj = JSONArray :: parse ( json, pos );
+                    jObj = JSONArray :: test_parse ( json );
                     break;
                 }
                 case Value:
@@ -80,35 +75,11 @@ namespace ncbi
         void make_and_verify_eq ( JSONType type, const std :: string &json, const std :: string &expected,
                                  bool consume_all = true )
         {
-            pos = 0;
-            
-            switch ( type )
-            {
-                case Object:
-                {
-                    jObj = JSONObject :: make ( json );
-                    break;
-                }
-                case Array:
-                {
-                    jObj = JSONArray :: parse ( json, pos );
-                    break;
-                }
-                case Value:
-                {
-                    JSONValue *val = JSONValue :: test_parse ( json, consume_all );
-                    ASSERT_TRUE ( val != nullptr );
-                    
-                    jObj = val;
-                    break;
-                }
-            }
-            
+            make ( type, json, consume_all );
             EXPECT_STREQ ( jObj -> toJSON() . c_str(), expected . c_str () );
         }
     
     protected:
-        size_t pos;
         JSONValue *jObj;
     };
 
@@ -188,23 +159,6 @@ namespace ncbi
     TEST_F ( JSONFixture_WhiteBox, JSONArray_Throw_TrailingBytes )
     {
         make_throw ( Array, "[\"name\",\"name\"]trailing" ); // Expected ']'
-    }
-  
-    /* String
-     * ""
-     * " chars "
-     */
-    TEST_F ( JSONFixture_WhiteBox, String_Empty )
-    {
-        make_and_verify_eq( Value , "\"\"", "\"\"" );
-    }
-    TEST_F ( JSONFixture_WhiteBox, String_Char )
-    {
-        make_and_verify_eq( Value , "\"a\"", "\"a\"" );
-    }
-    TEST_F ( JSONFixture_WhiteBox, String_Chars )
-    {
-        make_and_verify_eq( Value , "\"abc\"", "\"abc\"" );
     }
     
     /* Bool
@@ -289,9 +243,24 @@ namespace ncbi
         make ( Value, "0.0e0" );
     }
     
-    /* Exceptions
+    /* String
+     * ""
+     * " chars "
      */
+    TEST_F ( JSONFixture_WhiteBox, String_Empty )
+    {
+        make_and_verify_eq( Value , "\"\"", "\"\"" );
+    }
+    TEST_F ( JSONFixture_WhiteBox, String_Char )
+    {
+        make_and_verify_eq( Value , "\"a\"", "\"a\"" );
+    }
+    TEST_F ( JSONFixture_WhiteBox, String_Chars )
+    {
+        make_and_verify_eq( Value , "\"abc\"", "\"abc\"" );
+    }
     
+    // JSONValue Exceptions
     TEST_F ( JSONFixture_WhiteBox, JSONValue_Null_Throw_InvJSONFmt )
     {
         make_throw ( Value, "a" );
@@ -359,5 +328,120 @@ namespace ncbi
     TEST_F ( JSONFixture_WhiteBox, JSONValue_Integer_Throw_Negative_Bad )
     {
         make_throw ( Value, "-a" ); // Expected digit
+    }
+    
+    /* JSON Construction
+     *
+     **********************************************************************************/
+    class JSONFixture_BlackBox : public :: testing :: Test
+    {
+    public:
+        void SetUp ()
+        {
+            jObj = nullptr;
+        }
+        
+        void TearDown ()
+        {
+            delete jObj;
+        }
+        
+        void make ( const std :: string &json )
+        {
+            jObj = JSONObject :: make ( json );
+        }
+        
+        void make_and_verify_eq ( const std :: string &json, const std :: string &expected )
+        {
+            make ( json );
+            EXPECT_STREQ ( jObj -> toJSON() . c_str(), expected . c_str () );
+        }
+        
+    protected:
+        size_t pos;
+        JSONValue *jObj;
+    };
+    
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Empty )
+    {
+        make_and_verify_eq ( "{}", "{}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Nested_Obj1 )
+    {
+        make_and_verify_eq ( "{\"nested-obj\":{}}", "{\"nested-obj\":{}}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Nested_Obj2 )
+    {
+        make_and_verify_eq ( "{\"nested-obj\":{\"nested-array\":[]}}",
+                             "{\"nested-obj\":{\"nested-array\":[]}}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Nested_Obj3 )
+    {
+        make_and_verify_eq ( "{\"nested-obj\":{\"nested-obj\":{}}}",
+                             "{\"nested-obj\":{\"nested-obj\":{}}}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_EmptyArray )
+    {
+        make_and_verify_eq ( "{\"array\":[]}", "{\"array\":[]}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Bool_Member1 )
+    {
+        make_and_verify_eq ( "{\"name\":true}", "{\"name\":true}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Bool_Member2 )
+    {
+        make_and_verify_eq ( "{\"name\":false}", "{\"name\":false}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Number_Member1 )
+    {
+        make_and_verify_eq ( "{\"name\":0}", "{\"name\":0}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Number_Member2 )
+    {
+        make_and_verify_eq ( "{\"name\":1234567890}", "{\"name\":1234567890}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_NegNumber_Member1 )
+    {
+        make_and_verify_eq ( "{\"name\":-1}", "{\"name\":-1}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_NegNumber_Member2 )
+    {
+        make_and_verify_eq ( "{\"name\":-1234567890}", "{\"name\":-1234567890}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Float_Frac1 )
+    {
+        make_and_verify_eq( "{\"name\":0.0}", "{\"name\":0.0}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Float_Frac2 )
+    {
+        make_and_verify_eq( "{\"name\":123.456789}", "{\"name\":123.456789}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Float_eE_digit1 )
+    {
+        make_and_verify_eq( "{\"name\":0e0}", "{\"name\":0e0}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Float_eE_digit2 )
+    {
+        make_and_verify_eq( "{\"name\":0E0}", "{\"name\":0E0}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Float_eE_plus_digit )
+    {
+        make_and_verify_eq( "{\"name\":0e+0}", "{\"name\":0e+0}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Float_eE_minus_digit )
+    {
+        make_and_verify_eq( "{\"name\":0E-0}", "{\"name\":0E-0}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Float_Frac_Exp )
+    {
+        make_and_verify_eq( "{\"name\":0.0E0}", "{\"name\":0.0E0}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_String_Member )
+    {
+        make_and_verify_eq ( "{\"name\":\"value\"}", "{\"name\":\"value\"}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Member_Array )
+    {
+        make_and_verify_eq ( "{\"\":[true,false]}", "{\"\":[true,false]}" );
     }
 } // ncbi
