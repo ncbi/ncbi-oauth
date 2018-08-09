@@ -31,86 +31,212 @@ namespace ncbi
     // make an empty object
     JSONObject * JSONObject :: make ()
     {
-        return 0;
+        return new JSONObject ();
     }
 
     // JSONValue interface implementations
     std :: string JSONObject :: toJSON () const
     {
-        return 0;
+        std :: string to_string = "{";
+        const char* sep = "";
+        
+        for ( auto it = members . begin (); it != members . end (); ++ it )
+        {
+            std :: string key =  it -> first;
+            
+            JSONValue* value = it -> second . second;
+            
+            to_string += sep;
+            to_string += string_to_json ( key ) + ":" + value -> toJSON();
+            
+            sep = ",";
+        }
+        
+        to_string += "}";
+        
+        return to_string;
     }
     
     JSONValue * JSONObject :: clone ()
     {
-        return 0;
+        JSONObject *copy = new JSONObject ();
+        
+        *copy = *this;
+        
+        return copy;
     }
 
     // asks whether object is empty
     bool JSONObject :: isEmpty () const
     {
-        return false;
+        return members . empty ();
     }
 
     // does a member exist
     bool JSONObject :: exists ( const std :: string & name ) const
     {
-        return false;
+        auto it = members . find ( name );
+
+        if ( it == members . end () )
+                return false;
+        
+        return true;
     }
 
     // return the number of members
     unsigned long int JSONObject :: count () const
     {
-        return 0;
+        return members . size ();
     }
         
     // return names/keys
     std :: vector < std :: string > JSONObject :: getNames () const
     {
-        throw 123;
+        std :: vector < std :: string > names;
+        
+        for ( auto it = members . cbegin(); it != members . cend (); ++ it )
+            names . push_back ( it -> first );
+        
+        return names;
     }
         
     // set entry to a new value
     // throws exception if entry exists and is final
     void JSONObject :: setValue ( const std :: string & name, JSONValue * val )
     {
+        std :: pair < bool, JSONValue * > a_member;
+        
+        auto it = members . find ( name );
+        
+        // if doesnt exist, add
+        if ( it == members . cend () )
+        {
+            std :: pair < bool, JSONValue * > pair ( false, val );
+            members . emplace ( name, pair );
+        }
+        else
+        {
+            // if non modifiable, throw
+            if ( it -> second . first )
+                throw JSONException ( __func__, __LINE__, "Cannot overrite final member" );
+            
+            // overwrite value
+            it -> second . second = val;
+        }
     }
 
     // set entry to a final value
     // throws exception if entry exists and is final
     void JSONObject :: setFinalValue ( const std :: string & name, JSONValue * val )
     {
+        std :: pair < bool, JSONValue * > a_member;
+        
+        auto it = members . find ( name );
+        
+        // if doesnt exist, add
+        if ( it == members . cend () )
+        {
+            std :: pair < bool, JSONValue * > pair ( true, val );
+            members . emplace ( name, pair );
+        }
+        else
+        {
+            // if non modifiable, throw
+            if ( it -> second . first )
+                throw JSONException ( __func__, __LINE__, "Cannot overrite final member" );
+            
+            // overwrite value
+            it -> second . second = val;
+        }
     }
 
     // get named value
     JSONValue & JSONObject :: getValue ( const std :: string & name )
     {
-        throw 123;
+        auto it = members . find ( name );
+        if ( it != members . cend () )
+        {
+            return * it -> second . second;
+        }
+        
+        throw JSONException ( __func__, __LINE__, "Member not found" );
     }
     
     const JSONValue & JSONObject :: getValue ( const std :: string & name ) const
     {
-        throw 123;
+        auto it = members . find ( name );
+        if ( it != members . cend () )
+        {
+            return * it -> second . second;
+        }
+        
+        throw JSONException ( __func__, __LINE__, "Member not found" );
     }
         
     // remove a named value
     // returns nullptr if not found
-    JSONValue * JSONObject :: removeValue ( const std :: string & name )
+    void JSONObject :: removeValue ( const std :: string & name )
     {
-        return 0;
+        auto it = members . find ( name );
+        if ( it != members . cend () )
+            members . erase ( it );
     }
 
     // C++ assignment
     JSONObject & JSONObject :: operator = ( const JSONObject & obj )
     {
+        clear ();
+        
+        for ( auto it = obj . members . cbegin(); it != obj . members . cend (); ++ it )
+        {
+            std :: string name = it -> first;
+            JSONValue *val = it -> second . second  -> clone ();
+            
+            if ( it -> second . first )
+                setFinalValue ( name, val );
+            else
+                setValue ( name, val );
+        }
+        
         return * this;
     }
     
     JSONObject :: JSONObject ( const JSONObject & obj )
     {
+        for ( auto it = obj . members . cbegin(); it != obj . members . cend (); ++ it )
+        {
+            std :: string name = it -> first;
+            JSONValue *val = it -> second . second  -> clone ();
+            
+            if ( it -> second . first )
+                setFinalValue ( name, val );
+            else
+                setValue ( name, val );
+        }
     }
 
     JSONObject :: ~ JSONObject ()
     {
+        clear ();
+    }
+    
+    // used to empty out the object before copy
+    void JSONObject :: clear ()
+    {
+        if ( ! members . empty () )
+        {
+            for ( auto it = members . cbegin(); it != members . cend (); )
+            {
+                // if its final, skip it
+                if ( it -> second . first )
+                {
+                    ++ it;
+                    continue;
+                }
+                
+                it = members . erase ( it );
+            }
+        }
     }
 
     JSONObject :: JSONObject ()

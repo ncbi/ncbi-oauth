@@ -60,12 +60,7 @@ namespace ncbi
     {
         JSONArray * copy = new JSONArray ();
 
-        size_t i, count = array . size ();
-        for ( i = 0; i < count; ++ i )
-        {
-            JSONValue * elem = array [ i ] -> clone ();
-            copy -> appendValue ( elem );
-        }
+        *copy = *this;
 
         return copy;
     }

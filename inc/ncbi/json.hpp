@@ -111,6 +111,10 @@ namespace ncbi
         static JSONValue * parse ( const std :: string & json, size_t & pos );
         
         JSONValue ();
+        
+        // for testing
+        static JSONValue * parse ( const std :: string & json, bool consume_all );
+        friend class JSONFixture_JSONConstruction;
     };
         
     /* JSONArray 
@@ -179,6 +183,10 @@ namespace ncbi
         std :: vector < JSONValue * > array;
         
         friend class JSONValue;
+        
+        // for testing
+        static JSONArray * parse ( const std :: string & json );
+        friend class JSONFixture_JSONConstruction;
     };
     
     /* JSONObject
@@ -228,9 +236,8 @@ namespace ncbi
         JSONValue & getValue ( const std :: string & name );
         const JSONValue & getValue ( const std :: string & name ) const;
         
-        // remove a named value
-        // returns nullptr if not found
-        JSONValue * removeValue ( const std :: string & name );
+        // remove and delete named value
+        void removeValue ( const std :: string & name );
 
         // C++ assignment
         JSONObject & operator = ( const JSONObject & obj );
@@ -243,6 +250,8 @@ namespace ncbi
         
         static JSONObject * parse ( const std :: string & json, size_t & pos );
 
+        void clear ();
+        
         JSONObject ();
 
         std :: map < std :: string, std :: pair < bool, JSONValue * > > members;

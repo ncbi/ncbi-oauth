@@ -32,7 +32,7 @@ namespace ncbi
             delete jObj;
         }
         
-        void make_throw ( JSONType type, const std :: string &json )
+        void make_throw ( JSONType type, const std :: string &json, bool consume_all = true )
         {
             pos = 0;
             
@@ -42,10 +42,10 @@ namespace ncbi
                     EXPECT_ANY_THROW ( JSONObject :: make ( json ) );
                     break;
                 case Array:
-                    EXPECT_ANY_THROW ( JSONArray :: make () );
+                    EXPECT_ANY_THROW ( JSONArray :: parse ( json ) );
                     break;
                 case Value:
-                    EXPECT_ANY_THROW ( JSONValue :: parse ( json, pos ) );
+                    EXPECT_ANY_THROW ( JSONValue :: parse ( json, consume_all ) );
                     break;
             }
         }
@@ -65,19 +65,15 @@ namespace ncbi
                 }
                 case Array:
                 {
-                    JSONArray *array = JSONArray :: make ( json );
+                    JSONArray *array = JSONArray :: parse ( json );
                     ASSERT_TRUE ( array != nullptr );
                     jObj = array;
                     break;
                 }
                 case Value:
                 {
-                    JSONValue *val = JSONValue :: parse ( json, pos );
+                    JSONValue *val = JSONValue :: parse ( json, consume_all );
                     ASSERT_TRUE ( val != nullptr );
-                    if ( consume_all )
-                        ASSERT_TRUE ( pos == json . size () );
-                    else
-                        ASSERT_TRUE ( pos < json . size () );
                     
                     jObj = val;
                     break;
@@ -86,7 +82,7 @@ namespace ncbi
         }
         
         void make_and_verify_eq ( JSONType type, const std :: string &json, const std :: string &expected,
-                                  bool consume_all = true )
+                                 bool consume_all = true )
         {
             make ( type, json, consume_all );
             EXPECT_STREQ ( jObj -> toJSON() . c_str(), expected . c_str () );
