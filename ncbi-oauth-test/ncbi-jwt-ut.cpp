@@ -28,19 +28,14 @@ namespace ncbi
         {
         }
         
-        JWTFixture_BasicConstruction ()
-        {
-        }
-        
     protected:
         JWT jwt;
     };
-    
+   
+    /*
     TEST_F ( JWTFixture_BasicConstruction, JWT_Parse_Member )
     {
-        jwt . payload [ "ncbi" ] = "specifics";
-        
-        std :: cout << jwt . encode () << std :: endl;
     }
+     */
 
 } // namespace

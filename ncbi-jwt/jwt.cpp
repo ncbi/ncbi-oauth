@@ -34,57 +34,56 @@ namespace ncbi
     JWT JWT :: make ()
     {
         // make the header
-        JWT jwt;
-
-        jwt . header . addMember ( "alg", JSONValue :: makeString ( "RS512" ), true );
-        jwt . header . addMember ( "typ", JSONValue :: makeString ( "JWT" ), true );
+        JSONObject *header = JSONObject :: make ();
+        JSONObject *payload = JSONObject :: make ();
         
-        jwt . payload . addMember ( "iss", JSONValue :: makeString ( "Batman" ), true );
-        jwt . payload . addMember ( "sub", JSONValue :: makeString ( "Joker" ), true );
-        jwt . payload . addMember ( "aud", JSONValue :: makeString ( "Gotham" ), true );
-        jwt . payload . addMember ( "iat", JSONValue :: makeInteger ( 0 ), true );
-        jwt . payload . addMember ( "exp", JSONValue :: makeInteger ( 10 ), true );
+        JWT jwt ( header, payload );
         
         return jwt;
     }
     
-    JWT JWT :: make ( const std :: string & encoding )
+    JWT JWT :: decode ( const std :: string & encoding, const std :: string & pub_key )
     {
         // make sure there is at least one '.'
         size_t dot = encoding . find_first_of ('.', 0 );
         if ( dot == std :: string :: npos )
             throw std :: logic_error ( "Invalid encoded string" );
         
-        std :: string header = encoding . substr ( 0, dot - 0 );
+        std :: string hdr = encoding . substr ( 0, dot - 0 );
             
-        JWT jwt;
+        JSONObject *header = JSONObject :: make ();
+        JSONObject *payload = JSONObject :: make ();
+        
+        JWT jwt ( header, payload );
+        
         return jwt;
     }
     
     std :: string JWT :: encode () const
     {
-        std :: string encoding = encodeBase64URL ( header . toJSON () ) + ".";
-        encoding += encodeBase64URL( payload.toJSON() ) + ".";
+        std :: string encoding = encodeBase64URL ( hdr -> toJSON () ) + ".";
+        encoding += encodeBase64URL( pay -> toJSON() ) + ".";
         
         return encoding;
     }
     
-    void JWT :: decode ( const std :: string &encoding )
-    {
-        
-    }
-    
     JWT & JWT :: operator = ( const JWT & jwt )
     {
-        header = jwt . header;
-        payload = jwt . payload;
+        hdr = jwt . hdr;
+        pay = jwt . pay;
         
         return *this;
     }
     
     JWT :: JWT ( const JWT & jwt )
-    : header ( jwt . header )
-    , payload ( jwt . payload )
+    : hdr ( jwt . hdr )
+    , pay ( jwt . pay )
+    {
+    }
+    
+    JWT :: JWT ( JSONObject * hdr, JSONObject * pay )
+    : hdr ( hdr )
+    , pay ( pay )
     {
     }
     

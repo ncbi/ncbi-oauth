@@ -45,7 +45,7 @@ namespace ncbi
         static JWT make ();
         
         // make a JWT from an encoded string
-        static JWT make ( const std :: string & encoding );
+        static JWT decode ( const std :: string & encoding, const std :: string & pub_key );
         
         // create a simple, unsigned JWT
         std :: string encode () const;
@@ -64,8 +64,6 @@ namespace ncbi
         virtual ~JWT ();
         
     private:
-        
-        void decode ( const std :: string &encoding );
         
         JWT ( JSONObject * hdr, JSONObject * pay );
 
