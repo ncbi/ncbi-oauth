@@ -13,7 +13,7 @@
 
 namespace ncbi
 {
-    /* JSON Construction
+    /* JSON Construction - Whitebox
      *
      **********************************************************************************/
     class JSONFixture_WhiteBox : public :: testing :: Test
@@ -330,7 +330,7 @@ namespace ncbi
         make_throw ( Value, "-a" ); // Expected digit
     }
     
-    /* JSON Construction
+    /* JSON Construction - Blackbox
      *
      **********************************************************************************/
     class JSONFixture_BlackBox : public :: testing :: Test
@@ -346,22 +346,19 @@ namespace ncbi
             delete jObj;
         }
         
-        void make ( const std :: string &json )
-        {
-            jObj = JSONObject :: make ( json );
-        }
-        
         void make_and_verify_eq ( const std :: string &json, const std :: string &expected )
         {
-            make ( json );
+            jObj = JSONObject :: make ( json );
             EXPECT_STREQ ( jObj -> toJSON() . c_str(), expected . c_str () );
         }
         
     protected:
         size_t pos;
-        JSONValue *jObj;
+        JSONObject *jObj;
     };
     
+    
+    // Construction via JSON source
     TEST_F ( JSONFixture_BlackBox, JSONObject_Empty )
     {
         make_and_verify_eq ( "{}", "{}" );
@@ -444,4 +441,137 @@ namespace ncbi
     {
         make_and_verify_eq ( "{\"\":[true,false]}", "{\"\":[true,false]}" );
     }
+    
+    /* JSON Construction - Method
+     *
+     **********************************************************************************/
+    class JSONFixture_BlackBox_Method : public :: testing :: Test
+    {
+    public:
+        void SetUp ()
+        {
+            jObj = nullptr;
+        }
+        
+        void TearDown ()
+        {
+            delete jObj;
+        }
+        
+        void make_empty ()
+        {
+            jObj = JSONObject :: make ();
+            ASSERT_TRUE ( jObj != nullptr );
+        }
+
+    protected:
+        size_t pos;
+        JSONObject *jObj;
+    };
+    
+    // JSONObject
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_isObject )
+    {
+        make_empty();
+        ASSERT_TRUE ( jObj -> isObject () );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_toObject )
+    {
+        JSONValue *obj = JSONObject :: make ();
+        ASSERT_TRUE ( obj != nullptr );
+        
+        jObj = & obj -> toObject ();
+        ASSERT_TRUE ( jObj != nullptr );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_clone )
+    {
+        make_empty();
+        JSONValue *obj = jObj -> clone ();
+        ASSERT_TRUE ( obj -> isObject () );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), obj -> toJSON() . c_str() );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_isEmpty )
+    {
+        make_empty();
+        ASSERT_TRUE( jObj -> isEmpty() );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_exists )
+    {
+        make_empty();
+        ASSERT_FALSE( jObj -> exists ( "name" ) );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_count )
+    {
+        make_empty();
+        ASSERT_EQ ( jObj -> count (), 0 );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_getNames )
+    {
+        make_empty();
+        ASSERT_TRUE ( jObj -> getNames () . empty () );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setValue_Null )
+    {
+        make_empty();
+        jObj -> setValue ( "name", JSONValue :: makeNull () );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":null}" );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setValue_Bool)
+    {
+        make_empty();
+        jObj -> setValue ( "name", JSONValue :: makeBool ( true ) );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":true}" );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setValue_Integer)
+    {
+        make_empty();
+        jObj -> setValue ( "name", JSONValue :: makeInteger( 123 ) );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":123}" );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setValue_Double)
+    {
+        make_empty();
+        jObj -> setValue ( "name", JSONValue :: makeDouble( 123.456789, 6 ) );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":123.456789}" );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setValue_Number)
+    {
+        make_empty();
+        jObj -> setValue ( "name", JSONValue :: makeNumber( "123.456789" ) );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":123.456789}" ); // check
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setValue_String )
+    {
+        make_empty();
+        jObj -> setValue ( "name", JSONValue :: makeString ( "value" ) );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":\"value\"}" );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setFinalValue )
+    {
+        make_empty();
+        jObj -> setFinalValue ( "name", JSONValue :: makeString ( "value" ) );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":\"value\"}" );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_getValue )
+    {
+        make_empty();
+        jObj -> setValue ( "name", JSONValue :: makeString ( "value" ) );
+        JSONValue &val = jObj -> getValue ( "name" );
+        EXPECT_STREQ ( val . toJSON() . c_str(), "\"value\"" );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_removeValue )
+    {
+        make_empty();
+        jObj -> setValue ( "name", JSONValue :: makeString ( "value" ) );
+        jObj -> removeValue ( "name" );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{}" );
+    }
+    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_removeFinalValue )
+    {
+        make_empty();
+        jObj -> setFinalValue ( "name", JSONValue :: makeString ( "value" ) );
+        jObj -> removeValue ( "name" );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":\"value\"}" );
+    }
+    
 } // ncbi

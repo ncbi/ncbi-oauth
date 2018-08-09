@@ -53,8 +53,7 @@
 				5C5505E0211B7D1C000F4666 /* json-wrapper.cpp */,
 				5C89ABCF211B593000936B79 /* parser.cpp */,
 				5C89ABCB211B591200936B79 /* json-priv.hpp */,
-				DE69BB9521110100009E60F3 /* rfc3629.txt */,
-				DE69BB932110FDAD009E60F3 /* rfc7159.txt */,
+				CEC1375B211CC971006A81D5 /* RFC */,
 				CEA84F2F20E679D800A5608C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -65,6 +64,15 @@
 				CEA84F2E20E679D800A5608C /* libncbi-json.dylib */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		CEC1375B211CC971006A81D5 /* RFC */ = {
+			isa = PBXGroup;
+			children = (
+				DE69BB9521110100009E60F3 /* rfc3629.txt */,
+				DE69BB932110FDAD009E60F3 /* rfc7159.txt */,
+			);
+			name = RFC;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

@@ -174,11 +174,10 @@ namespace ncbi
     }
         
     // remove a named value
-    // returns nullptr if not found
     void JSONObject :: removeValue ( const std :: string & name )
     {
         auto it = members . find ( name );
-        if ( it != members . cend () )
+        if ( it != members . cend () && it -> second . first == false )
             members . erase ( it );
     }
 
