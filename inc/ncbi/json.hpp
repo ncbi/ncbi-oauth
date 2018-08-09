@@ -113,8 +113,8 @@ namespace ncbi
         JSONValue ();
         
         // for testing
-        static JSONValue * parse ( const std :: string & json, bool consume_all );
-        friend class JSONFixture_JSONConstruction;
+        static JSONValue * test_parse ( const std :: string & json, bool consume_all );
+        friend class JSONFixture_WhiteBox;
     };
         
     /* JSONArray 
@@ -185,8 +185,8 @@ namespace ncbi
         friend class JSONValue;
         
         // for testing
-        static JSONArray * parse ( const std :: string & json );
-        friend class JSONFixture_JSONConstruction;
+        static JSONArray * test_parse ( const std :: string & json );
+        friend class JSONFixture_WhiteBox;
     };
     
     /* JSONObject

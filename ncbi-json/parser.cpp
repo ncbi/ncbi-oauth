@@ -101,17 +101,17 @@ namespace ncbi
     {
         assert ( json [ pos ] == 'f' || json [ pos ] == 't' );
         
-        bool val;
+        bool tf;
         size_t start = pos;
         
         if ( json . compare ( start, sizeof "false" - 1, "false" ) == 0 )
         {
-            val = false;
+            tf = false;
             pos += sizeof "false" - 1;
         }
         else if ( json . compare ( start, sizeof "true" - 1, "true" ) == 0 )
         {
-            val = true;
+            tf = true;
             pos += sizeof "true" - 1;
         }
         else if ( json [ start ] == 'f' )
@@ -128,7 +128,12 @@ namespace ncbi
                 throw JSONException ( __FILE__, __LINE__, "Expected keyword: 'true'" ); // test hit
         }
         
-        return JSONValue :: makeBool ( val );
+
+        JSONValue *val = JSONValue :: makeBool ( tf );
+        if ( val == nullptr )
+            throw JSONException ( __func__, __LINE__, "Failed to make JSONValue" );
+        
+        return val;
     }
    
     /* JSONNumber
@@ -219,7 +224,11 @@ namespace ncbi
         std :: stold ( num_str, &num_len );
         pos = start + num_len;
         
-        return JSONValue :: makeNumber ( num_str . substr ( 0, num_len ) );
+        JSONValue *val = JSONValue :: makeNumber ( num_str . substr ( 0, num_len ) );
+        if ( val == nullptr )
+            throw JSONException ( __func__, __LINE__, "Failed to make JSONValue" );
+        
+        return val;
     }
     
     /* JSONString
@@ -305,20 +314,23 @@ namespace ncbi
         // set pos to point to next token
         ++ pos;
         
-        return JSONValue :: makeString ( str );
+        JSONValue *val = JSONValue :: makeString ( str );
+        if ( val == nullptr )
+            throw JSONException ( __func__, __LINE__, "Failed to make JSONValue" );
+        
+        return val;
     }
 
     /* JSONValue
      **********************************************************************************/
-    JSONValue * JSONValue :: parse ( const std :: string & json, bool consume_all )
+    JSONValue * JSONValue :: test_parse ( const std :: string & json, bool consume_all )
     {
         size_t pos = 0;
         
         JSONValue *val = parse ( json, pos );
-        if ( val == nullptr )
-            throw JSONException ( __func__, __LINE__, "Failed to parse JSONValue" );
+        
         if ( consume_all && pos < json . size () )
-            throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" );
+            throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" ); // test hit
         
         return val;
     }
@@ -357,10 +369,10 @@ namespace ncbi
    
     /* JSONArray
      **********************************************************************************/
-    JSONArray * JSONArray :: parse ( const std :: string & json )
+    JSONArray * JSONArray :: test_parse ( const std :: string & json )
     {
         if ( json . empty () )
-            throw JSONException ( __FILE__, __LINE__, "Empty JSON object" ); 
+            throw JSONException ( __FILE__, __LINE__, "Empty JSON object" );
         
         size_t pos = 0;
         skip_whitespace( json, pos );
@@ -368,10 +380,9 @@ namespace ncbi
             throw JSONException ( __FILE__, __LINE__, "Expected: '{'" ); // test hit
         
         JSONArray *array = parse ( json, pos );
-        if ( array == nullptr )
-            throw JSONException ( __func__, __LINE__, "Failed to parse JSONArray" );
+        
         if ( pos < json . size () )
-            throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" );
+            throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" ); // test hit
         
         return array;
     }
@@ -380,7 +391,7 @@ namespace ncbi
     {
         assert ( json [ pos ] == '[' );
         
-        JSONArray *array = new JSONArray;
+        JSONArray *array = new JSONArray ();
         try
         {
             while ( 1 )
@@ -424,6 +435,8 @@ namespace ncbi
             throw;
         }
         
+        // JSONArray must be valid
+        assert ( array != nullptr );
         return array;
     }
     
@@ -434,16 +447,16 @@ namespace ncbi
     JSONObject * JSONObject :: make ( const std :: string & json )
     {
         if ( json . empty () )
-            throw JSONException ( __FILE__, __LINE__, "Empty JSON object" ); // test hit
+            throw JSONException ( __FILE__, __LINE__, "Empty JSON source" ); // test hit
         
         size_t pos = 0;
         skip_whitespace( json, pos );
+        
         if ( json [ pos ] != '{' )
             throw JSONException ( __FILE__, __LINE__, "Expected: '{'" ); // test hit
         
         JSONObject *obj = parse ( json, pos );
-        if ( obj == nullptr )
-            throw JSONException ( __func__, __LINE__, "Failed to parse JSONArray" );
+
         if ( pos < json . size () )
             throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" );
         
@@ -454,7 +467,7 @@ namespace ncbi
     {
         assert ( json [ pos ] == '{' );
         
-        JSONObject *obj = new JSONObject;
+        JSONObject *obj = new JSONObject ();
         try
         {
             while ( 1 )
@@ -510,6 +523,8 @@ namespace ncbi
         }
         
         
+        // JSONObject must be valid
+        assert ( obj != nullptr );
         return obj;
     }
     
