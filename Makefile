@@ -16,15 +16,15 @@ LOBX = pic.o
 
 # rule to build object files from source
 $(OBJDIR)/%.$(LOBX): ncbi-json/%.cpp
-	g++ -g -c $< -o $@ -Incbi-json -Iinc -fPIC -MD
+	g++ -std=c++11 -g -c $< -o $@ -Incbi-json -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(LOBX): ncbi-jwt/%.cpp
-	g++ -g -c $< -o $@ -Incbi-jwt -Iinc -fPIC -MD
+	g++ -std=c++11 -g -c $< -o $@ -Incbi-jwt -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(OBJX): ncbi-oauth-test/%.cpp
-	g++ -g -c $< -o $@ -Incbi-oauth-test -Iinc -Igoogletest/googletest/include -MD
+	g++ -std=c++11 -g -c $< -o $@ -Incbi-oauth-test -Iinc -Igoogletest/googletest/include -MD -Wall
 $(OBJDIR)/%.$(OBJX): googletest/googletest/src/%.cc
-	g++ -g -c $< -o $@ -Incbi-oauth-test -Iinc -Igoogletest/googletest -Igoogletest/googletest/include -MD
+	g++ -std=c++11 -g -c $< -o $@ -Incbi-oauth-test -Iinc -Igoogletest/googletest -Igoogletest/googletest/include -MD
 
 # include dependencies
 include $(wildcard $(OBJDIR)/*.d)
