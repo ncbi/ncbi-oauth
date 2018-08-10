@@ -14,17 +14,20 @@ LOBX = pic.o
 # tell make to forget some of its built-in rules
 .SUFFIXES:
 
+# C++ compiler to use
+GPP ?= g++ -std=c++11
+
 # rule to build object files from source
 $(OBJDIR)/%.$(LOBX): ncbi-json/%.cpp
-	g++ -std=c++11 -g -c $< -o $@ -Incbi-json -Iinc -fPIC -MD -Wall
+	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-json -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(LOBX): ncbi-jwt/%.cpp
-	g++ -std=c++11 -g -c $< -o $@ -Incbi-jwt -Iinc -fPIC -MD -Wall
+	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-jwt -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(OBJX): ncbi-oauth-test/%.cpp
-	g++ -std=c++11 -g -c $< -o $@ -Incbi-oauth-test -Iinc -Igoogletest/googletest/include -MD -Wall
+	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-oauth-test -Iinc -Igoogletest/googletest/include -MD -Wall
 $(OBJDIR)/%.$(OBJX): googletest/googletest/src/%.cc
-	g++ -std=c++11 -g -c $< -o $@ -Incbi-oauth-test -Iinc -Igoogletest/googletest -Igoogletest/googletest/include -MD
+	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-oauth-test -Iinc -Igoogletest/googletest -Igoogletest/googletest/include -MD
 
 # include dependencies
 include $(wildcard $(OBJDIR)/*.d)
@@ -79,7 +82,7 @@ OAUTHTESTLIB =  \
 ncbi-oauth-test: $(BINDIR) $(BINDIR)/ncbi-oauth-test
 
 $(BINDIR)/ncbi-oauth-test: $(OBJDIR) $(OAUTHTESTOBJ) $(MAKEFILE)
-	g++ -g -o $@ $(OAUTHTESTOBJ) $(OAUTHTESTLIB)
+	$(GPP) -g -o $@ $(OAUTHTESTOBJ) $(OAUTHTESTLIB)
 
 clean:
 	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR)
