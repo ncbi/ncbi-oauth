@@ -30,6 +30,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 namespace ncbi
 {

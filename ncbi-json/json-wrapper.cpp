@@ -26,6 +26,8 @@
 
 #include "json-priv.hpp"
 
+#include <assert.h>
+
 namespace ncbi
 {
     // JSONWrapper - an implementation of JSONValue

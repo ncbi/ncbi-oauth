@@ -26,6 +26,8 @@
 
 #include "json-priv.hpp"
 
+#include <assert.h>
+
 namespace ncbi
 {
     std :: string string_to_json ( const std :: string & string )

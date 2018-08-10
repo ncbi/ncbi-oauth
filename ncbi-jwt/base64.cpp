@@ -8,6 +8,8 @@
 
 #include "base64-priv.hpp"
 
+#include <stdint.h>
+
 namespace ncbi
 {
     static
