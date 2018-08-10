@@ -56,7 +56,7 @@ namespace ncbi
         return to_string;
     }
     
-    JSONValue * JSONArray :: clone ()
+    JSONValue * JSONArray :: clone () const
     {
         JSONArray * copy = new JSONArray ();
 

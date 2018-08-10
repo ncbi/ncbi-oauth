@@ -136,7 +136,7 @@ namespace ncbi
         { return * this; }
         virtual const JSONArray & toArray () const
         { return * this; }
-        virtual JSONValue * clone ();
+        virtual JSONValue * clone () const;
 
         // asks whether array is empty
         bool isEmpty () const;
@@ -211,7 +211,7 @@ namespace ncbi
         { return * this; }
         virtual const JSONObject & toObject () const
         { return * this; }
-        virtual JSONValue * clone ();
+        virtual JSONValue * clone () const;
 
         // asks whether object is empty
         bool isEmpty () const;

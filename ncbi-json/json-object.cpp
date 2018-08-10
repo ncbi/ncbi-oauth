@@ -57,7 +57,7 @@ namespace ncbi
         return to_string;
     }
     
-    JSONValue * JSONObject :: clone ()
+    JSONValue * JSONObject :: clone () const
     {
         JSONObject *copy = new JSONObject ();
         
