@@ -1,5 +1,7 @@
 default: ncbi-json ncbi-jwt ncbi-oauth-test
 
+fuzz: ncbi-oauth-fuzz
+
 BINDIR = $(CURDIR)/bin
 LIBDIR = $(CURDIR)/lib
 OBJDIR = $(CURDIR)/obj
@@ -82,7 +84,25 @@ OAUTHTESTLIB =  \
 ncbi-oauth-test: $(BINDIR) $(BINDIR)/ncbi-oauth-test
 
 $(BINDIR)/ncbi-oauth-test: $(OBJDIR) $(OAUTHTESTOBJ) $(MAKEFILE)
-	$(GPP) -g -o $@ $(OAUTHTESTOBJ) $(OAUTHTESTLIB)
+	$(GPP) $(CFLAGS) -g -o $@ $(OAUTHTESTOBJ) $(OAUTHTESTLIB)
+
+## ncbi-oauth-fuzz
+OAUTHFUZZSRC =    \
+	fuzz-main
+
+OAUTHFUZZOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .$(OBJX),$(OAUTHFUZZSRC)))
+
+OAUTHFUZZLIB =  \
+	-L$(LIBDIR) \
+	-lncbi-jwt  \
+	-lncbi-json \
+	-lpthread
+
+ncbi-oauth-fuzz: $(BINDIR) $(BINDIR)/ncbi-oauth-fuzz
+
+$(BINDIR)/ncbi-oauth-fuzz: $(OBJDIR) $(OAUTHFUZZOBJ) $(MAKEFILE)
+	$(GPP) $(CFLAGS) -g -o $@ $(OAUTHFUZZOBJ) $(OAUTHFUZZLIB)
 
 clean:
 	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR)
