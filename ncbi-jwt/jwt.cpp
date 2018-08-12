@@ -25,72 +25,12 @@
  */
 
 #include <ncbi/jwt.hpp>
+#include <ncbi/jws.hpp>
 #include "base64-priv.hpp"
 
 #include <iostream>
 
 namespace ncbi
 {
-#if 0
-    JWT JWT :: make ()
-    {
-        // make the header
-        JSONObject *header = JSONObject :: make ();
-        JSONObject *payload = JSONObject :: make ();
-        
-        JWT jwt ( header, payload );
-        
-        return jwt;
-    }
-    
-    JWT JWT :: decode ( const std :: string & encoding, const std :: string & pub_key )
-    {
-        // make sure there is at least one '.'
-        size_t dot = encoding . find_first_of ('.', 0 );
-        if ( dot == std :: string :: npos )
-            throw std :: logic_error ( "Invalid encoded string" );
-        
-        std :: string hdr = encoding . substr ( 0, dot - 0 );
-            
-        JSONObject *header = JSONObject :: make ();
-        JSONObject *payload = JSONObject :: make ();
-        
-        JWT jwt ( header, payload );
-        
-        return jwt;
-    }
-    
-    std :: string JWT :: encode () const
-    {
-        std :: string encoding = encodeBase64URL ( hdr -> toJSON () ) + ".";
-        encoding += encodeBase64URL( pay -> toJSON() ) + ".";
-        
-        return encoding;
-    }
-#endif
-    
-    JWT & JWT :: operator = ( const JWT & jwt )
-    {
-        hdr = jwt . hdr;
-        pay = jwt . pay;
-        
-        return *this;
-    }
-    
-    JWT :: JWT ( const JWT & jwt )
-    : hdr ( jwt . hdr )
-    , pay ( jwt . pay )
-    {
-    }
-    
-    JWT :: JWT ( JSONObject * hdr, JSONObject * pay )
-    : hdr ( hdr )
-    , pay ( pay )
-    {
-    }
-    
-    JWT :: ~JWT ()
-    {
-    }
 }
 

@@ -31,16 +31,21 @@
 #include <ncbi/json.hpp>
 #endif
 
-#include <string>
-
 namespace ncbi
 {
+    class JWSFactory;
     class JWTFactory;
     class JWTFixture_BasicConstruction;
     
+    // a JSON Web Token
+    // A string representing a set of claims as a JSON object
+    typedef std :: string JWT;
+    
+    // if the string contains a ':', then it MUST be a URI [RFC3986]
     typedef std :: string StringOrURI;
     
-    class JWT
+    // A JSON object that contains the claims conveyed by the JWT
+    class JWTClaims
     {
     public:
         
@@ -49,25 +54,27 @@ namespace ncbi
         void setSubject ( const StringOrURI & sub );
         void addAudience ( const StringOrURI & aud );
         void setDuration ( long long int dur_seconds );
-        void setNotBefore ( long long int nbf );
+        void setNotBefore ( long long int nbf_seconds );
 
-        // user interface for managing claims
+        // claims can be any valid JSONValue
         void addClaim ( const std :: string & name, JSONValue * value );
         const JSONValue & getClaim ( const std :: string & name ) const;
         
         // C++ assignment
-        JWT & operator = ( const JWT & jwt );
-        JWT ( const JWT & jwt );
+        JWTClaims & operator = ( const JWTClaims & jwt );
+        JWTClaims ( const JWTClaims & jwt );
         
-        ~JWT ();
+        JWTClaims ();
         
     private:
         
-        static void verifyStringOrURI ( const std :: string & str );
+        // any std :: string parameter typed as StringOrURI MUST be validated
+        // throws an exception for an invalid string
+        static void validateStringOrURI ( const std :: string & str );
         
-        JWT ( JSONObject * payload );
+        JWTClaims ( JSONObject * claims );
 
-        JSONObject * payload;
+        JSONObject * claims;
 
         friend class JWTFactory;
         friend class JWTFixture_BasicConstruction;
@@ -80,11 +87,11 @@ namespace ncbi
         // make a new, more or less empty JWT object
         JWT make () const;
         
-        // decode a JWT
-        JWT decode ( const std :: string & jwt ) const;
+        // decode a signed JWT
+        JWT decode ( const JWSFactory & jws_fact, const std :: string & jwt ) const;
         
-        // create a JWS from the claims set
-        std :: string sign ( const JWT & claims_set ) const;
+        // create a signed JWT as a compact JWS from the claims set
+        JWT signCompact ( const JWSFactory & jws_fact, const JWT & claims ) const;
 
         // registered claim factory parameters
         void setIssuer ( const StringOrURI & iss );
@@ -92,13 +99,10 @@ namespace ncbi
         void addAudience ( const StringOrURI & aud );
         void setDuration ( long long int dur_seconds );
         void setNotBefore ( long long int nbf_seconds );
-        
-        // sign and verify keys
-        void setSigningKeys ( const std :: string & sign, const std :: string & verify );
 
         // copy construction
-        JWTFactory & operator = ( const JWTFactory & fact );
-        JWTFactory ( const JWTFactory & fact );
+        JWTFactory & operator = ( const JWTFactory & jwt_fact );
+        JWTFactory ( const JWTFactory & jwt_fact );
         
         // create a standard factory
         JWTFactory ();
@@ -112,8 +116,6 @@ namespace ncbi
         // return timestamp in seconds since epoch
         static long long int now ();
 
-        std :: string sign_key;
-        std :: string verify_key;
         std :: string iss;
         std :: string sub;
         std :: vector < std :: string > aud;

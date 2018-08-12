@@ -21,7 +21,8 @@ namespace ncbi
     public:
         void SetUp ()
         {
-            jwt = JWT :: make ();
+            jwt_fact . setIssuer ( "ncbi" );
+            jwt_fact . setDuration ( 15 );
         }
         
         void TearDown ()
@@ -29,7 +30,7 @@ namespace ncbi
         }
         
     protected:
-        JWT jwt;
+        JWTFactory jwt_fact;
     };
    
     /*
