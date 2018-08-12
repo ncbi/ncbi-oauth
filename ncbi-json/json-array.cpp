@@ -34,6 +34,11 @@ namespace ncbi
         return new JSONArray ();
     }
 
+    std :: string JSONArray :: toString () const
+    {
+        throw JSONException ( __func__, __LINE__, "this value cannot be converted to a string" );
+    }
+    
     std :: string JSONArray :: toJSON () const
     {
         std :: string to_string = "[";

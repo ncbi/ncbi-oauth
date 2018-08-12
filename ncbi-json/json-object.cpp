@@ -34,6 +34,11 @@ namespace ncbi
         return new JSONObject ();
     }
 
+    std :: string JSONObject :: toString () const
+    {
+        throw JSONException ( __func__, __LINE__, "this value cannot be converted to a string" );
+    }
+    
     // JSONValue interface implementations
     std :: string JSONObject :: toJSON () const
     {

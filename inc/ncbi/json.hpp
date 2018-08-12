@@ -131,6 +131,7 @@ namespace ncbi
         // JSONValue interface implementations
         virtual bool isArray () const
         { return true; }
+        virtual std :: string toString () const;
         virtual std :: string toJSON () const;
         virtual JSONArray & toArray ()
         { return * this; }
@@ -206,6 +207,7 @@ namespace ncbi
         // JSONValue interface implementations
         virtual bool isObject () const
         { return true; }
+        virtual std :: string toString () const;
         virtual std :: string toJSON () const;
         virtual JSONObject & toObject ()
         { return * this; }

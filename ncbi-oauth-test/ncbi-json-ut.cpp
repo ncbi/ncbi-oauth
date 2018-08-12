@@ -442,10 +442,349 @@ namespace ncbi
         make_and_verify_eq ( "{\"\":[true,false]}", "{\"\":[true,false]}" );
     }
     
-    /* JSON Construction - Method
+    /* JSONValue Construction - Method
      *
      **********************************************************************************/
-    class JSONFixture_BlackBox_Method : public :: testing :: Test
+    class JSONFixture_JSONValue_Interface : public :: testing :: Test
+    {
+    public:
+        enum Type { jvt_null, jvt_bool, jvt_int, jvt_double,
+            jvt_num, jvt_string, jvt_array, jvt_obj };
+        
+        void SetUp ()
+        {
+            jObj = nullptr;
+        }
+        
+        void TearDown ()
+        {
+            delete jObj;
+        }
+        
+        void assert_is_of_type ( const Type type )
+        {
+            switch ( type )
+            {
+            case jvt_null:
+                ASSERT_TRUE ( jObj -> isNull () );
+                ASSERT_FALSE( jObj -> isBool () );
+                ASSERT_FALSE( jObj -> isInteger () );
+                ASSERT_FALSE( jObj -> isNumber () );
+                ASSERT_FALSE( jObj -> isString () );
+                ASSERT_FALSE( jObj -> isArray () );
+                ASSERT_FALSE( jObj -> isObject () );
+                break;
+            case jvt_bool:
+                ASSERT_TRUE ( jObj -> isBool () );
+                ASSERT_FALSE( jObj -> isNull () );
+                ASSERT_FALSE( jObj -> isInteger () );
+                ASSERT_FALSE( jObj -> isNumber () );
+                ASSERT_FALSE( jObj -> isString () );
+                ASSERT_FALSE( jObj -> isArray () );
+                ASSERT_FALSE( jObj -> isObject () );
+                break;
+            case jvt_int:
+                ASSERT_TRUE ( jObj -> isInteger () );
+                ASSERT_FALSE( jObj -> isBool () );
+                ASSERT_FALSE( jObj -> isNull () );
+                ASSERT_FALSE( jObj -> isNumber () );
+                ASSERT_FALSE( jObj -> isString () );
+                ASSERT_FALSE( jObj -> isArray () );
+                ASSERT_FALSE( jObj -> isObject () );
+                break;
+            case jvt_double:
+                ASSERT_TRUE ( jObj -> isNumber () );
+                ASSERT_FALSE( jObj -> isBool () );
+                ASSERT_FALSE( jObj -> isInteger () );
+                ASSERT_FALSE( jObj -> isNull () );
+                ASSERT_FALSE( jObj -> isString () );
+                ASSERT_FALSE( jObj -> isArray () );
+                ASSERT_FALSE( jObj -> isObject () );
+                break;
+            case jvt_num:
+                ASSERT_TRUE ( jObj -> isNumber () );
+                ASSERT_FALSE( jObj -> isBool () );
+                ASSERT_FALSE( jObj -> isInteger () );
+                ASSERT_FALSE( jObj -> isNull () );
+                ASSERT_FALSE( jObj -> isString () );
+                ASSERT_FALSE( jObj -> isArray () );
+                ASSERT_FALSE( jObj -> isObject () );
+                break;
+            case jvt_string:
+                ASSERT_TRUE ( jObj -> isString () );
+                ASSERT_FALSE( jObj -> isBool () );
+                ASSERT_FALSE( jObj -> isInteger () );
+                ASSERT_FALSE( jObj -> isNumber () );
+                ASSERT_FALSE( jObj -> isNull () );
+                ASSERT_FALSE( jObj -> isArray () );
+                ASSERT_FALSE( jObj -> isObject () );
+                break;
+            case jvt_array:
+                ASSERT_TRUE ( jObj -> isArray () );
+                ASSERT_FALSE( jObj -> isBool () );
+                ASSERT_FALSE( jObj -> isInteger () );
+                ASSERT_FALSE( jObj -> isNumber () );
+                ASSERT_FALSE( jObj -> isString () );
+                ASSERT_FALSE( jObj -> isNull () );
+                ASSERT_FALSE( jObj -> isObject () );
+                break;
+        case jvt_obj:
+                ASSERT_TRUE ( jObj -> isObject () );
+                ASSERT_FALSE( jObj -> isBool () );
+                ASSERT_FALSE( jObj -> isInteger () );
+                ASSERT_FALSE( jObj -> isNumber () );
+                ASSERT_FALSE( jObj -> isString () );
+                ASSERT_FALSE( jObj -> isArray () );
+                ASSERT_FALSE( jObj -> isNull () );
+                break;
+            }
+        }
+        
+        void set_types ( const Type type )
+        {
+            switch ( type )
+            {
+                case jvt_null:
+                    ASSERT_TRUE ( ( jObj -> setBool ( true ) ) . isBool () );
+                    ASSERT_TRUE ( ( jObj -> setInteger ( 123 ) ) . isInteger () );
+                    ASSERT_TRUE ( ( jObj -> setDouble ( 123.456789, 10 ) ) . isNumber () );
+                    ASSERT_TRUE ( ( jObj -> setNumber ( "123.456789" ) ) . isNumber () );
+                    ASSERT_TRUE ( ( jObj -> setString ( "string" ) ) . isString () );
+                    ASSERT_TRUE ( ( jObj -> setNull () ) . isNull () );
+                    break;
+                case jvt_bool:
+                    ASSERT_TRUE ( ( jObj -> setInteger ( 123 ) ) . isInteger () );
+                    ASSERT_TRUE ( ( jObj -> setDouble ( 123.456789, 10 ) ) . isNumber () );
+                    ASSERT_TRUE ( ( jObj -> setNumber ( "123.456789" ) ) . isNumber () );
+                    ASSERT_TRUE ( ( jObj -> setString ( "string" ) ) . isString () );
+                    ASSERT_TRUE ( ( jObj -> setNull () ) . isNull () );
+                    ASSERT_TRUE ( ( jObj -> setBool ( true ) ) . isBool () );
+                    break;
+                case jvt_int:
+                    ASSERT_TRUE ( ( jObj -> setDouble ( 123.456789, 10 ) ) . isNumber () );
+                    ASSERT_TRUE ( ( jObj -> setNumber ( "123.456789" ) ) . isNumber () );
+                    ASSERT_TRUE ( ( jObj -> setString ( "string" ) ) . isString () );
+                    ASSERT_TRUE ( ( jObj -> setNull () ) . isNull () );
+                    ASSERT_TRUE ( ( jObj -> setBool ( true ) ) . isBool () );
+                    ASSERT_TRUE ( ( jObj -> setInteger ( 123 ) ) . isInteger () );
+                    break;
+                case jvt_double:
+                    ASSERT_TRUE ( ( jObj -> setNumber ( "123.456789" ) ) . isNumber () );
+                    ASSERT_TRUE ( ( jObj -> setString ( "string" ) ) . isString () );
+                    ASSERT_TRUE ( ( jObj -> setNull () ) . isNull () );
+                    ASSERT_TRUE ( ( jObj -> setBool ( true ) ) . isBool () );
+                    ASSERT_TRUE ( ( jObj -> setInteger ( 123 ) ) . isInteger () );
+                    ASSERT_TRUE ( ( jObj -> setDouble ( 123.456789, 10 ) ) . isNumber () );
+                    break;
+                case jvt_num:
+                    ASSERT_TRUE ( ( jObj -> setString ( "string" ) ) . isString () );
+                    ASSERT_TRUE ( ( jObj -> setNull () ) . isNull () );
+                    ASSERT_TRUE ( ( jObj -> setBool ( true ) ) . isBool () );
+                    ASSERT_TRUE ( ( jObj -> setInteger ( 123 ) ) . isInteger () );
+                    ASSERT_TRUE ( ( jObj -> setDouble ( 123.456789, 10 ) ) . isNumber () );
+                    ASSERT_TRUE ( ( jObj -> setNumber ( "123.456789" ) ) . isNumber () );
+                    break;
+                case jvt_string:
+                    ASSERT_TRUE ( ( jObj -> setNull () ) . isNull () );
+                    ASSERT_TRUE ( ( jObj -> setBool ( true ) ) . isBool () );
+                    ASSERT_TRUE ( ( jObj -> setInteger ( 123 ) ) . isInteger () );
+                    ASSERT_TRUE ( ( jObj -> setDouble ( 123.456789, 10 ) ) . isNumber () );
+                    ASSERT_TRUE ( ( jObj -> setNumber ( "123.456789" ) ) . isNumber () );
+                    ASSERT_TRUE ( ( jObj -> setString ( "string" ) ) . isString () );
+                    break;
+                case jvt_array:
+                    EXPECT_ANY_THROW ( jObj -> setNull () );
+                    EXPECT_ANY_THROW ( jObj -> setBool ( true ) );
+                    EXPECT_ANY_THROW ( jObj -> setInteger ( 123 ) );
+                    EXPECT_ANY_THROW ( jObj -> setDouble ( 123.456789, 10 ) );
+                    EXPECT_ANY_THROW ( jObj -> setNumber ( "123.456789" ) );
+                    EXPECT_ANY_THROW ( jObj -> setString ( "string" ) );
+                    break;
+                case jvt_obj:
+                    EXPECT_ANY_THROW ( jObj -> setNull () );
+                    EXPECT_ANY_THROW ( jObj -> setBool ( true ) );
+                    EXPECT_ANY_THROW ( jObj -> setInteger ( 123 ) );
+                    EXPECT_ANY_THROW ( jObj -> setDouble ( 123.456789, 10 ) );
+                    EXPECT_ANY_THROW ( jObj -> setNumber ( "123.456789" ) );
+                    EXPECT_ANY_THROW ( jObj -> setString ( "string" ) );
+                    break;
+            }
+        }
+        
+        void to_types ( const Type type, const void *cmp = nullptr )
+        {
+            switch ( type )
+            {
+                case jvt_null:
+                    EXPECT_ANY_THROW  ( jObj -> toBool () );
+                    EXPECT_ANY_THROW  ( jObj -> toInteger () );
+                    EXPECT_ANY_THROW  ( jObj -> toNumber() );
+                    EXPECT_STREQ  ( jObj -> toString () . c_str (), "null" );
+                    EXPECT_ANY_THROW  ( jObj -> toArray () );
+                    EXPECT_ANY_THROW  ( jObj -> toObject () );
+                    break;
+                case jvt_bool:
+                    ASSERT_TRUE  ( jObj -> toBool () );
+                    EXPECT_ANY_THROW  ( jObj -> toInteger () );
+                    EXPECT_ANY_THROW  ( jObj -> toNumber() );
+                    EXPECT_STREQ  ( jObj -> toString () . c_str (), ( const char * ) cmp );
+                    EXPECT_ANY_THROW  ( jObj -> toArray () );
+                    EXPECT_ANY_THROW  ( jObj -> toObject () );
+                    break;
+                case jvt_int:
+                    EXPECT_ANY_THROW  ( jObj -> toBool () );
+                    EXPECT_EQ  ( jObj -> toInteger (), * ( long long int * ) cmp  );
+                    EXPECT_STREQ  ( jObj -> toNumber () . c_str (),
+                                   std :: to_string ( * ( long long int * ) cmp ) . c_str () );
+                    EXPECT_STREQ  ( jObj -> toString () . c_str (),
+                                   std :: to_string ( * ( long long int * ) cmp ) . c_str () );
+                    EXPECT_ANY_THROW  ( jObj -> toArray () );
+                    EXPECT_ANY_THROW  ( jObj -> toObject () );
+                    break;
+                case jvt_double:
+                    EXPECT_ANY_THROW  ( jObj -> toBool () );
+                    EXPECT_ANY_THROW  ( jObj -> toInteger () );
+                    EXPECT_STREQ  ( jObj -> toNumber () . c_str (),
+                                   std :: to_string ( * ( long double * ) cmp ) . c_str () );
+                    EXPECT_STREQ  ( jObj -> toString () . c_str (),
+                                   std :: to_string ( * ( long double * ) cmp ) . c_str () );
+                    EXPECT_ANY_THROW  ( jObj -> toArray () );
+                    EXPECT_ANY_THROW  ( jObj -> toObject () );
+                    break;
+                case jvt_num:
+                    EXPECT_ANY_THROW  ( jObj -> toBool () );
+                    EXPECT_ANY_THROW  ( jObj -> toInteger () );
+                    EXPECT_STREQ  ( jObj -> toNumber () . c_str (), ( const char * ) cmp );
+                    EXPECT_STREQ  ( jObj -> toString () . c_str (), ( const char * ) cmp );
+                    EXPECT_ANY_THROW  ( jObj -> toArray () );
+                    EXPECT_ANY_THROW  ( jObj -> toObject () );
+                    break;
+                case jvt_string:
+                    EXPECT_ANY_THROW  ( jObj -> toBool () );
+                    EXPECT_ANY_THROW  ( jObj -> toInteger () );
+                    EXPECT_ANY_THROW  ( jObj -> toNumber () );
+                    EXPECT_STREQ  ( jObj -> toString () . c_str (), ( const char * ) cmp );
+                    EXPECT_ANY_THROW  ( jObj -> toArray () );
+                    EXPECT_ANY_THROW  ( jObj -> toObject () );
+                    break;
+                case jvt_array:
+                    EXPECT_ANY_THROW  ( jObj -> toBool () );
+                    EXPECT_ANY_THROW  ( jObj -> toInteger () );
+                    EXPECT_ANY_THROW  ( jObj -> toNumber() );
+                    EXPECT_ANY_THROW  ( jObj -> toString () );
+                    EXPECT_NO_THROW  ( jObj -> toArray () );
+                    EXPECT_ANY_THROW  ( jObj -> toObject () );
+                    break;
+                case jvt_obj:
+                    EXPECT_ANY_THROW  ( jObj -> toBool () );
+                    EXPECT_ANY_THROW  ( jObj -> toInteger () );
+                    EXPECT_ANY_THROW  ( jObj -> toNumber() );
+                    EXPECT_ANY_THROW  ( jObj -> toString () );
+                    EXPECT_ANY_THROW  ( jObj -> toArray () );
+                    EXPECT_NO_THROW  ( jObj -> toObject () );
+                    break;
+            }
+        }
+
+    protected:
+        size_t pos;
+        JSONValue *jObj;
+    };
+    
+    // JSONObject
+    TEST_F ( JSONFixture_JSONValue_Interface, t_null )
+    {
+        Type type = jvt_null;
+        jObj = JSONValue :: makeNull ();
+        ASSERT_TRUE ( jObj != nullptr );
+        assert_is_of_type ( type );
+        set_types ( type );
+        to_types ( type );
+        JSONValue *clone = jObj -> clone ();
+        ASSERT_TRUE( clone -> isNull () );
+    }
+    TEST_F ( JSONFixture_JSONValue_Interface, t_bool )
+    {
+        Type type = jvt_bool;
+        const char *val = "true";
+        jObj = JSONValue :: makeBool ( true );
+        ASSERT_TRUE ( jObj != nullptr );
+        assert_is_of_type ( type );
+        set_types ( type );
+        to_types ( type, val );
+        JSONValue *clone = jObj -> clone ();
+        ASSERT_TRUE( clone -> isBool () );
+    }
+    TEST_F ( JSONFixture_JSONValue_Interface, t_integer )
+    {
+        Type type = jvt_int;
+        long long int val = 123;
+        jObj = JSONValue :: makeInteger ( val );
+        ASSERT_TRUE ( jObj != nullptr );
+        assert_is_of_type ( type );
+        set_types ( type );
+        to_types ( type, &val );
+        JSONValue *clone = jObj -> clone ();
+        ASSERT_TRUE( clone -> isInteger () );
+    }
+    TEST_F ( JSONFixture_JSONValue_Interface, t_double )
+    {
+        Type type = jvt_double;
+        long double val = 123.456789;
+        jObj = JSONValue :: makeDouble ( val, 10 );
+        ASSERT_TRUE ( jObj != nullptr );
+        assert_is_of_type ( type );
+        set_types ( type );
+        to_types ( type, &val );
+        JSONValue *clone = jObj -> clone ();
+        ASSERT_TRUE( clone -> isNumber () );
+    }
+    TEST_F ( JSONFixture_JSONValue_Interface, t_number )
+    {
+        Type type = jvt_num;
+        const char * val = "123.456789";
+        jObj = JSONValue :: makeNumber ( std :: string ( val ) );
+        ASSERT_TRUE ( jObj != nullptr );
+        assert_is_of_type ( type );
+        set_types ( type );
+        to_types ( type, val );
+        JSONValue *clone = jObj -> clone ();
+        ASSERT_TRUE( clone -> isNumber () );
+    }
+    TEST_F ( JSONFixture_JSONValue_Interface, t_string )
+    {
+        Type type = jvt_string;
+        const char * val = "string";
+        jObj = JSONValue :: makeString ( val );
+        ASSERT_TRUE ( jObj != nullptr );
+        assert_is_of_type ( type );
+        set_types ( type );
+        to_types ( type, val );
+        JSONValue *clone = jObj -> clone ();
+        ASSERT_TRUE( clone -> isString () );
+    }
+    TEST_F ( JSONFixture_JSONValue_Interface, t_array )
+    {
+        Type type = jvt_array;
+        jObj = JSONArray :: make ();
+        ASSERT_TRUE ( jObj != nullptr );
+        assert_is_of_type ( type );
+        set_types ( type );
+        to_types ( type );
+    }
+    TEST_F ( JSONFixture_JSONValue_Interface, t_obj )
+    {
+        Type type = jvt_obj;
+        jObj = JSONObject :: make ();
+        ASSERT_TRUE ( jObj != nullptr );
+        assert_is_of_type ( type );
+        set_types ( type );
+        to_types ( type );
+    }
+    /* JSONObject Construction - Method
+     *
+     **********************************************************************************/
+    class JSONFixture_JSONObject_Interface : public :: testing :: Test
     {
     public:
         void SetUp ()
@@ -470,75 +809,75 @@ namespace ncbi
     };
     
     // JSONObject
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_isObject )
+    TEST_F ( JSONFixture_JSONObject_Interface, isObject )
     {
         make_empty();
         ASSERT_TRUE ( jObj -> isObject () );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_clone )
+    TEST_F ( JSONFixture_JSONObject_Interface, clone )
     {
         make_empty();
         JSONValue *obj = jObj -> clone ();
         ASSERT_TRUE ( obj -> isObject () );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), obj -> toJSON() . c_str() );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_isEmpty )
+    TEST_F ( JSONFixture_JSONObject_Interface, isEmpty )
     {
         make_empty();
         ASSERT_TRUE( jObj -> isEmpty() );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_exists )
+    TEST_F ( JSONFixture_JSONObject_Interface, exists )
     {
         make_empty();
         ASSERT_FALSE( jObj -> exists ( "name" ) );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_count )
+    TEST_F ( JSONFixture_JSONObject_Interface, count )
     {
         make_empty();
         ASSERT_EQ ( jObj -> count (), 0 );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_getNames )
+    TEST_F ( JSONFixture_JSONObject_Interface, getNames )
     {
         make_empty();
         ASSERT_TRUE ( jObj -> getNames () . empty () );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setValue_Null )
+    TEST_F ( JSONFixture_JSONObject_Interface, setValue_Null )
     {
         make_empty();
         jObj -> setValue ( "name", JSONValue :: makeNull () );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":null}" );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setValue_Bool)
+    TEST_F ( JSONFixture_JSONObject_Interface, setValue_Bool)
     {
         make_empty();
         jObj -> setValue ( "name", JSONValue :: makeBool ( true ) );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":true}" );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setValue_Integer)
+    TEST_F ( JSONFixture_JSONObject_Interface, setValue_Integer)
     {
         make_empty();
         jObj -> setValue ( "name", JSONValue :: makeInteger( 123 ) );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":123}" );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setValue_Double)
+    TEST_F ( JSONFixture_JSONObject_Interface, setValue_Double)
     {
         make_empty();
         jObj -> setValue ( "name", JSONValue :: makeDouble( 123.456789, 10 ) );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":123.456789}" );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setValue_Number)
+    TEST_F ( JSONFixture_JSONObject_Interface, setValue_Number)
     {
         make_empty();
         jObj -> setValue ( "name", JSONValue :: makeNumber( "123.456789" ) );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":123.456789}" );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setValue_String )
+    TEST_F ( JSONFixture_JSONObject_Interface, setValue_String )
     {
         make_empty();
         jObj -> setValue ( "name", JSONValue :: makeString ( "value" ) );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":\"value\"}" );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setValue_Object )
+    TEST_F ( JSONFixture_JSONObject_Interface, setValue_Object )
     {
         make_empty();
         jObj -> setValue ( "obj", JSONObject :: make () );
@@ -548,7 +887,7 @@ namespace ncbi
         . setValue ( "number", JSONValue :: makeInteger ( 2 ) );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"obj\":{\"name\":\"value\",\"number\":2}}" );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setValue_Array )
+    TEST_F ( JSONFixture_JSONObject_Interface, setValue_Array )
     {
         make_empty();
         jObj -> setValue ( "array", JSONArray :: make () );
@@ -558,20 +897,20 @@ namespace ncbi
         . appendValue ( JSONValue :: makeInteger ( 2 ) );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"array\":[\"first\",2]}" );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_setFinalValue )
+    TEST_F ( JSONFixture_JSONObject_Interface, setFinalValue )
     {
         make_empty();
         jObj -> setFinalValue ( "name", JSONValue :: makeString ( "value" ) );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":\"value\"}" );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_getValue )
+    TEST_F ( JSONFixture_JSONObject_Interface, getValue )
     {
         make_empty();
         jObj -> setValue ( "name", JSONValue :: makeString ( "value" ) );
         JSONValue &val = jObj -> getValue ( "name" );
         EXPECT_STREQ ( val . toJSON() . c_str(), "\"value\"" );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_const_getValue )
+    TEST_F ( JSONFixture_JSONObject_Interface, getConstValue )
     {
         make_empty();
         jObj -> setValue ( "name", JSONValue :: makeString ( "value" ) );
@@ -579,21 +918,21 @@ namespace ncbi
         const JSONValue &val =  cObj -> getValue ( "name" );
         EXPECT_STREQ ( val . toJSON() . c_str(), "\"value\"" );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_removeValue )
+    TEST_F ( JSONFixture_JSONObject_Interface, removeValue )
     {
         make_empty();
         jObj -> setValue ( "name", JSONValue :: makeString ( "value" ) );
         jObj -> removeValue ( "name" );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{}" );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_removeFinalValue )
+    TEST_F ( JSONFixture_JSONObject_Interface, removeFinalValue )
     {
         make_empty();
         jObj -> setFinalValue ( "name", JSONValue :: makeString ( "value" ) );
         jObj -> removeValue ( "name" );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), "{\"name\":\"value\"}" );
     }
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_operator_equals )
+    TEST_F ( JSONFixture_JSONObject_Interface, operator_equals )
     {
         make_empty();
         jObj -> setValue ( "name", JSONValue :: makeString ( "value" ) );
@@ -601,7 +940,7 @@ namespace ncbi
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), obj . toJSON() . c_str () );
     }
     
-    TEST_F ( JSONFixture_BlackBox_Method, JSONObject_copy_constructor )
+    TEST_F ( JSONFixture_JSONObject_Interface, copy_constructor )
     {
         make_empty();
         jObj -> setValue ( "name", JSONValue :: makeString ( "value" ) );
@@ -609,4 +948,158 @@ namespace ncbi
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), obj . toJSON() . c_str () );
     }
     
+    /* JSONArray Construction - Method
+     *
+     **********************************************************************************/
+    class JSONFixture_JSONArray_Interface : public :: testing :: Test
+    {
+    public:
+        void SetUp ()
+        {
+            jObj = nullptr;
+        }
+        
+        void TearDown ()
+        {
+            delete jObj;
+        }
+        
+        void make_empty ()
+        {
+            jObj = JSONArray :: make ();
+            ASSERT_TRUE ( jObj != nullptr );
+        }
+        
+    protected:
+        size_t pos;
+        JSONArray *jObj;
+    };
+    
+    // JSONObject
+    TEST_F ( JSONFixture_JSONArray_Interface, isArray )
+    {
+        make_empty();
+        ASSERT_TRUE ( jObj -> isArray () );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, clone )
+    {
+        make_empty();
+        JSONValue *obj = jObj -> clone ();
+        ASSERT_TRUE ( obj -> isArray () );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), obj -> toJSON() . c_str() );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, isEmpty )
+    {
+        make_empty();
+        ASSERT_TRUE( jObj -> isEmpty() );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, exists )
+    {
+        make_empty();
+        ASSERT_FALSE( jObj -> exists ( 3 ) );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, count )
+    {
+        make_empty();
+        ASSERT_EQ ( jObj -> count (), 0 );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, appendValue )
+    {
+        make_empty();
+        jObj -> appendValue ( JSONValue :: makeNull () );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "[null]" );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, setValue_Null )
+    {
+        make_empty();
+        jObj -> setValue ( 0, JSONValue :: makeNull () );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "[null]" );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, setValue_Bool)
+    {
+        make_empty();
+        jObj -> setValue ( 0, JSONValue :: makeBool ( true ) );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "[true]" );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, setValue_Integer)
+    {
+        make_empty();
+        jObj -> setValue ( 0, JSONValue :: makeInteger( 123 ) );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "[123]" );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, setValue_Double)
+    {
+        make_empty();
+        jObj -> setValue ( 0, JSONValue :: makeDouble( 123.456789, 10 ) );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "[123.456789]" );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, setValue_Number)
+    {
+        make_empty();
+        jObj -> setValue ( 0, JSONValue :: makeNumber( "123.456789" ) );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "[123.456789]" );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, setValue_String )
+    {
+        make_empty();
+        jObj -> setValue ( 0, JSONValue :: makeString ( "value" ) );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "[\"value\"]" );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, setValue_Object )
+    {
+        make_empty();
+        jObj -> setValue ( 0, JSONObject :: make () );
+        jObj -> getValue ( 0 ) . toObject ()
+        . setValue ( "name", JSONValue :: makeString ( "value" ) );
+        jObj -> getValue ( 0 ) . toObject ()
+        . setValue ( "number", JSONValue :: makeInteger ( 2 ) );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "[{\"name\":\"value\",\"number\":2}]" );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, setValue_Array )
+    {
+        make_empty();
+        jObj -> setValue ( 0, JSONArray :: make () );
+        jObj -> getValue ( 0 ) . toArray ()
+        . appendValue ( JSONValue :: makeString ( "first" ) );
+        jObj -> getValue ( 0 ) . toArray ()
+        . appendValue ( JSONValue :: makeInteger ( 2 ) );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "[[\"first\",2]]" );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, getValue )
+    {
+        make_empty();
+        jObj -> setValue ( 0, JSONValue :: makeString ( "value" ) );
+        JSONValue &val = jObj -> getValue ( 0 );
+        EXPECT_STREQ ( val . toJSON() . c_str(), "\"value\"" );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, getConstValue )
+    {
+        make_empty();
+        jObj -> setValue ( 0, JSONValue :: makeString ( "value" ) );
+        const JSONArray *cObj = jObj;
+        const JSONValue &val =  cObj -> getValue ( 0 );
+        EXPECT_STREQ ( val . toJSON() . c_str(), "\"value\"" );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, removeValue )
+    {
+        make_empty();
+        jObj -> setValue ( 0, JSONValue :: makeString ( "value" ) );
+        jObj -> removeValue ( 0 );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), "[]" );
+    }
+    TEST_F ( JSONFixture_JSONArray_Interface, operator_equals )
+    {
+        make_empty();
+        jObj -> setValue ( 0, JSONValue :: makeString ( "value" ) );
+        JSONArray obj = *jObj;
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), obj . toJSON() . c_str () );
+    }
+    
+    TEST_F ( JSONFixture_JSONArray_Interface, copy_constructor )
+    {
+        make_empty();
+        jObj -> setValue ( 0, JSONValue :: makeString ( "value" ) );
+        JSONArray obj ( *jObj );
+        EXPECT_STREQ ( jObj -> toJSON() . c_str(), obj . toJSON() . c_str () );
+    }
 } // ncbi

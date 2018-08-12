@@ -115,32 +115,32 @@ namespace ncbi
     {
         // this is an internal error
         // same for other setters
-        throw JSONException ( __func__, __LINE__, "INTERNAL ERROR" );
+        throw JSONException ( __func__, __LINE__, "INTERNAL ERROR" ); // test hit
     }
     
     JSONValue & JSONValue :: setBool ( bool val )
     {
-        throw JSONException ( __func__, __LINE__, "INTERNAL ERROR" );
+        throw JSONException ( __func__, __LINE__, "INTERNAL ERROR" ); // test hit
     }
     
     JSONValue & JSONValue :: setInteger ( long long int val )
     {
-        throw JSONException ( __func__, __LINE__, "INTERNAL ERROR" );
+        throw JSONException ( __func__, __LINE__, "INTERNAL ERROR" ); // test hit
     }
     
     JSONValue & JSONValue :: setDouble ( long double val, unsigned int precision )
     {
-        throw JSONException ( __func__, __LINE__, "INTERNAL ERROR" );
+        throw JSONException ( __func__, __LINE__, "INTERNAL ERROR" ); // test hit
     }
     
     JSONValue & JSONValue :: setNumber ( const std :: string & val )
     {
-        throw JSONException ( __func__, __LINE__, "INTERNAL ERROR" );
+        throw JSONException ( __func__, __LINE__, "INTERNAL ERROR" ); // test hit
     }
     
     JSONValue & JSONValue :: setString ( const std :: string & val )
     {
-        throw JSONException ( __func__, __LINE__, "INTERNAL ERROR" );
+        throw JSONException ( __func__, __LINE__, "INTERNAL ERROR" ); // test hit
     }
 
     // these are accessors
@@ -148,28 +148,28 @@ namespace ncbi
     {
         // this is a logic-error
         // same for other casts
-        throw JSONException ( __func__, __LINE__, "this value cannot be converted to bool" );
+        throw JSONException ( __func__, __LINE__, "this value cannot be converted to bool" ); //test hit
     }
     
     long long JSONValue :: toInteger () const
     {
-        throw JSONException ( __func__, __LINE__, "this value cannot be converted to an integer" );
+        throw JSONException ( __func__, __LINE__, "this value cannot be converted to an integer" ); // test hit
     }
     
     std :: string JSONValue :: toNumber () const
     {
-        throw JSONException ( __func__, __LINE__, "this value cannot be converted to a number" );
+        throw JSONException ( __func__, __LINE__, "this value cannot be converted to a number" ); // test hit
     }
     
     std :: string JSONValue :: toString () const
     {
-        // default behavior is to return JSON text
+       // default behavior is to return JSON text
         return toJSON ();
     }
     
     JSONArray & JSONValue :: toArray ()
     {
-        throw JSONException ( __func__, __LINE__, "this value cannot be converted to an array" );
+        throw JSONException ( __func__, __LINE__, "this value cannot be converted to an array" ); // test hit
     }
     
     const JSONArray & JSONValue :: toArray () const
@@ -179,7 +179,7 @@ namespace ncbi
     
     JSONObject & JSONValue :: toObject ()
     {
-        throw JSONException ( __func__, __LINE__, "this value cannot be converted to an object" );
+        throw JSONException ( __func__, __LINE__, "this value cannot be converted to an object" ); // test hit
     }
     
     const JSONObject & JSONValue :: toObject () const
