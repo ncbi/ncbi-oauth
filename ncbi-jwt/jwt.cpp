@@ -31,6 +31,7 @@
 
 namespace ncbi
 {
+#if 0
     JWT JWT :: make ()
     {
         // make the header
@@ -66,6 +67,7 @@ namespace ncbi
         
         return encoding;
     }
+#endif
     
     JWT & JWT :: operator = ( const JWT & jwt )
     {

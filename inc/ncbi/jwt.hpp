@@ -35,33 +35,29 @@
 
 namespace ncbi
 {
+    class JWTFactory;
     class JWTFixture_BasicConstruction;
     
     class JWT
     {
     public:
         
-        // make an empty JWT
-        static JWT make ();
-        
-        // make a JWT from an encoded string
-        static JWT decode ( const std :: string & encoding, const std :: string & pub_key );
-        
-        // create a simple, unsigned JWT
-        std :: string encode () const;
-        
-        // access the JOSE header
-        const JSONObject & header () const;
-        
-        // access the payload
-        JSONObject & payload ();
-        const JSONObject & payload () const;
+        // registered claims
+        void setIssuer ( const std :: string & iss );
+        void setSubject ( const std :: string & sub );
+        void addAudience ( const std :: string & aud );
+        void setDuration ( long long int seconds );
+        void setNotBefore ( long long int nbf );
+
+        // user interface for managing claims
+        void addClaim ( const std :: string & name, JSONValue * value );
+        const JSONValue & getClaim ( const std :: string & name ) const;
         
         // C++ assignment
         JWT & operator = ( const JWT & jwt );
         JWT ( const JWT & jwt );
         
-        virtual ~JWT ();
+        ~JWT ();
         
     private:
         
@@ -70,9 +66,46 @@ namespace ncbi
         JSONObject * hdr;
         JSONObject * pay;
 
+        friend class JWTFactory;
         friend class JWTFixture_BasicConstruction;
+    };
+
+    class JWTFactory
+    {
+    public:
+
+        // make a new, more or less empty JWT object
+        JWT make ();
+        
+        // convert between string and JWT
+        JWT decode ( const std :: string & jwt_str );
+        std :: string encode ( const JWT & jwt_obj );
+
+        // registered claims
+        void setIssuer ( const std :: string & iss );
+        void setSubject ( const std :: string & sub );
+        void addAudience ( const std :: string & aud );
+        void setDuration ( long long int seconds );
+        void setNotBefore ( long long int nbf_seconds );
+
+        // copy construction
+        JWTFactory & operator = ( const JWTFactory & fact );
+        JWTFactory ( const JWTFactory & fact );
+        
+        // create a standard factory
+        JWTFactory ();
+        ~ JWTFactory ();
+
+    protected:
+
+        std :: string iss;
+        std :: string sub;
+        std :: vector < std :: string > aud;
+        unsigned long long duration;
+        unsigned long long not_before;
+
+        static std :: atomic < unsigned long long > id_seq;
     };
 }
 
 #endif /* _hpp_ncbi_oauth_jwt_ */
-
