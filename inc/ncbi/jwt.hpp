@@ -38,15 +38,17 @@ namespace ncbi
     class JWTFactory;
     class JWTFixture_BasicConstruction;
     
+    typedef std :: string StringOrURI;
+    
     class JWT
     {
     public:
         
         // registered claims
-        void setIssuer ( const std :: string & iss );
-        void setSubject ( const std :: string & sub );
-        void addAudience ( const std :: string & aud );
-        void setDuration ( long long int seconds );
+        void setIssuer ( const StringOrURI & iss );
+        void setSubject ( const StringOrURI & sub );
+        void addAudience ( const StringOrURI & aud );
+        void setDuration ( long long int dur_seconds );
         void setNotBefore ( long long int nbf );
 
         // user interface for managing claims
@@ -83,10 +85,10 @@ namespace ncbi
         std :: string encode ( const JWT & jwt_obj );
 
         // registered claims
-        void setIssuer ( const std :: string & iss );
-        void setSubject ( const std :: string & sub );
-        void addAudience ( const std :: string & aud );
-        void setDuration ( long long int seconds );
+        void setIssuer ( const StringOrURI & iss );
+        void setSubject ( const StringOrURI & sub );
+        void addAudience ( const StringOrURI & aud );
+        void setDuration ( long long int dur_seconds );
         void setNotBefore ( long long int nbf_seconds );
 
         // copy construction
