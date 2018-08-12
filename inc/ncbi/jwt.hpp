@@ -61,10 +61,11 @@ namespace ncbi
         
     private:
         
-        JWT ( JSONObject * hdr, JSONObject * pay );
+        static void verifyStringOrURI ( const std :: string & str );
+        
+        JWT ( JSONObject * payload );
 
-        JSONObject * hdr;
-        JSONObject * pay;
+        JSONObject * payload;
 
         friend class JWTFactory;
         friend class JWTFixture_BasicConstruction;
@@ -96,7 +97,13 @@ namespace ncbi
         JWTFactory ();
         ~ JWTFactory ();
 
-    protected:
+    private:
+        
+        // make a new identifier
+        std :: string newJTI () const;
+        
+        // return timestamp in seconds since epoch
+        static long long int now () const;
 
         std :: string iss;
         std :: string sub;
