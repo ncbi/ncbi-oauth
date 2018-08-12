@@ -78,18 +78,23 @@ namespace ncbi
     public:
 
         // make a new, more or less empty JWT object
-        JWT make ();
+        JWT make () const;
         
-        // convert between string and JWT
-        JWT decode ( const std :: string & jwt_str );
-        std :: string encode ( const JWT & jwt_obj );
+        // decode a JWT
+        JWT decode ( const std :: string & jwt ) const;
+        
+        // create a JWS from the claims set
+        std :: string sign ( const JWT & claims_set ) const;
 
-        // registered claims
+        // registered claim factory parameters
         void setIssuer ( const StringOrURI & iss );
         void setSubject ( const StringOrURI & sub );
         void addAudience ( const StringOrURI & aud );
         void setDuration ( long long int dur_seconds );
         void setNotBefore ( long long int nbf_seconds );
+        
+        // sign and verify keys
+        void setSigningKeys ( const std :: string & sign, const std :: string & verify );
 
         // copy construction
         JWTFactory & operator = ( const JWTFactory & fact );
@@ -105,13 +110,15 @@ namespace ncbi
         std :: string newJTI () const;
         
         // return timestamp in seconds since epoch
-        static long long int now () const;
+        static long long int now ();
 
+        std :: string sign_key;
+        std :: string verify_key;
         std :: string iss;
         std :: string sub;
         std :: vector < std :: string > aud;
-        unsigned long long duration;
-        unsigned long long not_before;
+        long long duration;
+        long long not_before;
 
         static std :: atomic < unsigned long long > id_seq;
     };
