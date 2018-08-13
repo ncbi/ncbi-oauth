@@ -1102,4 +1102,54 @@ namespace ncbi
         JSONArray obj ( *jObj );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), obj . toJSON() . c_str () );
     }
+
+    /* Fuzzing
+     *
+     **********************************************************************************/
+    class JSONFixture_Fuzzing : public :: testing :: Test
+    {
+    public:
+        void SetUp ()
+        {
+            jObj = nullptr;
+        }
+        
+        void TearDown ()
+        {
+            delete jObj;
+        }
+        
+        void make_empty ()
+        {
+            jObj = JSONArray :: make ();
+            ASSERT_TRUE ( jObj != nullptr );
+        }
+        
+    protected:
+        size_t pos;
+        JSONArray *jObj;
+    };
+    
+    TEST ( JSONFuzzing, test1 )
+    {
+        EXPECT_ANY_THROW ( delete JSONObject :: make ("\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x0a\x0a\x0a\x0a\x0a\x0a\x0a\x0a\x0a\x0a\x0a" ) );
+    }
+    
+    TEST ( JSONFuzzing, test2 ) // fuzz crash but test doesnt
+    {
+        EXPECT_ANY_THROW ( delete JSONObject :: make ( "\x7b\x00\x00\x00\x0a" ) );
+    }
+    
+    TEST ( JSONFuzzing, test3 )
+    {
+        EXPECT_ANY_THROW ( delete JSONObject :: make ( "\x7b\x7b" ) );
+    }
+    
+    TEST ( JSONFuzzing, test4 ) // fuzz crash but test doesnt
+    {
+        EXPECT_ANY_THROW ( delete JSONObject :: make ( "\x7b\x2b" ) );
+    }
+    
 } // ncbi
+
+

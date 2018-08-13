@@ -40,7 +40,7 @@ namespace ncbi
     // skip whitespace
     // return the position of the first not whitespace character or npos
     static
-    void skip_whitespace ( const std :: string & text, size_t & pos )
+    bool skip_whitespace ( const std :: string & text, size_t & pos )
     {
         size_t count = text . size ();
         
@@ -53,7 +53,12 @@ namespace ncbi
         }
        
         if ( pos >= count )
+        {
             pos = std::string::npos;
+            return false;
+        }
+        
+        return true;
     }
     
     static
@@ -337,8 +342,7 @@ namespace ncbi
     
     JSONValue * JSONValue :: parse ( const std :: string & json, size_t & pos )
     {
-        skip_whitespace ( json, pos );
-        if ( pos != std :: string :: npos )
+        if ( skip_whitespace ( json, pos ) )
         {
             switch ( json [ pos ] )
             {
@@ -375,8 +379,7 @@ namespace ncbi
             throw JSONException ( __FILE__, __LINE__, "Empty JSON object" );
         
         size_t pos = 0;
-        skip_whitespace( json, pos );
-        if ( json [ pos ] != '[' )
+        if ( ! skip_whitespace( json, pos ) || json [ pos ] != '[' )
             throw JSONException ( __FILE__, __LINE__, "Expected: '{'" ); // test hit
         
         JSONArray *array = parse ( json, pos );
@@ -398,8 +401,7 @@ namespace ncbi
             {
                 // skip over '[' and any whitespace
                 // json [ 0 ] is '[' or ','
-                skip_whitespace ( json, ++ pos );
-                if ( pos == std :: string :: npos )
+                if ( ! skip_whitespace ( json, ++ pos ) )
                     throw JSONException ( __FILE__, __LINE__, "Expected: ']'" ); // test hit
                 
                 if ( json [ pos ] == ']' )
@@ -417,8 +419,7 @@ namespace ncbi
                 
                 // find and skip over ',' and skip any whitespace
                 // exit loop if no ',' found
-                skip_whitespace( json, pos );
-                if ( pos == std :: string :: npos || json [ pos ] != ',' )
+                if ( ! skip_whitespace ( json, pos ) || json [ pos ] != ',' )
                     break;
             }
             
@@ -450,9 +451,8 @@ namespace ncbi
             throw JSONException ( __FILE__, __LINE__, "Empty JSON source" ); // test hit
         
         size_t pos = 0;
-        skip_whitespace( json, pos );
         
-        if ( json [ pos ] != '{' )
+        if ( ! skip_whitespace ( json, pos ) || json [ pos ] != '{' )
             throw JSONException ( __FILE__, __LINE__, "Expected: '{'" ); // test hit
         
         JSONObject *obj = parse ( json, pos );
@@ -474,21 +474,22 @@ namespace ncbi
             {
                 // skip over '{' and any whitespace
                 // json [ pos ] is '{' or ',', start at json [ pos + 1 ]
-                skip_whitespace ( json, ++ pos );
-                if ( pos == std :: string :: npos )
+                if ( ! skip_whitespace ( json, ++ pos ) )
                     throw JSONException ( __FILE__, __LINE__, "Expected: '}'" ); // test hit
 
                 if ( json [ pos ] == '}' )
                     break;
                 
                 // get the name/key
+                if ( json [ pos ] != '"' )
+                    throw JSONException ( __FILE__, __LINE__, "Expected: 'name' " );
+                
                 JSONValue *name = JSONString :: parse ( json, pos );
                 if ( name == nullptr )
                     throw JSONException ( __FILE__, __LINE__, "Failed to create JSON object" );
                 
                 // skip to ':'
-                skip_whitespace ( json, pos );
-                if ( pos == std :: string :: npos || json [ pos ] != ':' )
+                if ( ! skip_whitespace ( json, pos ) || json [ pos ] != ':' )
                     throw JSONException ( __FILE__, __LINE__, "Expected: ':'" ); // test hit
                 
                 // skip over ':'
@@ -504,8 +505,7 @@ namespace ncbi
                 
                 // find and skip over ',' and skip any whitespace
                 // exit loop if no ',' found
-                skip_whitespace ( json, pos );
-                if ( pos == std :: string :: npos || json [ pos ] != ',' )
+                if ( ! skip_whitespace ( json, pos ) || json [ pos ] != ',' )
                     break;
             }
             
