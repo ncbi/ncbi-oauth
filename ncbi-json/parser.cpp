@@ -78,6 +78,27 @@ namespace ncbi
         }
     }
     
+    static
+    void test_depth ( const JSONValue :: Limits & lim, unsigned int & depth )
+    {
+        if ( ++ depth > lim . recursion_depth )
+            throw JSONException ( __func__, __LINE__, "parsing recursion exceeds maximum depth" );
+    }
+    
+    /* JSONValue :: Limits
+     **********************************************************************************/
+    JSONValue :: Limits :: Limits ()
+    : json_string_size ( 4 * 1024 * 1024 )
+    , recursion_depth ( 32 )
+    , numeral_length ( 256 )
+    , string_size ( 64 * 1024 )
+    , array_elem_count ( 4 * 1024 )
+    , object_mbr_count ( 256 )
+    {
+    }
+    
+    JSONValue :: Limits JSONValue :: default_limits;
+    
     /* JSONWrapper
      **********************************************************************************/
     JSONValue * JSONWrapper :: parse ( const std::string & json, size_t & pos )
@@ -138,7 +159,7 @@ namespace ncbi
    
     /* JSONNumber
      **********************************************************************************/
-    JSONValue * JSONNumber :: parse  ( const std::string &json, size_t & pos )
+    JSONValue * JSONNumber :: parse  ( const JSONValue :: Limits & lim, const std::string &json, size_t & pos )
     {
         assert ( isdigit ( json [ pos ] ) || json [ pos ] == '-' );
         
@@ -233,7 +254,7 @@ namespace ncbi
     
     /* JSONString
      **********************************************************************************/
-    JSONValue * JSONString :: parse  ( const std::string &json, size_t & pos )
+    JSONValue * JSONString :: parse  ( const JSONValue :: Limits & lim, const std::string &json, size_t & pos )
     {
         assert ( json [ pos ] == '"' );
         
@@ -327,7 +348,7 @@ namespace ncbi
     {
         size_t pos = 0;
         
-        JSONValue *val = parse ( json, pos );
+        JSONValue *val = parse ( default_limits, json, pos, 0 );
         
         if ( consume_all && pos < json . size () )
             throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" ); // test hit
@@ -335,29 +356,31 @@ namespace ncbi
         return val;
     }
     
-    JSONValue * JSONValue :: parse ( const std :: string & json, size_t & pos )
+    JSONValue * JSONValue :: parse ( const Limits & lim, const std :: string & json, size_t & pos, unsigned int depth )
     {
+        test_depth ( lim, depth );
+        
         skip_whitespace ( json, pos );
         if ( pos != std :: string :: npos )
         {
             switch ( json [ pos ] )
             {
                 case '{':
-                    return JSONObject :: parse ( json, pos );
+                    return JSONObject :: parse ( lim, json, pos, depth );
                 case '[':
-                    return JSONArray :: parse ( json, pos );
+                    return JSONArray :: parse ( lim, json, pos, depth );
                 case '"':
-                    return JSONString :: parse ( json, pos );
+                    return JSONString :: parse ( lim, json, pos );
                 case 'f':
                 case 't':
                     return JSONBoolean :: parse ( json, pos );
                 case '-':
-                    return JSONNumber :: parse ( json, pos );
+                    return JSONNumber :: parse ( lim, json, pos );
                 case 'n':
                     return JSONWrapper :: parse ( json, pos );
                 default:
                     if ( isdigit ( json [ pos ] ) )
-                        return JSONNumber :: parse ( json, pos );
+                        return JSONNumber :: parse ( lim, json, pos );
                     
                     // garbage
                     throw JSONException ( __FILE__, __LINE__, "Invalid JSON format" ); // test hit
@@ -379,7 +402,7 @@ namespace ncbi
         if ( json [ pos ] != '[' )
             throw JSONException ( __FILE__, __LINE__, "Expected: '{'" ); // test hit
         
-        JSONArray *array = parse ( json, pos );
+        JSONArray *array = parse ( default_limits, json, pos, 0 );
         
         if ( pos < json . size () )
             throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" ); // test hit
@@ -387,8 +410,10 @@ namespace ncbi
         return array;
     }
     
-    JSONArray * JSONArray :: parse ( const std :: string & json, size_t & pos )
+    JSONArray * JSONArray :: parse ( const Limits & lim, const std :: string & json, size_t & pos, unsigned int depth )
     {
+        test_depth ( lim, depth );
+
         assert ( json [ pos ] == '[' );
         
         JSONArray *array = new JSONArray ();
@@ -408,7 +433,7 @@ namespace ncbi
                 // use scope to invalidate value 
                 {
                     std :: string sub = json . substr(pos);
-                    JSONValue *value = JSONValue :: parse ( json, pos );
+                    JSONValue *value = JSONValue :: parse ( lim, json, pos, depth );
                     if ( value == nullptr )
                         throw JSONException ( __FILE__, __LINE__, "Failed to create JSON object" );
                     sub = json . substr(pos);
@@ -455,7 +480,7 @@ namespace ncbi
         if ( json [ pos ] != '{' )
             throw JSONException ( __FILE__, __LINE__, "Expected: '{'" ); // test hit
         
-        JSONObject *obj = parse ( json, pos );
+        JSONObject *obj = parse ( default_limits, json, pos, 0 );
 
         if ( pos < json . size () )
             throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" );
@@ -463,8 +488,10 @@ namespace ncbi
         return obj;
     }
     
-    JSONObject * JSONObject :: parse ( const std :: string & json, size_t & pos )
+    JSONObject * JSONObject :: parse ( const Limits & lim, const std :: string & json, size_t & pos, unsigned int depth )
     {
+        test_depth ( lim, depth );
+
         assert ( json [ pos ] == '{' );
         
         JSONObject *obj = new JSONObject ();
@@ -482,7 +509,7 @@ namespace ncbi
                     break;
                 
                 // get the name/key
-                JSONValue *name = JSONString :: parse ( json, pos );
+                JSONValue *name = JSONString :: parse ( lim, json, pos );
                 if ( name == nullptr )
                     throw JSONException ( __FILE__, __LINE__, "Failed to create JSON object" );
                 
@@ -495,7 +522,7 @@ namespace ncbi
                 ++ pos;
                 
                 // get JSON value;
-                JSONValue *value = JSONValue :: parse ( json, pos );
+                JSONValue *value = JSONValue :: parse ( lim, json, pos, depth );
                 if ( value == nullptr )
                     throw JSONException ( __FILE__, __LINE__, "Failed to create JSON object" );
                 

@@ -61,6 +61,18 @@ namespace ncbi
     class JSONValue
     {
     public:
+        
+        struct Limits
+        {
+            Limits ();                        // set default limits
+            
+            unsigned int json_string_size;    // total size of JSON string
+            unsigned int recursion_depth;     // parser stack depth
+            unsigned int numeral_length;      // maximum number of characters in number
+            unsigned int string_size;         // maximum number of bytes in string
+            unsigned int array_elem_count;    // maximum number of elements in array
+            unsigned int object_mbr_count;    // maximum number of members in object
+        };
 
         // make various value types
         static JSONValue * makeNull ();
@@ -109,7 +121,8 @@ namespace ncbi
 
     protected:
         
-        static JSONValue * parse ( const std :: string & json, size_t & pos );
+        static JSONValue * parse ( const Limits & lim, const std :: string & json, size_t & pos, unsigned int depth );
+        static Limits default_limits;
         
         JSONValue ();
         
@@ -175,7 +188,7 @@ namespace ncbi
         
     private:
 
-        static JSONArray * parse ( const std :: string & json, size_t & pos );
+        static JSONArray * parse ( const Limits & lim, const std :: string & json, size_t & pos, unsigned int depth );
         
         // used to empty out the array before copy
         void clear ();
@@ -203,6 +216,7 @@ namespace ncbi
 
         // make an object from JSON source
         static JSONObject * make ( const std :: string & json );
+        static JSONObject * make ( const Limits & lim, const std :: string & json );
 
         // JSONValue interface implementations
         virtual bool isObject () const
@@ -251,7 +265,7 @@ namespace ncbi
         
     private:
         
-        static JSONObject * parse ( const std :: string & json, size_t & pos );
+        static JSONObject * parse ( const Limits & lim, const std :: string & json, size_t & pos, unsigned int depth );
 
         void clear ();
         

@@ -93,7 +93,7 @@ namespace ncbi
 
     struct JSONNumber : JSONPrimitive
     {
-        static JSONValue * parse ( const std::string &json, size_t & pos );
+        static JSONValue * parse ( const JSONValue :: Limits & lim, const std::string &json, size_t & pos );
         
         virtual std :: string toString () const
         { return value; }
@@ -115,7 +115,7 @@ namespace ncbi
 
     struct JSONString : JSONPrimitive
     {
-        static JSONValue * parse ( const std::string &json, size_t & pos );
+        static JSONValue * parse ( const JSONValue :: Limits & lim, const std::string &json, size_t & pos );
         
         virtual std :: string toString () const
         { return value; }
