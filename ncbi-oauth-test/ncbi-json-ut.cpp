@@ -1119,35 +1119,46 @@ namespace ncbi
             delete jObj;
         }
         
-        void make_empty ()
+        void run_crash_file ( const std :: string & name)
         {
-            jObj = JSONArray :: make ();
-            ASSERT_TRUE ( jObj != nullptr );
+            FILE *file = fopen ( name . c_str (), "r" );
+            if ( file != nullptr )
+            {
+                long fSize = ftell ( file );
+                rewind ( file );
+                
+                char *buff = ( char * ) malloc ( sizeof ( char ) *fSize );
+                if ( buff != nullptr )
+                {
+                    size_t num_read = fread ( buff, 1, fSize, file );
+                    if ( num_read == fSize )
+                    {
+                        EXPECT_ANY_THROW ( delete JSONObject :: make ( buff ) );
+                    }
+                }
+            }
         }
         
     protected:
         size_t pos;
-        JSONArray *jObj;
+        JSONObject *jObj;
     };
     
-    TEST ( JSONFuzzing, test1 )
+    TEST_F ( JSONFixture_Fuzzing, test1 )
     {
-        EXPECT_ANY_THROW ( delete JSONObject :: make ("\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x0a\x0a\x0a\x0a\x0a\x0a\x0a\x0a\x0a\x0a\x0a" ) );
+        run_crash_file ( "oom-019001c7b22ae7889a8cf8e09def61728fc8cbdd" );
     }
     
     TEST ( JSONFuzzing, test2 ) // fuzz crash but test doesnt
     {
-        EXPECT_ANY_THROW ( delete JSONObject :: make ( "\x7b\x00\x00\x00\x0a" ) );
     }
     
     TEST ( JSONFuzzing, test3 )
     {
-        EXPECT_ANY_THROW ( delete JSONObject :: make ( "\x7b\x7b" ) );
     }
     
     TEST ( JSONFuzzing, test4 ) // fuzz crash but test doesnt
     {
-        EXPECT_ANY_THROW ( delete JSONObject :: make ( "\x7b\x2b" ) );
     }
     
 } // ncbi
