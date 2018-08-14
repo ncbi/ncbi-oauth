@@ -26,18 +26,17 @@
 
 #include <ncbi/json.hpp>
 
-using namespace std;
-
 extern "C" int
-LLVMFuzzerTestOneInput ( const uint8_t * const Data, size_t const Size )
+LLVMFuzzerTestOneInput ( const uint8_t * const data, size_t const size )
 {
-    string input ( (const char*)Data, Size );
-    // call Json parser on 'input'
+    std :: string input ( (const char*) data, size );
     try 
     {
-       delete ncbi::JSONObject::make(input);
+        delete ncbi :: JSONObject :: make ( input );
     }
-    catch (...) {};
+    catch ( ... )
+    {
+    };
 
     return 0;  // Non-zero return values are reserved for future use.
 }

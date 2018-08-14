@@ -1121,21 +1121,39 @@ namespace ncbi
         
         void run_crash_file ( const std :: string & name)
         {
-            FILE *file = fopen ( name . c_str (), "r" );
+            std :: string path = "crash-files/" + name;
+            FILE *file = fopen ( path . c_str (), "rb" );
             if ( file != nullptr )
             {
-                long fSize = ftell ( file );
-                rewind ( file );
-                
-                char *buff = ( char * ) malloc ( sizeof ( char ) *fSize );
-                if ( buff != nullptr )
+                try
                 {
-                    size_t num_read = fread ( buff, 1, fSize, file );
-                    if ( num_read == fSize )
+                    fseek ( file, 0, SEEK_END );
+                    long fSize = ftell ( file );
+                    rewind ( file );
+                
+                    char *buff = new char [ fSize ];
+                    try
                     {
-                        EXPECT_ANY_THROW ( delete JSONObject :: make ( buff ) );
+                        size_t num_read = fread ( buff, 1, fSize, file );
+                        if ( num_read == fSize )
+                        {
+                            EXPECT_ANY_THROW ( delete JSONObject :: make ( std :: string ( buff, num_read ) ) );
+                        }
                     }
+                    catch ( ... )
+                    {
+                        delete [] buff;
+                        throw;
+                    }
+                    
+                    delete [] buff;
                 }
+                catch ( ... )
+                {
+                    fclose ( file );
+                    throw;
+                }
+                fclose ( file );
             }
         }
         
