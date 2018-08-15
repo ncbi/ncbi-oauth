@@ -37,10 +37,11 @@ namespace ncbi
     class JWTFactory;
     class JWTFixture_BasicConstruction;
     
-    // a JSON Web Token
+    // a JSON Web Token - RFC 7519: Line 233
     // A string representing a set of claims as a JSON object
     typedef std :: string JWT;
     
+    // RFC 7519: Line 273
     // if the string contains a ':', then it MUST be a URI [RFC3986]
     typedef std :: string StringOrURI;
     

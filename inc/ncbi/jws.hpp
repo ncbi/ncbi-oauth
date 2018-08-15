@@ -35,7 +35,7 @@
 
 namespace ncbi
 {
-    // JSON Web Signature
+    // JSON Web Signature - RFC 7515: Line 350
     // A data structure representing a digitally signed or MACed message
     typedef std :: string JWS;
     
@@ -59,6 +59,7 @@ namespace ncbi
     {
     public:
         
+        // RFC 7515: Line 376
         // sign using compact serialization
         // signing input is:
         //   ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))
