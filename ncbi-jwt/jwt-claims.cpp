@@ -80,11 +80,6 @@ namespace ncbi
     {
     }
     
-    JWTClaims :: JWTClaims ()
-    : claims ( JSONObject :: make () )
-    {
-    }
-    
     void JWTClaims :: validateStringOrURI ( const std::string &str )
     {
     }

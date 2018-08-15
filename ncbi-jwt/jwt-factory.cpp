@@ -32,17 +32,83 @@
 
 namespace ncbi
 {
-    JWT JWTFactory :: make () const
+    JWTClaims JWTFactory :: make () const
     {
-        return "";
+        JSONObject *obj = JSONObject :: make ();
+        
+        if ( ! iss . empty() )
+            obj -> setFinalValue( "iss", JSONValue :: makeString ( iss ) );
+        
+        if ( ! sub . empty() )
+            obj -> setFinalValue ( "sub", JSONValue :: makeString ( sub ) );
+        
+        if ( ! aud . empty() )
+        {
+            size_t count = aud . size ();
+            for ( size_t i = 0; i < count; ++ i )
+            {
+                obj -> setFinalValue ( "array", JSONArray :: make () );
+                obj -> getValue ( "array" ) . toArray ()
+                . appendValue ( JSONValue :: makeString ( aud [ i ] ) );
+            }
+        }
+        
+        if ( duration != -1 )
+            claims -> setDuration ( duration );
+            
+        if ( not_before != -1 )
+            claims -> setNotBefore ( not_before );
+        
+        JWTClaims *claims = new JWTClaims ( obj );
+        return *claims;
     }
     
-    JWT JWTFactory :: decode ( const JWSFactory & jws_fact, const std :: string & jwt ) const
+    JWTClaims JWTFactory :: decode ( const JWSFactory & jws_fact, const JWT & jwt ) const
     {
-        return "";
+        // determine Base64 or Base64URL
+        std :: string decoded;
+        size_t pos = jwt . find_first_of ( "+/-_" );
+        if ( pos != std :: string :: npos )
+        {
+            switch ( jwt [ pos ])
+            {
+                case '+':
+                case '/':
+                    decoded = decodeBase64 ( jwt );
+                    break;
+                case '-':
+                case '_':
+                    decoded = decodeBase64URL ( jwt );
+                    break;
+            }
+        }
+        
+        JWTClaims *claims = new JWTClaims ();
+        
+        
+        if ( ! iss . empty() )
+            claims -> setIssuer ( iss );
+        
+        if ( ! sub . empty() )
+            claims -> setSubject ( sub );
+        
+        if ( ! aud . empty() )
+        {
+            size_t count = aud . size ();
+            for ( size_t i = 0; i < count; ++ i )
+                claims -> addAudience ( aud [ i ] );
+        }
+        
+        if ( duration != -1 )
+            claims -> setDuration ( duration );
+        
+        if ( not_before != -1 )
+            claims -> setNotBefore ( not_before );
+        
+        return *claims;
     }
     
-    JWT JWTFactory :: signCompact ( const JWSFactory & jws_fact, const JWT & claims ) const
+    JWT JWTFactory :: signCompact ( const JWSFactory & jws_fact, const JWTClaims & claims ) const
     {
         return "";
     }
@@ -64,10 +130,14 @@ namespace ncbi
     
     void JWTFactory :: setDuration ( long long int dur_seconds )
     {
+        if ( dur_seconds > 0 )
+            duration = dur_seconds;
     }
     
     void JWTFactory :: setNotBefore ( long long int nbf_seconds )
     {
+        if ( nbf_seconds > 0 )
+            duration = nbf_seconds;
     }
     
     JWTFactory & JWTFactory :: operator = ( const JWTFactory & jwt_fact )
@@ -77,7 +147,7 @@ namespace ncbi
         aud = jwt_fact . aud;
         duration = jwt_fact . duration;
         not_before = jwt_fact . not_before;
-        // id_seq?
+        
         return *this;
     }
     
@@ -87,16 +157,19 @@ namespace ncbi
     , aud ( jwt_fact . aud )
     , duration ( jwt_fact . duration )
     , not_before ( jwt_fact . not_before )
-    // , id_seq?
     {
     }
     
     JWTFactory :: JWTFactory ()
+    : duration ( -1 )
+    , not_before ( -1 )
     {
     }
     
     JWTFactory :: ~ JWTFactory ()
     {
+        duration = -1;
+        not_before = -1;
     }
     
     std :: string JWTFactory :: newJTI () const

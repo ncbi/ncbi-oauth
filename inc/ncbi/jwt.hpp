@@ -64,8 +64,6 @@ namespace ncbi
         JWTClaims & operator = ( const JWTClaims & jwt );
         JWTClaims ( const JWTClaims & jwt );
         
-        JWTClaims ();
-        
     private:
         
         // any std :: string parameter typed as StringOrURI MUST be validated
@@ -85,13 +83,13 @@ namespace ncbi
     public:
 
         // make a new, more or less empty JWT object
-        JWT make () const;
+        JWTClaims make () const;
         
         // decode a signed JWT
-        JWT decode ( const JWSFactory & jws_fact, const std :: string & jwt ) const;
+        JWTClaims decode ( const JWSFactory & jws_fact, const JWT & jwt ) const;
         
         // create a signed JWT as a compact JWS from the claims set
-        JWT signCompact ( const JWSFactory & jws_fact, const JWT & claims ) const;
+        JWT signCompact ( const JWSFactory & jws_fact, const JWTClaims & claims ) const;
 
         // registered claim factory parameters
         void setIssuer ( const StringOrURI & iss );
