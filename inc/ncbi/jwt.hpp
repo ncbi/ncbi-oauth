@@ -90,6 +90,7 @@ namespace ncbi
         // throws an exception for an invalid string
         static void validateStringOrURI ( const std :: string & str );
         
+        JWTClaims ();
         JWTClaims ( JSONObject * claims );
 
         JSONObject * claims;

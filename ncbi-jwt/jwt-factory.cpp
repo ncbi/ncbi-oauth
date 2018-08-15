@@ -63,39 +63,84 @@ namespace ncbi
         return claims;
     }
     
+    // Decoding follows RFC 7519: Second 7.2
     JWTClaims JWTFactory :: decode ( const JWSFactory & jws_fact, const JWT & jwt ) const
     {
-        // "1. verify that the JWT contains at least one period ('.') character."
+        // 1. verify that the JWT contains at least one '.'
         size_t pos = 0;
         size_t p = jwt . find_first_of ( "." );
         if ( p == std :: string :: npos )
             throw JWTException ( __func__, __LINE__, "Invalid JWT - expected: '.'" );
         
-        // split off the JOSE header from the start of "jwt" to the period.
+        // 2. split off the JOSE header from the start of "jwt" to the period.
         // this must be a base64url-encoded string representing a JSONObject
-        // "2. Let the Encoded JOSE Header be the portion of the JWT before the first period ('.') character"
         std :: string header = jwt . substr ( pos, p - pos );
-        pos = p;
+        pos = ++ p;
         
-        // run decodeBase64URL() on the JOSE string
+        // 3. run decodeBase64URL() on the JOSE string
         // this will produce raw JSON text
-        // "3. Base64url decode the Encoded JOSE Header following the restriction that no line breaks,
-        // whitespace, or other additional characters have been used."
         header = decodeBase64URL ( header );
         
-        // trust your JSON parser enough to parse the raw JSON text of the JOSE header
+        // 4. trust your JSON parser enough to parse the raw JSON text of the JOSE header
         // use restricted limits
-        // "4.   Verify that the resulting octet sequence is a UTF-8-encoded representation of a completely
-        // valid JSON object conforming to RFC 7159 [RFC7159]; let the JOSE Header be this JSON object."
+        JSONValue :: Limits lim;
+        lim . recursion_depth = 1;
+        JSONObject *jose = JSONObject :: make ( lim, header );
         
-        // let the JWSFactory validate the JOSE header
+        // 5. let the JWSFactory validate the JOSE header
         // "5. Verify that the resulting JOSE Header includes only parameters and values whose syntax and
         // semantics are both understood and supported or that are specified as being ignored when not understood."
+    
         
-        // look at the JOSE header to determine that this is in fact a JWS
-        // "6. Determine whether the JWT is a JWS or a JWE using any of the methods described in Section 9 of [JWE]."
+        // 6. determine that this is in fact a JWS; we dont support JWE
+        int p_count = 1; // already have the header
+        size_t pay_pos = 0;
         
-        // at this point, we should know that there must be a payload section
+        // JWS - only has two '.'
+        while ( p != std :: string :: npos )
+        {
+            if ( p_count < 2 )
+                pay_pos = jwt . find_first_of ( ".", p );
+            
+            ++ p_count;
+        }
+
+        switch ( p_count )
+        {
+            case 2:
+                break;
+            case 4:
+                throw JWTException ( __func__, __LINE__, "Not currently supporting JWE" );
+            default:
+                throw JWTException ( __func__, __LINE__, "Invalid JWT - does not conform to JWS or JWE" );
+        }
+        
+        // 7. Validate JWS - RFC 7515: Section 5.2
+        if ( ! jws_fact . validate () ) // this is missing
+            throw JWTException ( __func__, __LINE__, "Failed to validate JWS" );
+    
+        // 8. check for header member "cty"
+        // if exists, the payload is a nested JWT and need to repeat the previous steps
+        if ( jose -> exists( "cty" ) )
+            return decode ( jws_fact, jwt . substr ( pos, pay_pos - pos ) );
+        
+        // 9. decode payload
+        std :: string pay = decodeBase64URL ( jwt . substr ( pos, pay_pos - pos ) );
+        
+        // 10. trust your JSON parser enough to parse the raw JSON text of the payload
+        JSONObject *payload = JSONObject :: make ( lim, pay );
+        
+        // build claim set
+        JWTClaims claims ( payload );
+        claims . setIssuer ( payload -> getValue ( "iss" ) . toString () );
+        claims . setSubject ( payload -> getValue ( "sub" ) . toString () );
+        JSONArray aud = payload -> getValue ( "aud" ) . toArray ();
+        for ( size_t i = 0; i < aud . count (); ++ i )
+        {
+            claims . addAudience ( aud . getValue ( i ) . toString () );
+        }
+
+        return claims;
     }
     
     JWT JWTFactory :: signCompact ( const JWSFactory & jws_fact, const JWTClaims & claims ) const
