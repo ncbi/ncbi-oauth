@@ -1102,4 +1102,83 @@ namespace ncbi
         JSONArray obj ( *jObj );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), obj . toJSON() . c_str () );
     }
+
+    /* Fuzzing
+     *
+     **********************************************************************************/
+    class JSONFixture_Fuzzing : public :: testing :: Test
+    {
+    public:
+        void SetUp ()
+        {
+            jObj = nullptr;
+        }
+        
+        void TearDown ()
+        {
+            delete jObj;
+        }
+        
+        void run_crash_file ( const std :: string & name)
+        {
+            std :: string path = "crash-files/" + name;
+            FILE *file = fopen ( path . c_str (), "rb" );
+            if ( file != nullptr )
+            {
+                try
+                {
+                    fseek ( file, 0, SEEK_END );
+                    long fSize = ftell ( file );
+                    rewind ( file );
+                
+                    char *buff = new char [ fSize ];
+                    try
+                    {
+                        size_t num_read = fread ( buff, 1, fSize, file );
+                        if ( num_read == fSize )
+                        {
+                            EXPECT_ANY_THROW ( delete JSONObject :: make ( std :: string ( buff, num_read ) ) );
+                        }
+                    }
+                    catch ( ... )
+                    {
+                        delete [] buff;
+                        throw;
+                    }
+                    
+                    delete [] buff;
+                }
+                catch ( ... )
+                {
+                    fclose ( file );
+                    throw;
+                }
+                fclose ( file );
+            }
+        }
+        
+    protected:
+        size_t pos;
+        JSONObject *jObj;
+    };
+    
+    TEST_F ( JSONFixture_Fuzzing, test1 )
+    {
+        run_crash_file ( "oom-019001c7b22ae7889a8cf8e09def61728fc8cbdd" );
+    }
+    
+    TEST ( JSONFuzzing, test2 ) // fuzz crash but test doesnt
+    {
+    }
+    
+    TEST ( JSONFuzzing, test3 )
+    {
+    }
+    
+    TEST ( JSONFuzzing, test4 ) // fuzz crash but test doesnt
+    {
+    }
+    
 } // ncbi
+
+
