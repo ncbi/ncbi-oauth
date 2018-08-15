@@ -66,15 +66,22 @@ namespace ncbi
     JWTClaims JWTFactory :: decode ( const JWSFactory & jws_fact, const JWT & jwt ) const
     {
         // "1. verify that the JWT contains at least one period ('.') character."
+        size_t pos = 0;
+        size_t p = jwt . find_first_of ( "." );
+        if ( p == std :: string :: npos )
+            throw JWTException ( __func__, __LINE__, "Invalid JWT - expected: '.'" );
         
         // split off the JOSE header from the start of "jwt" to the period.
         // this must be a base64url-encoded string representing a JSONObject
         // "2. Let the Encoded JOSE Header be the portion of the JWT before the first period ('.') character"
+        std :: string header = jwt . substr ( pos, p - pos );
+        pos = p;
         
         // run decodeBase64URL() on the JOSE string
         // this will produce raw JSON text
         // "3. Base64url decode the Encoded JOSE Header following the restriction that no line breaks,
         // whitespace, or other additional characters have been used."
+        header = decodeBase64URL ( header );
         
         // trust your JSON parser enough to parse the raw JSON text of the JOSE header
         // use restricted limits

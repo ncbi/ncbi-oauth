@@ -45,6 +45,25 @@ namespace ncbi
     // if the string contains a ':', then it MUST be a URI [RFC3986]
     typedef std :: string StringOrURI;
     
+    /* JWTException
+     **********************************************************************************/
+    class JWTException : public std :: logic_error
+    {
+    public:
+        
+        virtual const char * what () const
+        throw ();
+        
+        explicit JWTException ( const char * function, unsigned int line, const char * message );
+        virtual ~JWTException ()
+        throw ();
+        
+    private:
+        
+        std :: string msg;
+        const char * fl_msg;
+    };
+    
     // A JSON object that contains the claims conveyed by the JWT
     class JWTClaims
     {
@@ -58,7 +77,7 @@ namespace ncbi
         void setNotBefore ( long long int nbf_seconds );
 
         // claims can be any valid JSONValue
-        void addClaim ( const std :: string & name, JSONValue * value );
+        void addClaim ( const std :: string & name, JSONValue * value, bool isFinal = false );
         const JSONValue & getClaim ( const std :: string & name ) const;
         
         // C++ assignment

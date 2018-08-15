@@ -38,17 +38,27 @@ namespace ncbi
      **********************************************************************************/
     void JWTClaims :: setIssuer ( const StringOrURI & iss )
     {
+        validateStringOrURI ( iss );
+        
         claims -> setFinalValue( "iss", JSONValue :: makeString ( iss ) );
     }
     
     void JWTClaims :: setSubject ( const StringOrURI & sub )
     {
+        validateStringOrURI ( sub );
+        
         claims -> setFinalValue( "sub", JSONValue :: makeString ( sub ) );
     }
     
     void JWTClaims :: addAudience ( const StringOrURI & aud )
     {
-        claims -> setFinalValue( "aud", JSONValue :: makeString ( aud ) );
+        validateStringOrURI ( aud );
+        
+        if ( ! claims -> exists ( "aud" ) )
+            claims -> setFinalValue ( "aud", JSONArray :: make () );
+        
+        JSONArray array = claims -> getValue ( "aud " ) . toArray ();
+        array . appendValue ( JSONValue :: makeString ( aud ) );
     }
     
     void JWTClaims :: setDuration ( long long int dur_seconds )
@@ -59,9 +69,12 @@ namespace ncbi
     {
     }
     
-    void JWTClaims :: addClaim ( const std :: string & name, JSONValue * value )
+    void JWTClaims :: addClaim ( const std :: string & name, JSONValue * value, bool isFinal )
     {
-        claims -> setValue ( name, value );
+        if ( isFinal )
+            claims -> setFinalValue ( name, value );
+        else
+            claims -> setValue ( name, value );
     }
     
     const JSONValue & JWTClaims :: getClaim ( const std :: string & name ) const
@@ -82,6 +95,7 @@ namespace ncbi
     
     void JWTClaims :: validateStringOrURI ( const std::string &str )
     {
+        throw JWTException ( __func__, __LINE__, "Invalid StringOrURI" );
     }
     
     JWTClaims :: JWTClaims ( JSONObject *claims )
