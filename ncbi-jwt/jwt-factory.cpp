@@ -36,76 +36,59 @@ namespace ncbi
     {
         JSONObject *obj = JSONObject :: make ();
         
+        JWTClaims claims ( obj );
+
         if ( ! iss . empty() )
-            obj -> setFinalValue( "iss", JSONValue :: makeString ( iss ) );
+            claims . setIssuer ( iss );
         
         if ( ! sub . empty() )
-            obj -> setFinalValue ( "sub", JSONValue :: makeString ( sub ) );
+            claims . setSubject ( sub );
         
         if ( ! aud . empty() )
         {
             size_t count = aud . size ();
             for ( size_t i = 0; i < count; ++ i )
             {
-                obj -> setFinalValue ( "array", JSONArray :: make () );
-                obj -> getValue ( "array" ) . toArray ()
-                . appendValue ( JSONValue :: makeString ( aud [ i ] ) );
+                claims . addAudience ( aud [ i ] );
             }
+            obj -> getValue ( "aud" ) . toArray () . lock ();
         }
         
         if ( duration != -1 )
-            claims -> setDuration ( duration );
+            claims . setDuration ( duration );
             
         if ( not_before != -1 )
-            claims -> setNotBefore ( not_before );
+            claims . setNotBefore ( not_before );
         
-        JWTClaims *claims = new JWTClaims ( obj );
-        return *claims;
+        return claims;
     }
     
     JWTClaims JWTFactory :: decode ( const JWSFactory & jws_fact, const JWT & jwt ) const
     {
-        // determine Base64 or Base64URL
-        std :: string decoded;
-        size_t pos = jwt . find_first_of ( "+/-_" );
-        if ( pos != std :: string :: npos )
-        {
-            switch ( jwt [ pos ])
-            {
-                case '+':
-                case '/':
-                    decoded = decodeBase64 ( jwt );
-                    break;
-                case '-':
-                case '_':
-                    decoded = decodeBase64URL ( jwt );
-                    break;
-            }
-        }
+        // "1. verify that the JWT contains at least one period ('.') character."
         
-        JWTClaims *claims = new JWTClaims ();
+        // split off the JOSE header from the start of "jwt" to the period.
+        // this must be a base64url-encoded string representing a JSONObject
+        // "2. Let the Encoded JOSE Header be the portion of the JWT before the first period ('.') character"
         
+        // run decodeBase64URL() on the JOSE string
+        // this will produce raw JSON text
+        // "3. Base64url decode the Encoded JOSE Header following the restriction that no line breaks,
+        // whitespace, or other additional characters have been used."
         
-        if ( ! iss . empty() )
-            claims -> setIssuer ( iss );
+        // trust your JSON parser enough to parse the raw JSON text of the JOSE header
+        // use restricted limits
+        // "4.   Verify that the resulting octet sequence is a UTF-8-encoded representation of a completely
+        // valid JSON object conforming to RFC 7159 [RFC7159]; let the JOSE Header be this JSON object."
         
-        if ( ! sub . empty() )
-            claims -> setSubject ( sub );
+        // let the JWSFactory validate the JOSE header
+        // "5. Verify that the resulting JOSE Header includes only parameters and values whose syntax and
+        // semantics are both understood and supported or that are specified as being ignored when not understood."
         
-        if ( ! aud . empty() )
-        {
-            size_t count = aud . size ();
-            for ( size_t i = 0; i < count; ++ i )
-                claims -> addAudience ( aud [ i ] );
-        }
+        // look at the JOSE header to determine that this is in fact a JWS
+        // "6. Determine whether the JWT is a JWS or a JWE using any of the methods described in Section 9 of [JWE]."
         
-        if ( duration != -1 )
-            claims -> setDuration ( duration );
-        
-        if ( not_before != -1 )
-            claims -> setNotBefore ( not_before );
-        
-        return *claims;
+        // at this point, we should know that there must be a payload section
     }
     
     JWT JWTFactory :: signCompact ( const JWSFactory & jws_fact, const JWTClaims & claims ) const

@@ -95,6 +95,8 @@ namespace ncbi
     // add a new element to end of array
     void JSONArray :: appendValue ( JSONValue * elem )
     {
+        if ( locked )
+            throw JSONException ( __func__, __LINE__, "array object cannot be modified" );
         if ( elem == nullptr )
             elem = JSONValue :: makeNull ();
 
@@ -106,6 +108,8 @@ namespace ncbi
     // throws exception on negative index
     void JSONArray :: setValue ( long int idx, JSONValue * elem )
     {
+        if ( locked )
+            throw JSONException ( __func__, __LINE__, "array object cannot be modified" );
         if ( idx < 0 )
             throw JSONException ( __func__, __LINE__, "illegal index value" );
 
@@ -158,7 +162,9 @@ namespace ncbi
     // deletes trailing null elements making them undefined
     JSONValue * JSONArray :: removeValue ( long int idx )
     {
-        // test for illegal index
+        if ( locked )
+            throw JSONException ( __func__, __LINE__, "array object cannot be modified" );
+       // test for illegal index
         if ( idx < 0 || ( size_t ) idx >= array . size () )
             return nullptr;
 
@@ -209,11 +215,14 @@ namespace ncbi
             // append them
             appendValue ( elem );
         }
+        
+        locked = a . locked;
 
         return * this;
     }
     
     JSONArray :: JSONArray ( const JSONArray & a )
+    : locked ( false )
     {
         size_t i, count = a . array . size ();
         for ( i = 0; i < count; ++ i )
@@ -221,24 +230,40 @@ namespace ncbi
             JSONValue * elem = a . array [ i ] -> clone ();
             appendValue ( elem );
         }
+        locked = a . locked;
     }
         
     JSONArray :: ~ JSONArray ()
     {
-        clear ();
+        locked = false;
+        try
+        {
+            clear ();
+        }
+        catch ( ... )
+        {
+        }
     }
 
     // used to empty out the array before copy
     void JSONArray :: clear ()
     {
+        if ( locked )
+            throw JSONException ( __func__, __LINE__, "array object cannot be modified" );
         while ( ! array . empty () )
         {
             delete array . back ();
             array . pop_back ();
         }
     }
+    
+    void JSONArray :: lock ()
+    {
+        locked = true;
+    }
 
     JSONArray :: JSONArray ()
+    : locked ( false )
     {
     }
     

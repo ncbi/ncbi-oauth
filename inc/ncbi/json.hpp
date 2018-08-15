@@ -166,6 +166,9 @@ namespace ncbi
         // replaces valid internal entries with null element
         // deletes trailing null elements making them undefined
         JSONValue * removeValue ( long int idx );
+        
+        // lock the array against change
+        void lock ();
 
         // C++ assignment
         JSONArray & operator = ( const JSONArray & array );
@@ -183,6 +186,7 @@ namespace ncbi
         JSONArray ();
 
         std :: vector < JSONValue * > array;
+        bool locked;
         
         friend class JSONValue;
         
@@ -241,6 +245,9 @@ namespace ncbi
         
         // remove and delete named value
         void removeValue ( const std :: string & name );
+        
+        // lock the object against change
+        void lock ();
 
         // C++ assignment
         JSONObject & operator = ( const JSONObject & obj );
@@ -258,6 +265,7 @@ namespace ncbi
         JSONObject ();
 
         std :: map < std :: string, std :: pair < bool, JSONValue * > > members;
+        bool locked;
         
         friend class JSONValue;
     };
