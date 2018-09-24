@@ -65,8 +65,10 @@ namespace ncbi
         //   ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))
         JWS signCompact ( JWSType type, const void * payload, size_t bytes ) const;
         
-        // verify a decoded JWS
-        void verify ( const JSONObject & hdr, const void * payload, size_t pay_bytes, const void * signature, size_t sig_bytes ) const;
+        // check that the JOSE header is completely understood
+        // validates signature
+        // or throw exception
+        void validate ( const JSONObject & hdr, const JWS & jws ) const;
         
         // sign and verify keys
         void setSigningKeys ( JWSAlgorithm alg, const std :: string & sign, const std :: string & verify );

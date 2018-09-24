@@ -31,11 +31,11 @@
 
 namespace ncbi
 {
-    const std :: string encodeBase64 ( const std :: string &text );
-    const std :: string decodeBase64 ( const std :: string &encoding );
+    const std :: string encodeBase64 ( const void * data, size_t bytes );
+    void * decodeBase64 ( const std :: string &encoding, size_t * bytes );
     
-    const std :: string encodeBase64URL ( const std :: string &text );
-    const std :: string decodeBase64URL ( const std :: string &encoding );
+    const std :: string encodeBase64URL ( const void * data, size_t bytes );
+    void * decodeBase64URL ( const std :: string &encoding, size_t * bytes );
     
 } // namespace ncbi
 

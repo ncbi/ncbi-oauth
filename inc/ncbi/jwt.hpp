@@ -80,6 +80,11 @@ namespace ncbi
         void addClaim ( const std :: string & name, JSONValue * value, bool isFinal = false );
         const JSONValue & getClaim ( const std :: string & name ) const;
         
+        // validate claims read from JWT payload
+        // mark protected claims as final
+        // test validity based on time +/- skew amount
+        void validate ( long long cur_time, long long skew = 0 );
+        
         // C++ assignment
         JWTClaims & operator = ( const JWTClaims & jwt );
         JWTClaims ( const JWTClaims & jwt );
@@ -107,10 +112,10 @@ namespace ncbi
         JWTClaims make () const;
         
         // decode a signed JWT
-        JWTClaims decode ( const JWSFactory & jws_fact, const JWT & jwt ) const;
+        JWTClaims decode ( const JWSFactory & jws_fact, const JWT & jwt, long long cur_time, long long skew = 0 ) const;
         
         // create a signed JWT as a compact JWS from the claims set
-        JWT signCompact ( const JWSFactory & jws_fact, const JWTClaims & claims ) const;
+        JWT sign ( const JWSFactory & jws_fact, const JWTClaims & claims ) const;
 
         // registered claim factory parameters
         void setIssuer ( const StringOrURI & iss );

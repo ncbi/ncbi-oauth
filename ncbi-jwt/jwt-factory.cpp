@@ -63,12 +63,15 @@ namespace ncbi
         return claims;
     }
     
-    // Decoding follows RFC 7519: Second 7.2
-    JWTClaims JWTFactory :: decode ( const JWSFactory & jws_fact, const JWT & jwt ) const
+    // Decoding follows RFC 7519: section 7.2
+    JWTClaims JWTFactory :: decode ( const JWSFactory & jws_fact, const JWT & jwt, long long cur_time, long long skew ) const
     {
+        // RFC 7519: section 1
+        // JWTs are always represented using the JWS Compact Serialization or the JWE Compact Serialization.
+        
         // 1. verify that the JWT contains at least one '.'
         size_t pos = 0;
-        size_t p = jwt . find_first_of ( "." );
+        size_t p = jwt . find_first_of ( '.' );
         if ( p == std :: string :: npos )
             throw JWTException ( __func__, __LINE__, "Invalid JWT - expected: '.'" );
         
@@ -79,71 +82,160 @@ namespace ncbi
         
         // 3. run decodeBase64URL() on the JOSE string
         // this will produce raw JSON text
-        header = decodeBase64URL ( header );
+        try
+        {
+            size_t bytes = 0;
+            char * data = ( char * ) decodeBase64URL ( header, & bytes );
+            header = std :: string ( data, bytes );
+            delete [] data;
+        }
+        catch ( ... )
+        {
+            // any error in base64URL encoding is an invalid JWT/JOSE object
+            // TBD - capture more information about what is wrong and include it in the new exception
+            throw JWTException ( __func__, __LINE__, "Invalid JWT - illegal JOSE base64URL encoding" );
+        }
         
-        // 4. trust your JSON parser enough to parse the raw JSON text of the JOSE header
+        // 4. trust JSON parser enough to parse the raw JSON text of the JOSE header
         // use restricted limits
         JSONValue :: Limits lim;
-        lim . recursion_depth = 1;
-        JSONObject *jose = JSONObject :: make ( lim, header );
-        
-        // 5. let the JWSFactory validate the JOSE header
-        // "5. Verify that the resulting JOSE Header includes only parameters and values whose syntax and
-        // semantics are both understood and supported or that are specified as being ignored when not understood."
-    
-        
-        // 6. determine that this is in fact a JWS; we dont support JWE
-        int p_count = 1; // already have the header
-        size_t pay_pos = 0;
-        
-        // JWS - only has two '.'
-        while ( p != std :: string :: npos )
+        JSONObject *jose = nullptr;
+        try
         {
-            if ( p_count < 2 )
-                pay_pos = jwt . find_first_of ( ".", p );
+            lim . recursion_depth = 1;
+            jose = JSONObject :: make ( lim, header );
+        }
+        catch ( ... )
+        {
+            // any error in JSON format is an invalid JWT/JOSE object
+            // TBD - capture more information about what is wrong and include it in the new exception
+            throw JWTException ( __func__, __LINE__, "Invalid JWT - malformed JOSE JSON" );
+        }
+        
+        try
+        {
+            // 5. count the number of compact segments
+            unsigned int period_count = 1; // already have the header
             
-            ++ p_count;
-        }
+            // "p" points to just after the first period
+            p = jwt . find_first_of ( '.', p );
+            
+            // retain the end of payload for JWS
+            size_t pay_pos = p;
+            
+            while ( p != std :: string :: npos )
+            {
+                if ( ++ period_count > 4 )
+                {
+                    throw JWTException ( __func__, __LINE__, "Invalid JWT - excessive number of sections." );
+                }
+                p = jwt . find_first_of ( '.', p + 1 );
+            }
+            
+            // 6. detect JWS or JWE
+            // RFC 7516 section 9
+            // "The JOSE Header for a JWS can also be distinguished from the JOSE
+            // Header for a JWE by determining whether an "enc" (encryption
+            // algorithm) member exists.  If the "enc" member exists, it is a
+            // JWE; otherwise, it is a JWS."
+            if ( jose -> exists ( "enc" ) )
+            {
+                // compact JWE has 5 sections
+                if ( period_count != 4 )
+                    throw JWTException ( __func__, __LINE__, "Invalid JWT - malformed JWE." );
+                
+                // TBD
+                throw JWTException ( __func__, __LINE__, "UNIMPLEMENTED - JWE is not supported at this time." );
+            }
+            
+            // compact JWS has 3 sections
+            if ( period_count != 2 )
+                throw JWTException ( __func__, __LINE__, "Invalid JWT - malformed JWS." );
+            
+            // 7. let the JWSFactory validate the JOSE header and signature - RFC 7515: Section 5.2
+            // "Verify that the resulting JOSE Header includes only parameters and values whose syntax and
+            // semantics are both understood and supported or that are specified as being ignored when not understood."
+            jws_fact . validate ( * jose, jwt );
+            
+            // 8. check for header member "cty"
+            // if exists, the payload is a nested JWT and need to repeat the previous steps
+            if ( jose -> exists( "cty" ) )
+            {
+                delete jose;
+                jose = nullptr;
+                return decode ( jws_fact, jwt . substr ( pos, pay_pos - pos ), cur_time, skew );
+            }
+            
+            // done with "jose"
+            delete jose;
+            jose = nullptr;
+            
+            // 9. decode payload
+            size_t bytes = 0;
+            char * pay_data = nullptr;
+            try
+            {
+                pay_data = ( char * ) decodeBase64URL ( jwt . substr ( pos, pay_pos - pos ), & bytes );
+            }
+            catch ( ... )
+            {
+                // any error in base64URL encoding is an invalid JWT object
+                // TBD - capture more information about what is wrong and include it in the new exception
+                throw JWTException ( __func__, __LINE__, "Invalid JWT - illegal base64URL encoding" );
+            }
+            std :: string pay ( pay_data, bytes );
+            delete [] pay_data;
+            
+            // 10. trust JSON parser enough to parse the raw JSON text of the payload
+            lim . recursion_depth = 100; // TBD - determine valid limit
+            JSONObject *payload = JSONObject :: make ( lim, pay );
+            try
+            {
 
-        switch ( p_count )
-        {
-            case 2:
-                break;
-            case 4:
-                throw JWTException ( __func__, __LINE__, "Not currently supporting JWE" );
-            default:
-                throw JWTException ( __func__, __LINE__, "Invalid JWT - does not conform to JWS or JWE" );
-        }
-        
-        // 7. Validate JWS - RFC 7515: Section 5.2
-        if ( ! jws_fact . validate () ) // this is missing
-            throw JWTException ( __func__, __LINE__, "Failed to validate JWS" );
-    
-        // 8. check for header member "cty"
-        // if exists, the payload is a nested JWT and need to repeat the previous steps
-        if ( jose -> exists( "cty" ) )
-            return decode ( jws_fact, jwt . substr ( pos, pay_pos - pos ) );
-        
-        // 9. decode payload
-        std :: string pay = decodeBase64URL ( jwt . substr ( pos, pay_pos - pos ) );
-        
-        // 10. trust your JSON parser enough to parse the raw JSON text of the payload
-        JSONObject *payload = JSONObject :: make ( lim, pay );
-        
-        // build claim set
-        JWTClaims claims ( payload );
-        claims . setIssuer ( payload -> getValue ( "iss" ) . toString () );
-        claims . setSubject ( payload -> getValue ( "sub" ) . toString () );
-        JSONArray aud = payload -> getValue ( "aud" ) . toArray ();
-        for ( size_t i = 0; i < aud . count (); ++ i )
-        {
-            claims . addAudience ( aud . getValue ( i ) . toString () );
-        }
+                // create claims from JSON payload
+                JWTClaims claims ( payload );
 
-        return claims;
+                // claim set is already built, but not validated
+                // TBD - validate claims, mark protected claims as final
+                claims . validate ( cur_time, skew );
+            
+#if 0
+                // this stuff is likely to be part of JWTClaims :: validate ()
+                claims . setIssuer ( payload -> getValue ( "iss" ) . toString () );
+                claims . setSubject ( payload -> getValue ( "sub" ) . toString () );
+                JSONArray aud = payload -> getValue ( "aud" ) . toArray ();
+                for ( size_t i = 0; i < aud . count (); ++ i )
+                {
+                    claims . addAudience ( aud . getValue ( i ) . toString () );
+                }
+                
+                // test validity of JWT based upon time
+                // TBD - must handle cases where claim might be optional
+                // right now if any are missing, they'll cause an exception to be thrown
+                if ( claims . getClaim ( "iat" ) . toInteger () > cur_time )
+                    throw "claims issued in the future";
+                if ( claims . getClaim ( "nbf" ) . toInteger () > cur_time )
+                    throw "claims are not yet valid";
+                if ( claims . getClaim ( "exp" ) . toInteger () <= cur_time )
+                    throw "claims have expired";
+#endif
+                
+                return claims;
+            }
+            catch ( ... )
+            {
+                delete payload;
+                throw;
+            }
+        }
+        catch ( ... )
+        {
+            delete jose;
+            throw;
+        }
     }
     
-    JWT JWTFactory :: signCompact ( const JWSFactory & jws_fact, const JWTClaims & claims ) const
+    JWT JWTFactory :: sign ( const JWSFactory & jws_fact, const JWTClaims & claims ) const
     {
         return "";
     }

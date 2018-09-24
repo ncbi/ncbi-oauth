@@ -67,17 +67,20 @@ namespace ncbi
     ;
     
     static
-    const std :: string encodeBase64Impl ( const std :: string &json, const char encode_table [] )
+    const std :: string encodeBase64Impl ( const void * data, size_t bytes, const char encode_table [] )
     {
+        if ( data == nullptr || bytes == 0 )
+            throw "invalid payload";
+            
         std :: string encoding;
         
         char buff [ 4096 ];
-        size_t i, j, len = json . size ();
+        size_t i, j, len = bytes;
         
         uint32_t acc;
-        const unsigned char * js = ( const unsigned char * ) json . c_str ();
+        const unsigned char * js = ( const unsigned char * ) data;
         
-        for ( i = j = 0; i + 2 < len; i += 3, j += 4 )
+        for ( i = j = 0; i + 3 <= len; i += 3, j += 4 )
         {
             acc
             = ( ( uint32_t ) js [ i + 0 ] << 16 )
@@ -164,15 +167,33 @@ namespace ncbi
     }
     
     static
-    const std :: string decodeBase64Impl ( const std :: string &encoding, const char decode_table [] )
+    unsigned char * reallocBuffer ( unsigned char * buff, size_t * bytes )
     {
-        std :: string json;
+        unsigned char * new_buff = new unsigned char [ * bytes + 256 + 1 ];
+        memmove ( new_buff, buff, * bytes );
+        delete [] buff;
+        * bytes += 256;
+        return new_buff;
+    }
+    
+    static
+    void * decodeBase64Impl ( const std :: string &encoding, size_t * bytes, const char decode_table [] )
+    {
+        size_t dummy;
+        if ( bytes == nullptr )
+            bytes = & dummy;
         
-        char buff [ 4096 ];
         size_t i, j, len = encoding . size ();
         
         uint32_t acc, ac;
         const unsigned char * en = ( const unsigned char * ) encoding . c_str ();
+        
+        // the returned buffer should be 3/4 the size of the input string,
+        // provided that there are no padding bytes in the input
+        * bytes = ( ( len + 3 ) / 4 ) * 3;
+        
+        // overallocate by 1 so that we can null-terminate
+        unsigned char * buff = new unsigned char [ * bytes + 1 ];
         
         for ( i = j = 0, acc = ac = 0; i < len; ++ i )
         {
@@ -183,29 +204,25 @@ namespace ncbi
                 acc |= byte;
                 if ( ++ ac == 4 )
                 {
+                    if ( j + 3 > * bytes )
+                        buff = reallocBuffer ( buff, bytes );
+
                     buff [ j + 0 ] = ( char ) ( acc >> 16 );
                     buff [ j + 1 ] = ( char ) ( acc >>  8 );
                     buff [ j + 2 ] = ( char ) ( acc >>  0 );
                     ac = 0;
                     
                     j += 3;
-                    if ( j + 3 > sizeof buff )
-                    {
-                        json += std :: string ( buff, j );
-                        j = 0;
-                    }
                 }
             }
             else if ( byte == -2 )
                 break;
-#if 0
+            else if ( byte == -3 )
+                continue;
             else
             {
-                // have to take a decision about illegal characters
-                // when okay, just skip them
-                // otherwise, consider the string corrupt
+                throw "illegal input characters";
             }
-#endif
         }
         
         switch ( ac )
@@ -220,11 +237,8 @@ namespace ncbi
                 acc <<= 12;
                 
                 // check buffer for space
-                if ( j >= sizeof buff )
-                {
-                    json += std :: string ( buff, j );
-                    j = 0;
-                }
+                if ( j >= * bytes )
+                    buff = reallocBuffer ( buff, bytes );
                 
                 // set additional byte
                 buff [ j + 0 ] = ( char ) ( acc >> 16 );
@@ -237,12 +251,9 @@ namespace ncbi
                 acc <<= 6;
                 
                 // check buffer for space
-                if ( j + 1 >= sizeof buff )
-                {
-                    json += std :: string ( buff, j );
-                    j = 0;
-                }
-                
+                if ( j + 1 >= * bytes )
+                    buff = reallocBuffer ( buff, bytes );
+
                 // set additional bytes
                 buff [ j + 0 ] = ( char ) ( acc >> 16 );
                 buff [ j + 1 ] = ( char ) ( acc >>  8 );
@@ -253,30 +264,29 @@ namespace ncbi
                 throw "2 - aaah!";
         }
         
-        if ( j != 0 )
-            json += std :: string ( buff, j );
-        
-        return json;
+        * bytes = j;
+        buff [ j ] = 0;
+        return buff;
     }
     
-    const std :: string encodeBase64 ( const std :: string &text )
+    const std :: string encodeBase64 ( const void * data, size_t bytes )
     {
-        return encodeBase64Impl ( text, encode_std_table );
+        return encodeBase64Impl ( data, bytes, encode_std_table );
     }
     
-    const std :: string decodeBase64 ( const std :: string &encoding )
+    void * decodeBase64 ( const std :: string &encoding, size_t * bytes )
     {
-        return decodeBase64Impl ( encoding, decode_std_table );
+        return decodeBase64Impl ( encoding, bytes, decode_std_table );
     }
     
-    const std :: string encodeBase64URL ( const std :: string &text )
+    const std :: string encodeBase64URL ( const void * data, size_t bytes )
     {
-        return encodeBase64Impl ( text, encode_url_table );
+        return encodeBase64Impl ( data, bytes, encode_url_table );
     }
     
-    const std :: string decodeBase64URL ( const std :: string &encoding )
+    void * decodeBase64URL ( const std :: string &encoding, size_t * bytes )
     {
-        return decodeBase64Impl ( encoding, decode_url_table );
+        return decodeBase64Impl ( encoding, bytes, decode_url_table );
     }
     
 } // namespace
