@@ -1150,7 +1150,7 @@ namespace ncbi
                     try
                     {
                         size_t num_read = fread ( buff, 1, fSize, file );
-                        if ( num_read == fSize )
+                        if ( num_read == ( size_t ) fSize )
                         {
                             EXPECT_ANY_THROW ( delete JSONObject :: make ( std :: string ( buff, num_read ) ) );
                         }
