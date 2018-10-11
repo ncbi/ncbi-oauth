@@ -109,12 +109,10 @@ namespace ncbi
     // throws exception if entry exists and is final
     void JSONObject :: setValue ( const std :: string & name, JSONValue * val )
     {
-        std :: pair < bool, JSONValue * > a_member;
-        
         auto it = members . find ( name );
         
         // if doesnt exist, add
-        if ( it == members . cend () )
+        if ( it == members . end () )
         {
             std :: pair < bool, JSONValue * > pair ( false, val );
             members . emplace ( name, pair );
@@ -137,12 +135,10 @@ namespace ncbi
    #pragma warning "this set final value seems to be leaking memory"
     void JSONObject :: setFinalValue ( const std :: string & name, JSONValue * val )
     {
-        std :: pair < bool, JSONValue * > a_member;
-        
         auto it = members . find ( name );
         
         // if doesnt exist, add
-        if ( it == members . cend () )
+        if ( it == members . end () )
         {
             std :: pair < bool, JSONValue * > pair ( true, val );
             members . emplace ( name, pair );
