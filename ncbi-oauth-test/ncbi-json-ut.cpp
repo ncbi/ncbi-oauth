@@ -188,9 +188,12 @@ namespace ncbi
     {
         make_and_verify_eq( Value , "12345", "12345" );
     }
-    TEST_F ( JSONFixture_WhiteBox, Integer_Single_Negative )
+    TEST_F ( JSONFixture_WhiteBox, Integer_Single_Negative_zero )
     {
         make_and_verify_eq( Value , "-0", "0" );
+    }
+    TEST_F ( JSONFixture_WhiteBox, Integer_Single_Negative_one )
+    {
         make_and_verify_eq( Value , "-1", "-1" );
     }
     TEST_F ( JSONFixture_WhiteBox, Integer_Multiple_Negative )
@@ -203,9 +206,12 @@ namespace ncbi
      * int exp
      * int frac exp
      */
-    TEST_F ( JSONFixture_WhiteBox, Float_Frac )
+    TEST_F ( JSONFixture_WhiteBox, Float_Frac_zero )
     {
         make_and_verify_eq( Value , "0.0", "0.0" );
+    }
+        TEST_F ( JSONFixture_WhiteBox, Float_Frac_onetwo )
+    {
         make_and_verify_eq( Value , "1.2", "1.2" );
     }
     TEST_F ( JSONFixture_WhiteBox, Float_Frac_Precision )
@@ -221,20 +227,28 @@ namespace ncbi
         // only one digit
         make_and_verify_eq ( Value , "0E", "0", false );
     }
-    TEST_F ( JSONFixture_WhiteBox, Float_eE_digit )
+    TEST_F ( JSONFixture_WhiteBox, Float_eE_digit_lower )
     {
         make ( Value , "0e0" );
-        make ( Value , "0E0" );
-        
     }
-    TEST_F ( JSONFixture_WhiteBox, Float_eE_plus_digits )
+    TEST_F ( JSONFixture_WhiteBox, Float_eE_digit_upper )
+    {
+        make ( Value , "0E0" );   
+    }
+    TEST_F ( JSONFixture_WhiteBox, Float_eE_plus_digits_lower )
     {
         make ( Value , "0e+0" );
+    }
+    TEST_F ( JSONFixture_WhiteBox, Float_eE_plus_digits_upper )
+    {
         make ( Value , "0E+0" );
     }
-    TEST_F ( JSONFixture_WhiteBox, Float_eE_minus_digits )
+    TEST_F ( JSONFixture_WhiteBox, Float_eE_minus_digits_lower )
     {
         make ( Value , "0e-0" );
+    }
+    TEST_F ( JSONFixture_WhiteBox, Float_eE_minus_digits_upper )
+    {
         make ( Value , "0E-0" );
     }
 
@@ -348,6 +362,7 @@ namespace ncbi
         
         void make_and_verify_eq ( const std :: string &json, const std :: string &expected )
         {
+            assert ( jObj == nullptr );
             jObj = JSONObject :: make ( json );
             EXPECT_STREQ ( jObj -> toJSON() . c_str(), expected . c_str () );
         }
