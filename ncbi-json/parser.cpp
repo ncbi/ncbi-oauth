@@ -370,7 +370,10 @@ namespace ncbi
         JSONValue *val = parse ( default_limits, json, pos, 0 );
         
         if ( consume_all && pos < json . size () )
+        {
+            delete val;
             throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" ); // test hit
+        }
         
         return val;
     }
@@ -425,7 +428,10 @@ namespace ncbi
         JSONArray *array = parse ( default_limits, json, pos, 0 );
         
         if ( pos < json . size () )
+        {
+            delete array;
             throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" ); // test hit
+        }
         
         return array;
     }
@@ -505,7 +511,10 @@ namespace ncbi
         JSONObject *obj = parse ( default_limits, json, pos, 0 );
 
         if ( pos < json . size () )
+        {
+            delete obj;
             throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" );
+        }
         
         return obj;
     }
@@ -559,7 +568,10 @@ namespace ncbi
                 
                 // skip to ':'
                 if ( ! skip_whitespace ( json, pos ) || json [ pos ] != ':' )
+                {
+                    delete name;
                     throw JSONException ( __func__, __LINE__, "Expected: ':'" ); // test hit
+                }
                 
                 // skip over ':'
                 ++ pos;
@@ -567,12 +579,18 @@ namespace ncbi
                 // get JSON value;
                 JSONValue *value = JSONValue :: parse ( lim, json, pos, depth );
                 if ( value == nullptr )
+                {
+                    delete name;
                     throw JSONException ( __func__, __LINE__, "Failed to create JSON object" );
+                }
                 
                 obj -> setValue ( name -> toString(), value );
                 
                 if ( obj -> count () > default_limits . object_mbr_count )
+                {
+                    delete name;
                     throw JSONException ( __func__, __LINE__, "Array element count exceeds limit" );
+                }
                 
                 delete name;
                 

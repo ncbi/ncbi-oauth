@@ -109,12 +109,10 @@ namespace ncbi
     // throws exception if entry exists and is final
     void JSONObject :: setValue ( const std :: string & name, JSONValue * val )
     {
-        std :: pair < bool, JSONValue * > a_member;
-        
         auto it = members . find ( name );
         
         // if doesnt exist, add
-        if ( it == members . cend () )
+        if ( it == members . end () )
         {
             std :: pair < bool, JSONValue * > pair ( false, val );
             members . emplace ( name, pair );
@@ -126,20 +124,21 @@ namespace ncbi
                 throw JSONException ( __func__, __LINE__, "Cannot overrite final member" );
             
             // overwrite value
+            // TBD - need to look at threat safety
+            delete it -> second . second;
             it -> second . second = val;
         }
     }
 
     // set entry to a final value
     // throws exception if entry exists and is final
+   #pragma warning "this set final value seems to be leaking memory"
     void JSONObject :: setFinalValue ( const std :: string & name, JSONValue * val )
     {
-        std :: pair < bool, JSONValue * > a_member;
-        
         auto it = members . find ( name );
         
         // if doesnt exist, add
-        if ( it == members . cend () )
+        if ( it == members . end () )
         {
             std :: pair < bool, JSONValue * > pair ( true, val );
             members . emplace ( name, pair );
@@ -151,6 +150,7 @@ namespace ncbi
                 throw JSONException ( __func__, __LINE__, "Cannot overrite final member" );
             
             // overwrite value
+            delete it -> second . second;
             it -> second . second = val;
         }
     }
@@ -238,6 +238,7 @@ namespace ncbi
                     continue;
                 }
                 
+                delete  it -> second . second;
                 it = members . erase ( it );
             }
         }

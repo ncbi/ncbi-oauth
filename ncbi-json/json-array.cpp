@@ -185,6 +185,7 @@ namespace ncbi
             array . pop_back ();
 
             // and test from the back toward front for null elements
+            // up until the first non-null (resize the array)
             while ( ! array . empty () )
             {
                 // any non-null element breaks loop
@@ -192,7 +193,7 @@ namespace ncbi
                     break;
 
                 // delete the null
-                delete array . back ();
+                //delete array . back ();
                 array . pop_back ();
             }
         }
