@@ -183,7 +183,10 @@ namespace ncbi
     {
         auto it = members . find ( name );
         if ( it != members . cend () && it -> second . first == false )
+        {
+            delete  it -> second . second;
             members . erase ( it );
+        }
     }
 
     // C++ assignment
@@ -207,7 +210,7 @@ namespace ncbi
     
     JSONObject :: JSONObject ( const JSONObject & obj )
     {
-        for ( auto it = obj . members . cbegin(); it != obj . members . cend (); ++ it )
+        for ( auto it = obj . members . begin(); it != obj . members . end (); ++ it )
         {
             std :: string name = it -> first;
             JSONValue *val = it -> second . second  -> clone ();
@@ -229,15 +232,8 @@ namespace ncbi
     {
         if ( ! members . empty () )
         {
-            for ( auto it = members . cbegin(); it != members . cend (); )
+            for ( auto it = members . begin(); it != members . end (); )
             {
-                // if its final, skip it
-                if ( it -> second . first )
-                {
-                    ++ it;
-                    continue;
-                }
-                
                 delete  it -> second . second;
                 it = members . erase ( it );
             }
