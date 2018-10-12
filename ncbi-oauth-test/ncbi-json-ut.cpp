@@ -717,6 +717,7 @@ namespace ncbi
         to_types ( type );
         JSONValue *clone = jObj -> clone ();
         ASSERT_TRUE( clone -> isNull () );
+        delete clone;
     }
     TEST_F ( JSONFixture_JSONValue_Interface, t_bool )
     {
@@ -729,6 +730,7 @@ namespace ncbi
         to_types ( type, val );
         JSONValue *clone = jObj -> clone ();
         ASSERT_TRUE( clone -> isBool () );
+        delete clone;
     }
     TEST_F ( JSONFixture_JSONValue_Interface, t_integer )
     {
@@ -741,6 +743,7 @@ namespace ncbi
         to_types ( type, &val );
         JSONValue *clone = jObj -> clone ();
         ASSERT_TRUE( clone -> isInteger () );
+        delete clone;
     }
     TEST_F ( JSONFixture_JSONValue_Interface, t_double )
     {
@@ -753,6 +756,7 @@ namespace ncbi
         to_types ( type, &val );
         JSONValue *clone = jObj -> clone ();
         ASSERT_TRUE( clone -> isNumber () );
+        delete clone;
     }
     TEST_F ( JSONFixture_JSONValue_Interface, t_number )
     {
@@ -765,6 +769,7 @@ namespace ncbi
         to_types ( type, val );
         JSONValue *clone = jObj -> clone ();
         ASSERT_TRUE( clone -> isNumber () );
+        delete clone;
     }
     TEST_F ( JSONFixture_JSONValue_Interface, t_string )
     {
@@ -777,6 +782,7 @@ namespace ncbi
         to_types ( type, val );
         JSONValue *clone = jObj -> clone ();
         ASSERT_TRUE( clone -> isString () );
+        delete clone;
     }
     TEST_F ( JSONFixture_JSONValue_Interface, t_array )
     {
@@ -835,6 +841,7 @@ namespace ncbi
         JSONValue *obj = jObj -> clone ();
         ASSERT_TRUE ( obj -> isObject () );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), obj -> toJSON() . c_str() );
+        delete obj;
     }
     TEST_F ( JSONFixture_JSONObject_Interface, isEmpty )
     {
@@ -1002,6 +1009,7 @@ namespace ncbi
         JSONValue *obj = jObj -> clone ();
         ASSERT_TRUE ( obj -> isArray () );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), obj -> toJSON() . c_str() );
+        delete obj;
     }
     TEST_F ( JSONFixture_JSONArray_Interface, isEmpty )
     {
@@ -1099,7 +1107,7 @@ namespace ncbi
     {
         make_empty();
         jObj -> setValue ( 0, JSONValue :: makeString ( "value" ) );
-        jObj -> removeValue ( 0 );
+        delete jObj -> removeValue ( 0 );
         EXPECT_STREQ ( jObj -> toJSON() . c_str(), "[]" );
     }
     TEST_F ( JSONFixture_JSONArray_Interface, operator_equals )
