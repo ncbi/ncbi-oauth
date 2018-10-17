@@ -53,9 +53,14 @@ $(LIBDIR)/libncbi-json.a: $(OBJDIR) $(LIBJSONOBJ) $(MAKEFILE)
 	ar -rc $@ $(LIBJSONOBJ)
 
 ## ncbi-jwt
-LIBJWTSRC =                \
-	jwt-claims         \
+LIBJWTSRC =            \
 	jwt-factory        \
+	jwt-claims         \
+	jws-factory        \
+	jwa-none           \
+	jwa-factory        \
+	jwt-lock           \
+	jwt-exception      \
 	base64
 
 LIBJWTOBJ = \

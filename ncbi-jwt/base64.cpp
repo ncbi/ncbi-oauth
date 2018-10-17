@@ -1,24 +1,53 @@
-//
-//  jwt-base64.cpp
-//  ncbi-jwt
-//
-//  Created by User on 7/30/18.
-//  Copyright © 2018 NCBI. All rights reserved.
-//
+/*===========================================================================
+*
+*                            PUBLIC DOMAIN NOTICE
+*               National Center for Biotechnology Information
+*
+*  This software/database is a "United States Government Work" under the
+*  terms of the United States Copyright Act.  It was written as part of
+*  the author's official duties as a United States Government employee and
+*  thus cannot be copyrighted.  This software/database is freely available
+*  to the public for use. The National Library of Medicine and the U.S.
+*  Government have not placed any restriction on its use or reproduction.
+*
+*  Although all reasonable efforts have been taken to ensure the accuracy
+*  and reliability of the software and data, the NLM and the U.S.
+*  Government do not and cannot warrant the performance or results that
+*  may be obtained by using this software or data. The NLM and the U.S.
+*  Government disclaim all warranties, express or implied, including
+*  warranties of performance, merchantability or fitness for any particular
+*  purpose.
+*
+*  Please cite the author in any work or product based on this material.
+*
+* ===========================================================================
+*
+*/
 
 #include "base64-priv.hpp"
+#include <ncbi/jwt.hpp>
 
-#include <stdint.h>
+#include <cstdint>
+#include <cstring>
+#include <cassert>
+#include <string>
 
 namespace ncbi
 {
+    // from binary 0..63 to standard BASE64 encoding
     static
     const char encode_std_table [] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789"
     "+/";
-    
+
+    // from octet stream ( presumed standard BASE64 encoding )
+    // to binary, where
+    //   0..63 is valid output
+    //   -1 is invalid output
+    //   -2 is padding
+    //   -3 would normally mean ignore ( invalid within JWT )
     static
     const char decode_std_table [] =
     "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x00 .. \x0F
@@ -39,6 +68,7 @@ namespace ncbi
     "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xF0 .. \xFF
     ;
     
+    // from binary 0..63 to BASE64-URL encoding
     static
     const char encode_url_table [] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -46,6 +76,12 @@ namespace ncbi
     "0123456789"
     "-_";
     
+    // from octet stream ( presumed BASE64-URL encoding )
+    // to binary, where
+    //   0..63 is valid output
+    //   -1 is invalid output
+    //   -2 is padding
+    //   -3 would normally mean ignore ( invalid within JWT )
     static
     const char decode_url_table [] =
     "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x00 .. \x0F
@@ -69,62 +105,100 @@ namespace ncbi
     static
     const std :: string encodeBase64Impl ( const void * data, size_t bytes, const char encode_table [] )
     {
-        if ( data == nullptr || bytes == 0 )
-            throw "invalid payload";
-            
+        // allow an empty source
+        if ( bytes == 0 )
+            return "";
+        
+        // this exception represents an internal error in any case
+        if ( data == nullptr )
+            throw JWTException ( __func__, __LINE__, "invalid payload" );
+
+        // TBD - place an upper limit on data size
+        // a very large payload will create a very large string allocation
+        // and may indicate garbage that could result in a segfault
+        if ( bytes >= 0x40000000 )
+            throw JWTException ( __func__, __LINE__, "payload too large" );
+
+        // gather encoded output in a string
+        // this is why we wanted to limit the data size
         std :: string encoding;
-        
+
+        // perform work in a stack-local buffer to reduce
+        // memory manager thrashing when adding to "encoding" string
+        size_t i, j;
         char buff [ 4096 ];
-        size_t i, j, len = bytes;
-        
+
+        // accumulate 24 bits of input at a time into a 32-bit accumulator
         uint32_t acc;
+
+        // walk across data as a block of octets
         const unsigned char * js = ( const unsigned char * ) data;
-        
-        for ( i = j = 0; i + 3 <= len; i += 3, j += 4 )
+
+        // consume 3 octets of input while producing 4 output characters
+        // JWT does not allow formatting, so no line breaks are involved
+        for ( i = j = 0; i + 3 <= bytes; i += 3, j += 4 )
         {
+            // bring in 24 bits in specific order
             acc
             = ( ( uint32_t ) js [ i + 0 ] << 16 )
             | ( ( uint32_t ) js [ i + 1 ] <<  8 )
             | ( ( uint32_t ) js [ i + 2 ] <<  0 )
             ;
-            
-            if ( j == sizeof buff )
+
+            // we need to emit 4 bytes of output
+            // flush the local buffer if it cannot hold them all
+            if ( j > ( sizeof buff - 4 ) )
             {
                 encoding += std :: string ( buff, j );
                 j = 0;
             }
-            
+
+            // produce the 4 bytes of output through the provided encoding table
+            // each index MUST be 0..63
             buff [ j + 0 ] = encode_table [ ( acc >> 18 ) & 0x3F ];
             buff [ j + 1 ] = encode_table [ ( acc >> 12 ) & 0x3F ];
             buff [ j + 2 ] = encode_table [ ( acc >>  6 ) & 0x3F ];
             buff [ j + 3 ] = encode_table [ ( acc >>  0 ) & 0x3F ];
         }
-        
-        switch ( len - i )
+
+        // at this point, the data block is either completely converted
+        // or has 1 or 2 bytes left over, since ( bytes % 3 ) is in { 0, 1, 2 }
+        // we know "i" is a multiple of 3, and ( bytes - i ) == ( bytes % 3 )
+        switch ( bytes - i )
         {
             case 0:
+                // everything is complete
                 break;
                 
             case 1:
-                
+
+                // 1 octet left over
+                // place it in the highest part of 24-bit accumulator
                 acc
                 = ( ( uint32_t ) js [ i + 0 ] << 16 )
                 ;
-                
-                if ( j == sizeof buff )
+
+                // we need to emit 4 bytes of output
+                // flush buffer if insufficient space is available
+                if ( j > ( sizeof buff - 4 ) )
                 {
                     encoding += std :: string ( buff, j );
                     j = 0;
                 }
-                
+
+                // emit single octet split between two encoding characters
                 buff [ j + 0 ] = encode_table [ ( acc >> 18 ) & 0x3F ];
                 buff [ j + 1 ] = encode_table [ ( acc >> 12 ) & 0x3F ];
+
+                // pad the remaining two with padding character
                 buff [ j + 2 ] = '=';
                 buff [ j + 3 ] = '=';
-                
+
 #if BASE64_PAD_ENCODING
+                // total number of characters in buffer includes padding
                 j += 4;
 #else
+                // total number of characters in buffer does not include padding
                 j += 2;
 #endif
                 
@@ -132,57 +206,127 @@ namespace ncbi
                 
             case 2:
                 
+                // 2 octets left over
+                // place them in the upper part of 24-bit accumulator
                 acc
                 = ( ( uint32_t ) js [ i + 0 ] << 16 )
                 | ( ( uint32_t ) js [ i + 1 ] <<  8 )
                 ;
-                
-                if ( j == sizeof buff )
+
+                // test for buffer space as above
+                if ( j > ( sizeof buff - 4 ) )
                 {
                     encoding += std :: string ( buff, j );
                     j = 0;
                 }
-                
+
+                // emit the two octets split across three encoding characters
                 buff [ j + 0 ] = encode_table [ ( acc >> 18 ) & 0x3F ];
                 buff [ j + 1 ] = encode_table [ ( acc >> 12 ) & 0x3F ];
                 buff [ j + 2 ] = encode_table [ ( acc >>  6 ) & 0x3F ];
+
+                // pad the remainder with padding character
                 buff [ j + 3 ] = '=';
                 
 #if BASE64_PAD_ENCODING
+                // total number of characters in buffer includes padding
                 j += 4;
 #else
+                // total number of characters in buffer does not include padding
                 j += 3;
 #endif
                 
                 break;
                 
             default:
-                throw "1 - aaaah!";
+
+                // this is theoretically impossible
+                throw JWTException ( __func__, __LINE__, "1 - aaaah!" );
         }
-        
+
+        // if "j" is not 0 at this point, it means
+        // there are encoding characters in the stack-local buffer
+        // append them to the encoding string
         if ( j != 0 )
             encoding += std :: string ( buff, j );
-        
+
+        // done.
         return encoding;
     }
-    
-    static
-    unsigned char * reallocBuffer ( unsigned char * buff, size_t * bytes )
+
+
+
+
+    // Base64Payload
+    void Base64Payload :: setSize ( size_t amt )
     {
-        unsigned char * new_buff = new unsigned char [ * bytes + 256 + 1 ];
-        memmove ( new_buff, buff, * bytes );
+        if ( amt > cap || buff == nullptr )
+            throw JWTException ( __func__, __LINE__, "illegal payload size" );
+
+        sz = amt;
+        buff [ amt ] = 0;
+    }
+    
+    void Base64Payload :: increaseCapacity ( size_t amt )
+    {
+        unsigned char * new_buff = new unsigned char [ cap + amt + 1 ];
+        memmove ( new_buff, buff, sz );
         delete [] buff;
-        * bytes += 256;
-        return new_buff;
+        cap += amt;
+        buff = new_buff;
+    }
+
+    Base64Payload :: Base64Payload ()
+        : buff ( nullptr )
+        , sz ( 0 )
+        , cap ( 0 )
+    {
+    }
+
+    Base64Payload :: Base64Payload ( size_t initial_capacity )
+        : buff ( nullptr )
+        , sz ( 0 )
+        , cap ( initial_capacity )
+    {
+        buff = new unsigned char [ cap + 1 ];
+    }
+
+    Base64Payload :: Base64Payload ( const Base64Payload & payload )
+        : buff ( payload . buff )
+        , sz ( payload . sz )
+        , cap ( payload . cap )
+    {
+        payload . buff = nullptr;
+        payload . sz = payload . cap = 0;
+    }
+
+    Base64Payload & Base64Payload :: operator = ( const Base64Payload & payload )
+    {
+        delete [] buff;
+
+        buff = payload . buff;
+        sz = payload . sz;
+        cap = payload . cap;
+        
+        payload . buff = nullptr;
+        payload . sz = payload . cap = 0;
+
+        return * this;
+    }
+
+    Base64Payload :: ~ Base64Payload ()
+    {
+        delete [] buff;
+        buff = nullptr;
+        sz = cap = 0;
     }
     
     static
-    void * decodeBase64Impl ( const std :: string &encoding, size_t * bytes, const char decode_table [] )
+    const Base64Payload decodeBase64Impl ( const std :: string &encoding, const char decode_table [] )
     {
-        size_t dummy;
-        if ( bytes == nullptr )
-            bytes = & dummy;
-        
+        // base the estimate of decoded size on input size
+        // this can be over-estimated due to embedded padding or formatting characters
+        // however, these are prohibited in JWT so the size should be nearly exact
         size_t i, j, len = encoding . size ();
         
         uint32_t acc, ac;
@@ -190,69 +334,122 @@ namespace ncbi
         
         // the returned buffer should be 3/4 the size of the input string,
         // provided that there are no padding bytes in the input
-        * bytes = ( ( len + 3 ) / 4 ) * 3;
+        size_t bytes = ( ( len + 3 ) / 4 ) * 3;
         
-        // overallocate by 1 so that we can null-terminate
-        unsigned char * buff = new unsigned char [ * bytes + 1 ];
-        
+        // create an output buffer
+        Base64Payload payload ( bytes );
+        unsigned char * buff = payload . data ();
+
+        // generate a capacity limit, beyond which
+        // the buffer must be extended
+        size_t cap_limit = payload . capacity () - 3;
+
+        // walk across the input string a byte at a time
+        // avoid temptation to consume 4 bytes at a time,
+        // in order to be robust to any allowed stray characters
+        // NB - if this proves to be a performance issue, it can
+        // be optimized in the future.
         for ( i = j = 0, acc = ac = 0; i < len; ++ i )
         {
+            // return from table is a SIGNED entity
             int byte = decode_table [ en [ i ] ];
+
+            // non-negative lookups are valid translations
             if ( byte >= 0 )
             {
+                // must be 0..63
+                assert ( byte < 64 );
+
+                // shift 6 bits into accumulator
                 acc <<= 6;
                 acc |= byte;
+
+                // if the number of codes in accumulator is 4 ( i.e. 24 bits )
                 if ( ++ ac == 4 )
                 {
-                    if ( j + 3 > * bytes )
-                        buff = reallocBuffer ( buff, bytes );
+                    // test capacity of output
+                    if ( j > cap_limit )
+                    {
+                        payload . increaseCapacity ();
+                        buff = payload . data ();
+                        cap_limit = payload . capacity () - 3;
+                    }
 
-                    buff [ j + 0 ] = ( char ) ( acc >> 16 );
-                    buff [ j + 1 ] = ( char ) ( acc >>  8 );
-                    buff [ j + 2 ] = ( char ) ( acc >>  0 );
+                    // put 3 octets into payload
+                    buff [ j + 0 ] = ( unsigned char ) ( acc >> 16 );
+                    buff [ j + 1 ] = ( unsigned char ) ( acc >>  8 );
+                    buff [ j + 2 ] = ( unsigned char ) ( acc >>  0 );
+
+                    // clear the accumulator
                     ac = 0;
-                    
+
+                    // keep track of size
+                    // NB - this is not YET reflected in payload
                     j += 3;
                 }
             }
-            else if ( byte == -2 )
-                break;
-            else if ( byte == -3 )
-                continue;
+
+            // NEGATIVE lookups have to be interpreted
             else
             {
-                throw "illegal input characters";
+                // the special value -2 means padding
+                // which indicates the end of the input
+                if ( byte == -2 )
+                    break;
+
+                // the special value -3 would indicate ignore
+                // but it's not allowed in JWT and so is not expected to be in table
+                // any other value ( notably -1 ) is illegal
+                if ( byte != -3 )
+                    throw JWTException ( __func__, __LINE__, "illegal input characters" );
             }
         }
-        
+
+        // test the number of 6-bit codes remaining in the accumulator
         switch ( ac )
         {
             case 0:
+                // none - everything has been converted
                 break;
+                
             case 1:
-                throw "malformed input - group with 1 base64 encode character";
+                // encoding granularity is an octet - 8 bits
+                // it MUST be split across two codes - 6 bits each, i.e. 12 bits
+                // having only 6 bits in accumulator is illegal
+                throw JWTException ( __func__, __LINE__, "malformed input - group with 1 base64 encode character" );
+                
             case 2:
                 
-                // fill accumulator with padding
+                // fill accumulator with two padding codes
+                // NB - not strictly necessary, but keeps code regular and readable
                 acc <<= 12;
                 
                 // check buffer for space
-                if ( j >= * bytes )
-                    buff = reallocBuffer ( buff, bytes );
+                if ( j >= payload . capacity () )
+                {
+                    payload . increaseCapacity ( 1 );
+                    buff = payload . data ();
+                }
                 
-                // set additional byte
+                // set additional octet
                 buff [ j + 0 ] = ( char ) ( acc >> 16 );
-                
+
+                // account for size
+                // NB - this is not YET reflected in payload
                 j += 1;
                 break;
+                
             case 3:
                 
                 // fill accumulator with padding
                 acc <<= 6;
                 
                 // check buffer for space
-                if ( j + 1 >= * bytes )
-                    buff = reallocBuffer ( buff, bytes );
+                if ( j + 1 >= payload . capacity () )
+                {
+                    payload . increaseCapacity ( 2 );
+                    buff = payload . data ();
+                }
 
                 // set additional bytes
                 buff [ j + 0 ] = ( char ) ( acc >> 16 );
@@ -260,13 +457,35 @@ namespace ncbi
                 
                 j += 2;
                 break;
+                
             default:
-                throw "2 - aaah!";
+
+                // theoretically impossible
+                throw JWTException ( __func__, __LINE__, "2 - aaah!" );
         }
-        
-        * bytes = j;
-        buff [ j ] = 0;
-        return buff;
+
+        // NOW store size on object
+        payload . setSize ( j );
+
+        // return the object
+        return payload;
+    }
+
+    static
+    const std :: string payloadToUTF8 ( const Base64Payload & payload )
+    {
+        const unsigned char * buff = payload . data ();
+        size_t size = payload . size ();
+
+        // COULD carry out a full UTF-8 examination
+        // but for now, just look for NULs within the text
+        for ( size_t i = 0; i < size; ++ i )
+        {
+            if ( buff [ i ] == 0 )
+                throw JWTException ( __func__, __LINE__, "text contains embedded NUL" );
+        }
+
+        return std :: string ( ( const char * ) buff, size );
     }
     
     const std :: string encodeBase64 ( const void * data, size_t bytes )
@@ -274,9 +493,16 @@ namespace ncbi
         return encodeBase64Impl ( data, bytes, encode_std_table );
     }
     
-    void * decodeBase64 ( const std :: string &encoding, size_t * bytes )
+    const Base64Payload decodeBase64 ( const std :: string &encoding )
     {
-        return decodeBase64Impl ( encoding, bytes, decode_std_table );
+        Base64Payload payload = decodeBase64Impl ( encoding, decode_std_table );
+        return payload;
+    }
+    
+    const std :: string decodeBase64String ( const std :: string &encoding )
+    {
+        Base64Payload payload = decodeBase64Impl ( encoding, decode_std_table );
+        return payloadToUTF8 ( payload );
     }
     
     const std :: string encodeBase64URL ( const void * data, size_t bytes )
@@ -284,9 +510,15 @@ namespace ncbi
         return encodeBase64Impl ( data, bytes, encode_url_table );
     }
     
-    void * decodeBase64URL ( const std :: string &encoding, size_t * bytes )
+    const Base64Payload decodeBase64URL ( const std :: string &encoding )
     {
-        return decodeBase64Impl ( encoding, bytes, decode_url_table );
+        return decodeBase64Impl ( encoding, decode_url_table );
+    }
+    
+    const std :: string decodeBase64URLString ( const std :: string &encoding )
+    {
+        Base64Payload payload = decodeBase64Impl ( encoding, decode_url_table );
+        return payloadToUTF8 ( payload );
     }
     
 } // namespace

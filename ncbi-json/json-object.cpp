@@ -121,7 +121,7 @@ namespace ncbi
         {
             // if non modifiable, throw
             if ( it -> second . first )
-                throw JSONException ( __func__, __LINE__, "Cannot overrite final member" );
+                throw JSONException ( __func__, __LINE__, "Cannot overwrite final member" );
             
             // overwrite value
             // TBD - need to look at threat safety
@@ -132,7 +132,6 @@ namespace ncbi
 
     // set entry to a final value
     // throws exception if entry exists and is final
-   #pragma warning "this set final value seems to be leaking memory"
     void JSONObject :: setFinalValue ( const std :: string & name, JSONValue * val )
     {
         auto it = members . find ( name );
@@ -147,7 +146,7 @@ namespace ncbi
         {
             // if non modifiable, throw
             if ( it -> second . first )
-                throw JSONException ( __func__, __LINE__, "Cannot overrite final member" );
+                throw JSONException ( __func__, __LINE__, "Cannot overwrite final member" );
             
             // overwrite value
             delete it -> second . second;
@@ -159,7 +158,7 @@ namespace ncbi
     JSONValue & JSONObject :: getValue ( const std :: string & name )
     {
         auto it = members . find ( name );
-        if ( it != members . cend () )
+        if ( it != members . end () )
         {
             return * it -> second . second;
         }
@@ -182,7 +181,7 @@ namespace ncbi
     void JSONObject :: removeValue ( const std :: string & name )
     {
         auto it = members . find ( name );
-        if ( it != members . cend () && it -> second . first == false )
+        if ( it != members . end () && it -> second . first == false )
         {
             delete  it -> second . second;
             members . erase ( it );
@@ -210,7 +209,7 @@ namespace ncbi
     
     JSONObject :: JSONObject ( const JSONObject & obj )
     {
-        for ( auto it = obj . members . begin(); it != obj . members . end (); ++ it )
+        for ( auto it = obj . members . cbegin(); it != obj . members . cend (); ++ it )
         {
             std :: string name = it -> first;
             JSONValue *val = it -> second . second  -> clone ();

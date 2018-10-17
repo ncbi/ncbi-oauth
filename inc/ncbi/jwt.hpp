@@ -31,6 +31,8 @@
 #include <ncbi/json.hpp>
 #endif
 
+#include <atomic>
+
 namespace ncbi
 {
     class JWSFactory;
@@ -63,6 +65,28 @@ namespace ncbi
         std :: string msg;
         const char * fl_msg;
     };
+
+    // JWTLock
+    struct JWTLock
+    {
+
+        JWTLock ();
+        ~ JWTLock ();
+        
+        mutable std :: atomic_flag flag;
+    };
+
+    class JWTLocker
+    {
+    public:
+
+        JWTLocker ( const JWTLock & lock );
+        ~ JWTLocker ();
+        
+    private:
+
+        const JWTLock & lock;
+    };
     
     // A JSON object that contains the claims conveyed by the JWT
     class JWTClaims
@@ -78,29 +102,46 @@ namespace ncbi
 
         // claims can be any valid JSONValue
         void addClaim ( const std :: string & name, JSONValue * value, bool isFinal = false );
+        void addClaimOrDeleteValue ( const std :: string & name, JSONValue * value, bool isFinal = false );
         const JSONValue & getClaim ( const std :: string & name ) const;
         
         // validate claims read from JWT payload
         // mark protected claims as final
         // test validity based on time +/- skew amount
         void validate ( long long cur_time, long long skew = 0 );
+
+        // serialization
+        std :: string toJSON () const;
         
         // C++ assignment
         JWTClaims & operator = ( const JWTClaims & jwt );
         JWTClaims ( const JWTClaims & jwt );
+        ~ JWTClaims ();
         
     private:
         
         // any std :: string parameter typed as StringOrURI MUST be validated
         // throws an exception for an invalid string
         static void validateStringOrURI ( const std :: string & str );
+        static void validateStringOrURI ( JSONValue * value );
+
+        // store a newly allocated value under claim name
+        // delete the value if there are any problems
+        void setValueOrDelete ( const std :: string & name, JSONValue * value ) const;
+        void setFinalValueOrDelete ( const std :: string & name, JSONValue * value ) const;
         
         JWTClaims ();
         JWTClaims ( JSONObject * claims );
 
         JSONObject * claims;
+        long long duration;
+        long long not_before;
+        JWTLock obj_lock;
+        bool have_duration;
+        bool have_not_before;
 
         friend class JWTFactory;
+        friend class JWTClaimsLock;
         friend class JWTFixture_BasicConstruction;
     };
 
@@ -111,11 +152,13 @@ namespace ncbi
         // make a new, more or less empty JWT object
         JWTClaims make () const;
         
-        // decode a signed JWT
-        JWTClaims decode ( const JWSFactory & jws_fact, const JWT & jwt, long long cur_time, long long skew = 0 ) const;
-        
         // create a signed JWT as a compact JWS from the claims set
-        JWT sign ( const JWSFactory & jws_fact, const JWTClaims & claims ) const;
+        JWT sign ( const JWTClaims & claims ) const;
+        
+        // decode a JWT against current time with default skew
+        JWTClaims decode ( const JWT & jwt ) const;
+        // decode a JWT against provided time with optional explicit skew
+        JWTClaims decode ( const JWT & jwt, long long cur_time, long long skew = 0 ) const;
 
         // registered claim factory parameters
         void setIssuer ( const StringOrURI & iss );
@@ -124,28 +167,51 @@ namespace ncbi
         void setDuration ( long long int dur_seconds );
         void setNotBefore ( long long int nbf_seconds );
 
+        // skew access
+        long long getDefaultSkew () const
+        { return dflt_skew; }
+        void setDefaultSkew ( long long dflt );
+
+        // prevent further modifications
+        void lock ();
+
         // copy construction
         JWTFactory & operator = ( const JWTFactory & jwt_fact );
         JWTFactory ( const JWTFactory & jwt_fact );
         
-        // create a standard factory
+        // create a factory without signing or encrypting capability
         JWTFactory ();
+
+        // create a standard factory with signing capability
+        JWTFactory ( const JWSFactory & jws_fact );
+        
         ~ JWTFactory ();
 
     private:
-        
+
         // make a new identifier
         std :: string newJTI () const;
+
+        // convert claims to JSON text
+        std :: string claimsToPayload ( const JWTClaims & claims ) const;
         
         // return timestamp in seconds since epoch
         static long long int now ();
 
+        // we obtain this as a reference
+        // but hold it as a pointer to allow for
+        // copies and NULL
+        const JWSFactory * jws_fact;
+
+        // factory claims
         std :: string iss;
         std :: string sub;
         std :: vector < std :: string > aud;
         long long duration;
         long long not_before;
-
+        long long dflt_skew;
+        JWTLock obj_lock;
+        
         static std :: atomic < unsigned long long > id_seq;
     };
 }

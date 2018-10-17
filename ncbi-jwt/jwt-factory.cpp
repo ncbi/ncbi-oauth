@@ -34,46 +34,180 @@ namespace ncbi
 {
     JWTClaims JWTFactory :: make () const
     {
+        // make empty container for claims
         JSONObject *obj = JSONObject :: make ();
-        
+
+        // construct the claims object
+        // while retaining access to object
         JWTClaims claims ( obj );
 
+        // issuer may have been set on factory
+        // install into claims if so
         if ( ! iss . empty() )
             claims . setIssuer ( iss );
-        
+
+        // subject may have been set on factory
+        // install into claims if so
         if ( ! sub . empty() )
             claims . setSubject ( sub );
-        
+
+        // test for any audience members
         if ( ! aud . empty() )
         {
+            // add each audience member
             size_t count = aud . size ();
             for ( size_t i = 0; i < count; ++ i )
-            {
                 claims . addAudience ( aud [ i ] );
-            }
+
+            // lock the array against further modification
             obj -> getValue ( "aud" ) . toArray () . lock ();
         }
-        
-        if ( duration != -1 )
+
+        // a non-negative duration is transferred to claims
+        if ( duration >= 0 )
             claims . setDuration ( duration );
-            
-        if ( not_before != -1 )
+
+        // a non-negative "nbf" is transferred
+        if ( not_before >= 0 )
             claims . setNotBefore ( not_before );
-        
+
+        // the claims object has been constructed
         return claims;
     }
     
+    JWT JWTFactory :: sign ( const JWTClaims & claims ) const
+    {
+        std :: string jwt;
+        
+        std :: string payload = claimsToPayload ( claims );
+
+        // this would be a case when we encode with "none" algorithm
+        if ( jws_fact == nullptr )
+            throw JWTException ( __func__, __LINE__, "no JWS factory specified and 'none' algorithm is unsupported" );
+
+        // create a JWS-compatible JOSE header
+        JSONObject * hdr = JSONObject :: make ();
+        try
+        {
+            // the main thing we can say about this is that it is a JWT
+            JSONValue * typ = JSONValue :: makeString ( "JWT" );
+            try
+            {
+                hdr -> setValue ( "typ", typ );
+            }
+            catch ( ... )
+            {
+                delete typ;
+                throw;
+            }
+
+            // let the JWS factory fill out the remainder of the header
+            jwt = jws_fact -> signCompact ( * hdr, payload . data (), payload . size () );
+        }
+        catch ( ... )
+        {
+            delete hdr;
+            throw;
+        }
+
+        delete hdr;
+        return jwt;
+    }
+
+    std :: string JWTFactory :: claimsToPayload ( const JWTClaims & claims ) const
+    {
+        std :: string payload;
+        
+        JWTLocker claims_lock ( claims . obj_lock );
+
+        // test duration to be non-negative
+        if ( claims . duration < 0 )
+            throw JWTException ( __func__, __LINE__, "claims must have a specific duration" );
+        if ( claims . not_before > claims . duration )
+            throw JWTException ( __func__, __LINE__, "claims would become valid only after expiration" );
+
+        JSONObject * json = claims . claims;
+
+        // capture time
+        long long cur_time = now ();
+
+        // set "iat"
+        claims . setValueOrDelete ( "iat", JSONValue :: makeInteger ( cur_time ) );
+        try
+        {
+            // set "exp"
+            claims . setValueOrDelete ( "exp", JSONValue :: makeInteger ( cur_time + claims . duration ) );
+            try
+            {
+                // potentially set "nbf"
+                if ( claims . not_before >= 0 )
+                    claims . setValueOrDelete ( "nbf", JSONValue :: makeInteger ( cur_time + claims . not_before ) );
+                try
+                {
+                    // at this point, we can convert the claims object to a string
+                    payload = json -> toJSON ();
+                }
+                catch ( ... )
+                {
+                    json -> removeValue ( "nbf" );
+                    throw;
+                }
+                
+                json -> removeValue ( "nbf" );
+            }
+            catch ( ... )
+            {
+                json -> removeValue ( "exp" );
+                throw;
+            }
+
+            json -> removeValue ( "exp" );
+        }
+        catch ( ... )
+        {
+            json -> removeValue ( "iat" );
+            throw;
+        }
+
+        json -> removeValue ( "iat" );
+        
+        return payload;
+    }
+
+    JWTClaims JWTFactory :: decode ( const JWT & jwt ) const
+    {
+        return this -> decode ( jwt, now (), dflt_skew );
+    }
+    
     // Decoding follows RFC 7519: section 7.2
-    JWTClaims JWTFactory :: decode ( const JWSFactory & jws_fact, const JWT & jwt, long long cur_time, long long skew ) const
+    JWTClaims JWTFactory :: decode ( const JWT & jwt, long long cur_time, long long skew ) const
     {
         // RFC 7519: section 1
         // JWTs are always represented using the JWS Compact Serialization or the JWE Compact Serialization.
+
+        /*
+          The RFC specifies an unsafe means of decoding the JWT
+          predicated on a design flaw that gave rise to the JOSE header.
+          The flaw requires reliance upon content of the header to
+          validate the JWT itself, including the header. This still
+          could have been done in a way that would be relatively safe
+          to implement, but instead the JOSE header is represented as...
+          ...JSON, meaning that 99.9% of implementations will send the
+          header to their off-the-shelf JSON parser as the first step,
+          before any validation of any sort, and most JSON parsers are
+          not secure enough to be exposed to this.
+
+          The present implementation follows the RFC, and will thus
+          permit multiple signing algorithms. A hardened version would
+          have a single allowed algorithm and verify the signature BEFORE
+          passing any text to a JSON parser.
+         */
         
         // 1. verify that the JWT contains at least one '.'
         size_t pos = 0;
         size_t p = jwt . find_first_of ( '.' );
         if ( p == std :: string :: npos )
-            throw JWTException ( __func__, __LINE__, "Invalid JWT - expected: '.'" );
+            throw JWTException ( __func__, __LINE__, "Invalid JWT - expected: 3 or 5 sections" );
         
         // 2. split off the JOSE header from the start of "jwt" to the period.
         // this must be a base64url-encoded string representing a JSONObject
@@ -81,34 +215,57 @@ namespace ncbi
         pos = ++ p;
         
         // 3. run decodeBase64URL() on the JOSE string
-        // this will produce raw JSON text
-        try
+        // this should produce raw JSON text, although we won't know until later
         {
-            size_t bytes = 0;
-            char * data = ( char * ) decodeBase64URL ( header, & bytes );
-            header = std :: string ( data, bytes );
-            delete [] data;
-        }
-        catch ( ... )
-        {
-            // any error in base64URL encoding is an invalid JWT/JOSE object
-            // TBD - capture more information about what is wrong and include it in the new exception
-            throw JWTException ( __func__, __LINE__, "Invalid JWT - illegal JOSE base64URL encoding" );
+            // declare base64 payload outside of try block ( thanks so much, C++! )
+            // so that we can properly interpret any exceptions caught by decoding
+            std :: string payload;
+            try
+            {
+                // decode the header text
+                payload = decodeBase64URLString ( header );
+            }
+            catch ( JWTException & x )
+            {
+                // any error in base64URL encoding is an invalid JWT/JOSE object
+                std :: string what ( "Invalid JWT - " );
+                what += x . what ();
+                throw JWTException ( __func__, __LINE__, what . c_str () );
+            }
+            catch ( ... )
+            {
+                // any error in base64URL encoding is an invalid JWT/JOSE object
+                throw JWTException ( __func__, __LINE__, "Invalid JWT - illegal JOSE base64URL encoding" );
+            }
+
+            // replace the header
+            header = payload;
         }
         
         // 4. trust JSON parser enough to parse the raw JSON text of the JOSE header
+        // THIS IS EXACTLY THE PART THAT IS DANGEROUS
         // use restricted limits
         JSONValue :: Limits lim;
         JSONObject *jose = nullptr;
         try
         {
+            // JOSE doesn't have any recursive structure
             lim . recursion_depth = 1;
+
+            // TBD - set other limits
+
+            // parse header
             jose = JSONObject :: make ( lim, header );
+        }
+        catch ( JSONException & x )
+        {
+            std :: string what ( "Invalid JWT - " );
+            what += x . what ();
+            throw JWTException ( __func__, __LINE__, what . c_str () );
         }
         catch ( ... )
         {
             // any error in JSON format is an invalid JWT/JOSE object
-            // TBD - capture more information about what is wrong and include it in the new exception
             throw JWTException ( __func__, __LINE__, "Invalid JWT - malformed JOSE JSON" );
         }
         
@@ -121,14 +278,14 @@ namespace ncbi
             p = jwt . find_first_of ( '.', p );
             
             // retain the end of payload for JWS
-            size_t pay_pos = p;
-            
+            size_t payload_pos = p;
             while ( p != std :: string :: npos )
             {
+                // found another period
                 if ( ++ period_count > 4 )
-                {
                     throw JWTException ( __func__, __LINE__, "Invalid JWT - excessive number of sections." );
-                }
+
+                // look for another period
                 p = jwt . find_first_of ( '.', p + 1 );
             }
             
@@ -142,7 +299,7 @@ namespace ncbi
             {
                 // compact JWE has 5 sections
                 if ( period_count != 4 )
-                    throw JWTException ( __func__, __LINE__, "Invalid JWT - malformed JWE." );
+                    throw JWTException ( __func__, __LINE__, "Invalid JWT - malformed JWE. Expected 5 sections." );
                 
                 // TBD
                 throw JWTException ( __func__, __LINE__, "UNIMPLEMENTED - JWE is not supported at this time." );
@@ -150,20 +307,22 @@ namespace ncbi
             
             // compact JWS has 3 sections
             if ( period_count != 2 )
-                throw JWTException ( __func__, __LINE__, "Invalid JWT - malformed JWS." );
+                throw JWTException ( __func__, __LINE__, "Invalid JWT - malformed JWS. Expected 3 sections." );
             
             // 7. let the JWSFactory validate the JOSE header and signature - RFC 7515: Section 5.2
             // "Verify that the resulting JOSE Header includes only parameters and values whose syntax and
             // semantics are both understood and supported or that are specified as being ignored when not understood."
-            jws_fact . validate ( * jose, jwt );
+            if ( jws_fact == nullptr )
+                throw JWTException ( __func__, __LINE__, "no JWS factory specified and 'none' algorithm is unsupported" );
+            
+            jws_fact -> validate ( * jose, jwt );
             
             // 8. check for header member "cty"
             // if exists, the payload is a nested JWT and need to repeat the previous steps
             if ( jose -> exists( "cty" ) )
             {
                 delete jose;
-                jose = nullptr;
-                return decode ( jws_fact, jwt . substr ( pos, pay_pos - pos ), cur_time, skew );
+                throw JWTException ( __func__, __LINE__, "UNIMPLEMENTED - nested JWTs are not supported at this time." );
             }
             
             // done with "jose"
@@ -171,61 +330,46 @@ namespace ncbi
             jose = nullptr;
             
             // 9. decode payload
-            size_t bytes = 0;
-            char * pay_data = nullptr;
-            try
             {
-                pay_data = ( char * ) decodeBase64URL ( jwt . substr ( pos, pay_pos - pos ), & bytes );
-            }
-            catch ( ... )
-            {
-                // any error in base64URL encoding is an invalid JWT object
-                // TBD - capture more information about what is wrong and include it in the new exception
-                throw JWTException ( __func__, __LINE__, "Invalid JWT - illegal base64URL encoding" );
-            }
-            std :: string pay ( pay_data, bytes );
-            delete [] pay_data;
-            
-            // 10. trust JSON parser enough to parse the raw JSON text of the payload
-            lim . recursion_depth = 100; // TBD - determine valid limit
-            JSONObject *payload = JSONObject :: make ( lim, pay );
-            try
-            {
-
-                // create claims from JSON payload
-                JWTClaims claims ( payload );
-
-                // claim set is already built, but not validated
-                // TBD - validate claims, mark protected claims as final
-                claims . validate ( cur_time, skew );
-            
-#if 0
-                // this stuff is likely to be part of JWTClaims :: validate ()
-                claims . setIssuer ( payload -> getValue ( "iss" ) . toString () );
-                claims . setSubject ( payload -> getValue ( "sub" ) . toString () );
-                JSONArray aud = payload -> getValue ( "aud" ) . toArray ();
-                for ( size_t i = 0; i < aud . count (); ++ i )
+                std :: string pay;
+                try
                 {
-                    claims . addAudience ( aud . getValue ( i ) . toString () );
+                    pay = decodeBase64URLString ( jwt . substr ( pos, payload_pos - pos ) );
                 }
-                
-                // test validity of JWT based upon time
-                // TBD - must handle cases where claim might be optional
-                // right now if any are missing, they'll cause an exception to be thrown
-                if ( claims . getClaim ( "iat" ) . toInteger () > cur_time )
-                    throw "claims issued in the future";
-                if ( claims . getClaim ( "nbf" ) . toInteger () > cur_time )
-                    throw "claims are not yet valid";
-                if ( claims . getClaim ( "exp" ) . toInteger () <= cur_time )
-                    throw "claims have expired";
-#endif
-                
-                return claims;
-            }
-            catch ( ... )
-            {
-                delete payload;
-                throw;
+                catch ( JWTException & x )
+                {
+                    // any error in base64URL encoding is an invalid JWT object
+                    std :: string what ( "Invalid JWT - " );
+                    what += x . what ();
+                    throw JWTException ( __func__, __LINE__, what . c_str () );
+                }
+                catch ( ... )
+                {
+                    // any error in base64URL encoding is an invalid JWT object
+                    throw JWTException ( __func__, __LINE__, "Invalid JWT - illegal base64URL encoding" );
+                }
+            
+                // 10. trust JSON parser enough to parse the raw JSON text of the payload
+                // we should have already validated the sender
+                lim . recursion_depth = 100; // TBD - determine valid limit
+                JSONObject *payload = JSONObject :: make ( lim, pay );
+                try
+                {
+
+                    // create claims from JSON payload
+                    JWTClaims claims ( payload );
+
+                    // claim set is already built, but not validated
+                    // TBD - validate claims, mark protected claims as final
+                    claims . validate ( cur_time, skew );
+            
+                    return claims;
+                }
+                catch ( ... )
+                {
+                    delete payload;
+                    throw;
+                }
             }
         }
         catch ( ... )
@@ -235,72 +379,113 @@ namespace ncbi
         }
     }
     
-    JWT JWTFactory :: sign ( const JWSFactory & jws_fact, const JWTClaims & claims ) const
-    {
-        return "";
-    }
-    
     void JWTFactory :: setIssuer ( const StringOrURI & iss )
     {
+        JWTClaims :: validateStringOrURI ( iss );
+        JWTLocker locker ( obj_lock );
         this -> iss = iss;
     }
     
     void JWTFactory :: setSubject ( const StringOrURI & sub )
     {
+        JWTClaims :: validateStringOrURI ( sub );
+        JWTLocker locker ( obj_lock );
         this -> sub = sub;
     }
     
     void JWTFactory :: addAudience ( const StringOrURI & aud )
     {
+        JWTClaims :: validateStringOrURI ( aud );
+        JWTLocker locker ( obj_lock );
         this -> aud . push_back ( aud );
     }
     
     void JWTFactory :: setDuration ( long long int dur_seconds )
     {
-        if ( dur_seconds > 0 )
+        JWTLocker locker ( obj_lock );
+        if ( dur_seconds >= 0 )
             duration = dur_seconds;
     }
     
     void JWTFactory :: setNotBefore ( long long int nbf_seconds )
     {
-        if ( nbf_seconds > 0 )
+        JWTLocker locker ( obj_lock );
+        if ( nbf_seconds >= 0 )
             duration = nbf_seconds;
+    }
+
+    void JWTFactory :: lock ()
+    {
+        obj_lock . flag . test_and_set ();
     }
     
     JWTFactory & JWTFactory :: operator = ( const JWTFactory & jwt_fact )
     {
+        JWTLocker locker ( obj_lock );
+
+        jws_fact = jwt_fact . jws_fact;
         iss = jwt_fact . iss;
         sub = jwt_fact . sub;
-        aud = jwt_fact . aud;
         duration = jwt_fact . duration;
         not_before = jwt_fact . not_before;
+        dflt_skew = jwt_fact . dflt_skew;
+        
+        aud . clear ();
+        size_t i, count = jwt_fact . aud . size ();
+        for ( i = 0; i < count; ++ i )
+        {
+            aud . push_back ( jwt_fact . aud [ i ] );
+        }
         
         return *this;
     }
     
     JWTFactory :: JWTFactory ( const JWTFactory & jwt_fact )
-    : iss ( jwt_fact . iss )
-    , sub ( jwt_fact . sub )
-    , aud ( jwt_fact . aud )
-    , duration ( jwt_fact . duration )
-    , not_before ( jwt_fact . not_before )
+        : jws_fact ( jwt_fact . jws_fact )
+        , iss ( jwt_fact . iss )
+        , sub ( jwt_fact . sub )
+        , duration ( jwt_fact . duration )
+        , not_before ( jwt_fact . not_before )
+        , dflt_skew ( jwt_fact . dflt_skew )
+    {
+        size_t i, count = jwt_fact . aud . size ();
+        for ( i = 0; i < count; ++ i )
+        {
+            aud . push_back ( jwt_fact . aud [ i ] );
+        }
+    }
+    
+    JWTFactory :: JWTFactory ( const JWSFactory & jws )
+        : jws_fact ( & jws )
+        , duration ( -1 )
+        , not_before ( -1 )
+        , dflt_skew ( 0 )
     {
     }
     
     JWTFactory :: JWTFactory ()
-    : duration ( -1 )
-    , not_before ( -1 )
+        : jws_fact ( nullptr )
+        , duration ( -1 )
+        , not_before ( -1 )
+        , dflt_skew ( 0 )
     {
     }
     
     JWTFactory :: ~ JWTFactory ()
     {
+        jws_fact = nullptr;
+        iss . clear ();
+        sub . clear ();
+        aud . clear ();
         duration = -1;
         not_before = -1;
+        dflt_skew = 0;
     }
     
     std :: string JWTFactory :: newJTI () const
     {
+        // TBD - generate from something involving id_seq
+        // or some other source of unique numbers
         return "";
     }
     
@@ -308,5 +493,7 @@ namespace ncbi
     {
         return ( long long int ) time ( nullptr );
     }
+
+    std :: atomic < unsigned long long > JWTFactory :: id_seq;
 }
 

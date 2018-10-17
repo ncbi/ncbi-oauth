@@ -31,6 +31,10 @@
 #include <ncbi/json.hpp>
 #endif
 
+#ifndef _hpp_ncbi_oauth_jwa_
+#include <ncbi/jwa.hpp>
+#endif
+
 #include <vector>
 
 namespace ncbi
@@ -38,22 +42,6 @@ namespace ncbi
     // JSON Web Signature - RFC 7515: Line 350
     // A data structure representing a digitally signed or MACed message
     typedef std :: string JWS;
-    
-    enum JWSType
-    {
-        jws_type_JWT
-    };
-    
-    enum JWSAlgorithm
-    {
-        jws_alg_NONE,
-        jws_alg_HS256,
-        jws_alg_HS384,
-        jws_alg_HS512,
-        jws_alg_RS256,
-        jws_alg_RS384,
-        jws_alg_RS512
-    };
     
     class JWSFactory
     {
@@ -63,33 +51,30 @@ namespace ncbi
         // sign using compact serialization
         // signing input is:
         //   ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))
-        JWS signCompact ( JWSType type, const void * payload, size_t bytes ) const;
+        JWS signCompact ( JSONObject & hdr, const void * payload, size_t bytes ) const;
         
         // check that the JOSE header is completely understood
         // validates signature
         // or throw exception
         void validate ( const JSONObject & hdr, const JWS & jws ) const;
         
-        // sign and verify keys
-        void setSigningKeys ( JWSAlgorithm alg, const std :: string & sign, const std :: string & verify );
-        
-        // additional verification keys
-        void addVerificationKey ( JWSAlgorithm alg, const std :: string verify );
+        // additional verifiers
+        void addVerifier ( const std :: string & alg, const std :: string & name, const std :: string & key );
         
         // copy construction
         JWSFactory & operator = ( const JWSFactory & fact );
         JWSFactory ( const JWSFactory & fact );
         
         // create a standard factory
-        JWSFactory ();
+        JWSFactory ( const std :: string & alg, const std :: string & name,
+             const std :: string & signing_key, const std :: string & verify_key );
         ~ JWSFactory ();
         
     private:
         
-        std :: string sign_key;
-        std :: string verify_key;
-        std :: vector < std :: pair < std :: string, JWSAlgorithm > > addl_key;
-        JWSAlgorithm alg;
+        const JWASigner * signer;
+        const JWAVerifier * verifier;
+        std :: vector < const JWAVerifier * > addl_verifiers;
     };
 }
 

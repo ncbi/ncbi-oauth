@@ -7,6 +7,7 @@
 //
 
 #include "gtest/gtest.h"
+#include <ncbi/jws.hpp>
 #include <ncbi/jwt.hpp>
 
 #include <iostream>
@@ -21,22 +22,42 @@ namespace ncbi
     public:
         void SetUp ()
         {
-            jwt_fact . setIssuer ( "ncbi" );
-            jwt_fact . setDuration ( 15 );
+            jws_fact = new JWSFactory ( "none", "ncbi", "", "" );
+            jwt_fact = new JWTFactory ( * jws_fact );
+            jwt_fact -> setIssuer ( "ncbi" );
+            jwt_fact -> setDuration ( 15 );
         }
         
         void TearDown ()
         {
+            delete jwt_fact;
+            delete jws_fact;
         }
         
     protected:
-        JWTFactory jwt_fact;
+
+        JWSFactory * jws_fact;
+        JWTFactory * jwt_fact;
     };
    
-    /*
-    TEST_F ( JWTFixture_BasicConstruction, JWT_Parse_Member )
+    TEST_F ( JWTFixture_BasicConstruction, JWT_Hello )
     {
+        JWTClaims claims = jwt_fact -> make ();
+        claims . addClaimOrDeleteValue ( "hello", JSONValue :: makeString ( "there" ) );
+        std :: cout
+            << "hello test:\n"
+            << "  JSON:\n"
+            << "    "
+            << claims . toJSON ()
+            << '\n'
+            ;
+        JWT jwt = jwt_fact -> sign ( claims );
+        std :: cout
+            << "  JWT:\n"
+            << "    "
+            << jwt
+            << std :: endl
+            ;
     }
-     */
 
 } // namespace

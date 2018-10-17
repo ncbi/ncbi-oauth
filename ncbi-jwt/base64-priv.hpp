@@ -31,11 +31,43 @@
 
 namespace ncbi
 {
+    class Base64Payload
+    {
+    public:
+
+        unsigned char * data ()
+        { return buff; }
+        const unsigned char * data () const
+        { return buff; }
+
+        size_t size () const
+        { return sz; }
+
+        size_t capacity () const
+        { return cap; }
+
+        void setSize ( size_t amt );
+        void increaseCapacity ( size_t amt = 256 );
+
+        Base64Payload ();
+        Base64Payload ( size_t initial_capacity );
+        Base64Payload ( const Base64Payload & payload );
+        Base64Payload & operator = ( const Base64Payload & payload );
+        ~ Base64Payload ();
+
+    private:
+
+        mutable unsigned char * buff;
+        mutable size_t sz, cap;
+    };
+        
     const std :: string encodeBase64 ( const void * data, size_t bytes );
-    void * decodeBase64 ( const std :: string &encoding, size_t * bytes );
+    const Base64Payload decodeBase64 ( const std :: string &encoding );
+    const std :: string decodeBase64String ( const std :: string &encoding );
     
     const std :: string encodeBase64URL ( const void * data, size_t bytes );
-    void * decodeBase64URL ( const std :: string &encoding, size_t * bytes );
+    const Base64Payload decodeBase64URL ( const std :: string &encoding );
+    const std :: string decodeBase64URLString ( const std :: string &encoding );
     
 } // namespace ncbi
 
