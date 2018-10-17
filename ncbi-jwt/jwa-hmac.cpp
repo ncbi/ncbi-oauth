@@ -40,54 +40,122 @@ namespace ncbi
     {
         virtual std :: string sign ( const void * data, size_t bytes ) const
         {
-            // start up with key
-            mbedtls_md_hmac_starts ( & ctx, ( const unsigned char * ) key . data (), key . size () );
-
             // hash the data
             mbedtls_md_hmac_update ( & ctx, ( const unsigned char * ) data, bytes );
 
-            // extract the digest
-            unsigned char digest [ 32 ];
+            // extract the digest - maximum size is 512 bits
+            unsigned char digest [ 512 / 8 ];
             mbedtls_md_hmac_finish ( & ctx, digest );
 
+            // reset the context for the next signature
+            mbedtls_md_hmac_reset ( & ctx );
+
             // encode as base64url
-            return encodeBase64URL ( digest, sizeof digest );
+            return encodeBase64URL ( digest, dsize );
         }
         
         virtual JWASigner * clone () const
         {
-            return new HMAC_Signer ( alg, nam, key, ctx );
+            return new HMAC_Signer ( alg, nam, key, md_type );
         }
 
         HMAC_Signer ( const std :: string & alg, const std :: string & name,
-                const std :: string & key, mbedtls_md_context_t & _ctx )
+                const std :: string & key, mbedtls_md_type_t type )
             : JWASigner ( alg, name, key )
-            , ctx ( _ctx )
+            , ctx ( cctx )
+            , md_type ( type )
         {
+            // simple context initialization
+            mbedtls_md_init ( & ctx );
+
+            // get info from the type
+            const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
+            dsize = mbedtls_md_get_size ( info );
+
+            // selects the digest algorithm and allocates internal structures
+            int status = mbedtls_md_setup ( & ctx, info, 1 );
+            if ( status != 0 )
+                throw JWTException ( __func__, __LINE__, "failed to setup HMAC context" );
+
+            // bind the key to the context
+            status = mbedtls_md_hmac_starts ( & ctx, ( const unsigned char * ) key . data (), key . size () );
+            if ( status != 0 )
+                throw JWTException ( __func__, __LINE__, "failed to bind key to HMAC context" );
         }
 
-        mbedtls_md_context_t & ctx;
+        ~ HMAC_Signer ()
+        {
+            mbedtls_md_free ( & ctx );
+        }
+
+        size_t dsize;
+        mbedtls_md_context_t cctx, & ctx;
+        mbedtls_md_type_t md_type;
     };
 
     struct HMAC_Verifier : JWAVerifier
     {
-        virtual void verify ( const void * data, size_t bytes, const std :: string & signature ) const
+        virtual void verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
         {
+            // hash the data
+            mbedtls_md_hmac_update ( & ctx, ( const unsigned char * ) data, bytes );
+
+            // extract the digest - maximum size is 512 bits
+            unsigned char digest [ 512 / 8 ];
+            mbedtls_md_hmac_finish ( & ctx, digest );
+
+            // reset the context for the next signature
+            mbedtls_md_hmac_reset ( & ctx );
+
+            // decode the base64url signature
+            Base64Payload signature = decodeBase64URL ( sig_base64 );
+
+            // test: the lengths must match
+            if ( signature . size () != dsize )
+                throw JWTException ( __func__, __LINE__, "signature mismatch" );
+
+            // the digest must match
+            if ( memcmp ( digest, signature . data (), dsize ) != 0 )
+                throw JWTException ( __func__, __LINE__, "signature mismatch" );
         }
         
         virtual JWAVerifier * clone () const
         {
-            return new HMAC_Verifier ( alg, nam, key, ctx );
+            return new HMAC_Verifier ( alg, nam, key, md_type );
         }
 
         HMAC_Verifier ( const std :: string & alg, const std :: string & name,
-                const std :: string & key, mbedtls_md_context_t & _ctx )
+                const std :: string & key, mbedtls_md_type_t type )
             : JWAVerifier ( alg, name, key )
-            , ctx ( _ctx )
+            , ctx ( cctx )
+            , md_type ( type )
         {
+            // simple context initialization
+            mbedtls_md_init ( & ctx );
+
+            // get info from the type
+            const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
+            dsize = mbedtls_md_get_size ( info );
+
+            // selects the digest algorithm and allocates internal structures
+            int status = mbedtls_md_setup ( & ctx, info, 1 );
+            if ( status != 0 )
+                throw JWTException ( __func__, __LINE__, "failed to setup HMAC context" );
+
+            // bind the key to the context
+            status = mbedtls_md_hmac_starts ( & ctx, ( const unsigned char * ) key . data (), key . size () );
+            if ( status != 0 )
+                throw JWTException ( __func__, __LINE__, "failed to bind key to HMAC context" );
         }
 
-        mbedtls_md_context_t & ctx;
+        ~ HMAC_Verifier ()
+        {
+            mbedtls_md_free ( & ctx );
+        }
+
+        size_t dsize;
+        mbedtls_md_context_t cctx, & ctx;
+        mbedtls_md_type_t md_type;
     };
     
     struct HMAC_SignerFact : JWASignerFact
@@ -95,24 +163,16 @@ namespace ncbi
         virtual JWASigner * make ( const std :: string & alg,
             const std :: string & name, const std :: string & key ) const
         {
-            HMAC_SignerFact * self = const_cast < HMAC_SignerFact * > ( this );
-            return new HMAC_Signer ( alg, name, key, self -> ctx );
+            return new HMAC_Signer ( alg, name, key, md_type );
         }
 
-        HMAC_SignerFact ( const char * name, mbedtls_md_type_t md_type )
+        HMAC_SignerFact ( const std :: string & alg, mbedtls_md_type_t type )
+            : md_type ( type )
         {
-            mbedtls_md_init ( & ctx );
-            int status = mbedtls_md_setup ( & ctx, mbedtls_md_info_from_type ( md_type ), 1 );
-            if ( status == 0 )
-                gJWAFactory . registerSignerFact ( name, this );
+            gJWAFactory . registerSignerFact ( alg, this );
         }
 
-        ~ HMAC_SignerFact ()
-        {
-            mbedtls_md_free ( & ctx );
-        }
-
-        mbedtls_md_context_t ctx;
+        mbedtls_md_type_t md_type;
     };
 
     struct HMAC_VerifierFact : JWAVerifierFact
@@ -120,36 +180,41 @@ namespace ncbi
         virtual JWAVerifier * make ( const std :: string & alg,
             const std :: string & name, const std :: string & key ) const
         {
-            HMAC_VerifierFact * self = const_cast < HMAC_VerifierFact * > ( this );
-            return new HMAC_Verifier ( alg, name, key, self -> ctx );
+            return new HMAC_Verifier ( alg, name, key, md_type );
         }
 
-        HMAC_VerifierFact ( const char * name, mbedtls_md_type_t md_type )
+        HMAC_VerifierFact ( const std :: string & alg, mbedtls_md_type_t type )
+            : md_type ( type )
         {
-            mbedtls_md_init ( & ctx );
-            int status = mbedtls_md_setup ( & ctx, mbedtls_md_info_from_type ( md_type ), 1 );
-            if ( status == 0 )
-                gJWAFactory . registerVerifierFact ( name, this );
+            gJWAFactory . registerVerifierFact ( alg, this );
         }
 
-        ~ HMAC_VerifierFact ()
-        {
-            mbedtls_md_free ( & ctx );
-        }
-
-        mbedtls_md_context_t ctx;
+        mbedtls_md_type_t md_type;
     };
 
-    static HMAC_SignerFact hs256_signer_fact ( "HS256", MBEDTLS_MD_SHA256 );
-    static HMAC_VerifierFact hs256_verifier_fact ( "HS256", MBEDTLS_MD_SHA256 );
+    static struct HMAC_Registry
+    {
+        HMAC_Registry ( const std :: string & alg, mbedtls_md_type_t md_type )
+            : signer_fact ( alg, md_type )
+            , verifier_fact ( alg, md_type )
+        {
+        }
+        
+        HMAC_SignerFact signer_fact;
+        HMAC_VerifierFact verifier_fact;
+
+    } hs256 ( "HS256", MBEDTLS_MD_SHA256 ),
+      hs384 ( "HS384", MBEDTLS_MD_SHA384 ),
+      hs512 ( "HS512", MBEDTLS_MD_SHA512 );
 
     void includeJWA_hmac ( bool always_false )
     {
         if ( always_false )
         {
             std :: string empty;
-            hs256_signer_fact . make ( empty, empty, empty );
-            hs256_verifier_fact . make ( empty, empty, empty );
+            hs256 . signer_fact . make ( empty, empty, empty );
+            hs384 . signer_fact . make ( empty, empty, empty );
+            hs512 . signer_fact . make ( empty, empty, empty );
         }
     }
 }

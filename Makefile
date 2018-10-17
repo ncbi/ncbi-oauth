@@ -34,6 +34,10 @@ $(OBJDIR)/%.$(OBJX): googletest/googletest/src/%.cc
 # include dependencies
 include $(wildcard $(OBJDIR)/*.d)
 
+OAUTHLIBS =                  \
+	$(LIBDIR)/libncbi-json.a \
+	$(LIBDIR)/libncbi-jwt.a
+
 ## ncbi-json
 LIBJSONSRC =       \
 	parser         \
@@ -117,7 +121,7 @@ OAUTHTESTLIB =   \
 
 ncbi-oauth-test: $(BINDIR) $(BINDIR)/ncbi-oauth-test
 
-$(BINDIR)/ncbi-oauth-test: $(MBEDLIBS)
+$(BINDIR)/ncbi-oauth-test: $(OAUTHLIBS) $(MBEDLIBS)
 
 $(BINDIR)/ncbi-oauth-test: $(OBJDIR) $(OAUTHTESTOBJ) $(MAKEFILE)
 	$(GPP) $(CFLAGS) -g -o $@ $(OAUTHTESTOBJ) $(OAUTHTESTLIB)

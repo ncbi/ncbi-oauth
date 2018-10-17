@@ -380,8 +380,6 @@ namespace ncbi
     
     JSONValue * JSONValue :: parse ( const Limits & lim, const std :: string & json, size_t & pos, unsigned int depth )
     {
-        test_depth ( lim, depth );
-        
         if ( skip_whitespace ( json, pos ) )
         {
             switch ( json [ pos ] )
@@ -438,8 +436,6 @@ namespace ncbi
     
     JSONArray * JSONArray :: parse ( const Limits & lim, const std :: string & json, size_t & pos, unsigned int depth )
     {
-        test_depth ( lim, depth );
-
         assert ( json [ pos ] == '[' );
         
         JSONArray *array = new JSONArray ();

@@ -78,9 +78,9 @@ namespace ncbi
             return new NONE_Signer ( alg, name, key );
         }
 
-        NONE_SignerFact ()
+        NONE_SignerFact ( const std :: string & alg )
         {
-            gJWAFactory . registerSignerFact ( "none", this );
+            gJWAFactory . registerSignerFact ( alg, this );
         }
     };
 
@@ -92,22 +92,36 @@ namespace ncbi
             return new NONE_Verifier ( alg, name, key );
         }
 
-        NONE_VerifierFact ()
+        NONE_VerifierFact ( const std :: string & alg )
         {
-            gJWAFactory . registerVerifierFact ( "none", this );
+            gJWAFactory . registerVerifierFact ( alg, this );
         }
     };
 
-    static NONE_SignerFact none_signer_fact;
-    static NONE_VerifierFact none_verifier_fact;
+
+    static struct NONE_Registry
+    {
+        NONE_Registry ( const std :: string & alg )
+            : signer_fact ( alg )
+            , verifier_fact ( alg )
+        {
+        }
+
+        ~ NONE_Registry ()
+        {
+        }
+        
+        NONE_SignerFact signer_fact;
+        NONE_VerifierFact verifier_fact;
+        
+    } none_registry ( "none" );
 
     void includeJWA_none ( bool always_false )
     {
         if ( always_false )
         {
             std :: string empty;
-            none_signer_fact . make ( empty, empty, empty );
-            none_verifier_fact . make ( empty, empty, empty );
+            none_registry . signer_fact . make ( empty, empty, empty );
         }
     }
 }

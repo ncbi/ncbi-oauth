@@ -279,11 +279,15 @@ namespace ncbi
             
             // retain the end of payload for JWS
             size_t payload_pos = p;
+            size_t last_pos = p;
             while ( p != std :: string :: npos )
             {
                 // found another period
                 if ( ++ period_count > 4 )
                     throw JWTException ( __func__, __LINE__, "Invalid JWT - excessive number of sections." );
+
+                // remember where the last seen period was
+                last_pos = p;
 
                 // look for another period
                 p = jwt . find_first_of ( '.', p + 1 );
@@ -315,7 +319,7 @@ namespace ncbi
             if ( jws_fact == nullptr )
                 throw JWTException ( __func__, __LINE__, "no JWS factory specified and 'none' algorithm is unsupported" );
             
-            jws_fact -> validate ( * jose, jwt );
+            jws_fact -> validate ( * jose, jwt, last_pos );
             
             // 8. check for header member "cty"
             // if exists, the payload is a nested JWT and need to repeat the previous steps

@@ -29,6 +29,7 @@
 #include "base64-priv.hpp"
 
 #include <iostream>
+#include <cassert>
 
 namespace ncbi
 {
@@ -96,8 +97,23 @@ namespace ncbi
         return jws;
     }
 
-    void JWSFactory :: validate ( const JSONObject & hdr, const JWS & jws ) const
+    void JWSFactory :: validate ( const JSONObject & hdr, const JWS & jws, size_t last_period ) const
     {
+        // the "last_period" tells us already where to split the jws
+        assert ( last_period < jws . size () );
+
+        std :: string content = jws . substr ( 0, last_period );
+        std :: string signature = jws . substr ( last_period + 1 );
+
+        // TBD - loop through other verifiers as well
+        verifier -> verify ( content . data (), content . size (), signature );
+
+        if ( hdr . exists ( "alg" ) )
+        {
+            std :: string alg = hdr . getValue ( "alg" ) . toString ();
+            if ( alg . compare ( verifier -> algorithm () ) != 0 )
+                throw JWTException ( __func__, __LINE__, "algorithm does not match" );
+        }
     }
 
     void JWSFactory :: addVerifier ( const std :: string & alg, const std :: string & name, const std :: string & key )
