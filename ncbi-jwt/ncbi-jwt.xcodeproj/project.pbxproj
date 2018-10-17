@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0C7D32712177A6D700ECCF4B /* libmbedtls.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C7D32702177A6D700ECCF4B /* libmbedtls.dylib */; };
 		0C92962E21233E7600BFE15D /* jwt-factory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0C92962C21233E7600BFE15D /* jwt-factory.cpp */; };
 		0C92962F21233E7600BFE15D /* jwt-claims.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0C92962D21233E7600BFE15D /* jwt-claims.cpp */; };
 		CE026B4A2177722F00A1C44F /* jwa-none.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE026B442177722E00A1C44F /* jwa-none.cpp */; };
@@ -15,23 +16,13 @@
 		CE026B4D2177722F00A1C44F /* jws-factory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE026B472177722F00A1C44F /* jws-factory.cpp */; };
 		CE026B4E2177722F00A1C44F /* jwa-factory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE026B482177722F00A1C44F /* jwa-factory.cpp */; };
 		CE026B4F2177722F00A1C44F /* jwt-exception.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE026B492177722F00A1C44F /* jwt-exception.cpp */; };
-		CE026D2821779CB700A1C44F /* libmbedtls.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = CE026BCE2177954E00A1C44F /* libmbedtls.dylib */; };
 		CE0C38FB20E68B1B003E7D51 /* libncbi-json.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = CE0C38FA20E68B1B003E7D51 /* libncbi-json.dylib */; };
 		CEE54A45210FA6B0009ECFD8 /* base64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CEE54A43210FA6B0009ECFD8 /* base64.cpp */; };
 		CEE54A46210FA6B0009ECFD8 /* base64-priv.hpp in Headers */ = {isa = PBXBuildFile; fileRef = CEE54A44210FA6B0009ECFD8 /* base64-priv.hpp */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		CE026BCD2177954E00A1C44F /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = CE026BC92177954E00A1C44F /* mbedtls.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = CE026BBB2177954500A1C44F;
-			remoteInfo = mbedtls;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXFileReference section */
+		0C7D32702177A6D700ECCF4B /* libmbedtls.dylib */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libmbedtls.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		0C92962C21233E7600BFE15D /* jwt-factory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwt-factory.cpp"; sourceTree = "<group>"; };
 		0C92962D21233E7600BFE15D /* jwt-claims.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwt-claims.cpp"; sourceTree = "<group>"; };
 		CE026B442177722E00A1C44F /* jwa-none.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwa-none.cpp"; sourceTree = "<group>"; };
@@ -40,7 +31,6 @@
 		CE026B472177722F00A1C44F /* jws-factory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jws-factory.cpp"; sourceTree = "<group>"; };
 		CE026B482177722F00A1C44F /* jwa-factory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwa-factory.cpp"; sourceTree = "<group>"; };
 		CE026B492177722F00A1C44F /* jwt-exception.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwt-exception.cpp"; sourceTree = "<group>"; };
-		CE026BC92177954E00A1C44F /* mbedtls.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = mbedtls.xcodeproj; path = ../mbedtls/mbedtls.xcodeproj; sourceTree = "<group>"; };
 		CE0C38FA20E68B1B003E7D51 /* libncbi-json.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libncbi-json.dylib"; path = "../../../../../Users/user/Library/Developer/Xcode/DerivedData/ncbi-oauth-ccqkmtescumnuuanmckichlndcup/Build/Products/Debug/libncbi-json.dylib"; sourceTree = "<group>"; };
 		CE720D8D20E549DF00FDB587 /* libncbi-jwt.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libncbi-jwt.dylib"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CEE54A43210FA6B0009ECFD8 /* base64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = base64.cpp; sourceTree = "<group>"; };
@@ -61,7 +51,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CE026D2821779CB700A1C44F /* libmbedtls.dylib in Frameworks */,
+				0C7D32712177A6D700ECCF4B /* libmbedtls.dylib in Frameworks */,
 				CE0C38FB20E68B1B003E7D51 /* libncbi-json.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -69,18 +59,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		CE026BCA2177954E00A1C44F /* Products */ = {
+		0C7D32722177A76200ECCF4B /* jwa-algs */ = {
 			isa = PBXGroup;
 			children = (
-				CE026BCE2177954E00A1C44F /* libmbedtls.dylib */,
+				CE026B462177722F00A1C44F /* jwa-hmac.cpp */,
+				CE026B442177722E00A1C44F /* jwa-none.cpp */,
 			);
-			name = Products;
+			path = "jwa-algs";
 			sourceTree = "<group>";
 		};
 		CE0C38F920E68B1B003E7D51 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				CE026BC92177954E00A1C44F /* mbedtls.xcodeproj */,
+				0C7D32702177A6D700ECCF4B /* libmbedtls.dylib */,
 				CE0C38FA20E68B1B003E7D51 /* libncbi-json.dylib */,
 			);
 			name = Frameworks;
@@ -90,8 +81,7 @@
 			isa = PBXGroup;
 			children = (
 				CE026B482177722F00A1C44F /* jwa-factory.cpp */,
-				CE026B462177722F00A1C44F /* jwa-hmac.cpp */,
-				CE026B442177722E00A1C44F /* jwa-none.cpp */,
+				0C7D32722177A76200ECCF4B /* jwa-algs */,
 				CE026B472177722F00A1C44F /* jws-factory.cpp */,
 				CE026B492177722F00A1C44F /* jwt-exception.cpp */,
 				CE026B452177722E00A1C44F /* jwt-lock.cpp */,
@@ -186,28 +176,12 @@
 			mainGroup = CE720D8420E549DE00FDB587;
 			productRefGroup = CE720D8E20E549DF00FDB587 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = CE026BCA2177954E00A1C44F /* Products */;
-					ProjectRef = CE026BC92177954E00A1C44F /* mbedtls.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				CE720D8C20E549DE00FDB587 /* ncbi-jwt */,
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXReferenceProxy section */
-		CE026BCE2177954E00A1C44F /* libmbedtls.dylib */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.dylib";
-			path = libmbedtls.dylib;
-			remoteRef = CE026BCD2177954E00A1C44F /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-/* End PBXReferenceProxy section */
 
 /* Begin PBXSourcesBuildPhase section */
 		CE720D8920E549DE00FDB587 /* Sources */ = {
