@@ -121,9 +121,7 @@ OAUTHTESTLIB =   \
 
 ncbi-oauth-test: $(BINDIR) $(BINDIR)/ncbi-oauth-test
 
-$(BINDIR)/ncbi-oauth-test: $(OAUTHLIBS) $(MBEDLIBS)
-
-$(BINDIR)/ncbi-oauth-test: $(OBJDIR) $(OAUTHTESTOBJ) $(MAKEFILE)
+$(BINDIR)/ncbi-oauth-test: $(OBJDIR) $(OAUTHTESTOBJ) $(OAUTHLIBS) $(MBEDLIBS) $(MAKEFILE)
 	$(GPP) $(CFLAGS) -g -o $@ $(OAUTHTESTOBJ) $(OAUTHTESTLIB)
 
 ## ncbi-oauth-fuzz
@@ -149,5 +147,6 @@ $(BINDIR)/ncbi-oauth-fuzz: $(OBJDIR) $(OAUTHFUZZOBJ) $(MAKEFILE)
 
 clean:
 	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR)
+	$(MAKE) -C mbedtls clean
 
 .PHONY: default
