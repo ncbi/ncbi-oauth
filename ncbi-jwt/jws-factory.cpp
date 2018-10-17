@@ -85,14 +85,8 @@ namespace ncbi
             jws += '.';
             jws += pay_base64;
 
-            std :: string sig_base64;
-            {
-                // now we should be able to generate a signature
-                std :: string sig = signer -> sign ( jws . data (), jws . size () );
-
-                // base64url encode the signature
-                sig_base64 = encodeBase64URL ( sig . data (), sig . size () );
-            }
+            // now we should be able to generate a signature
+            std :: string sig_base64 = signer -> sign ( jws . data (), jws . size () );
 
             // concatenate the third strings
             jws += '.';

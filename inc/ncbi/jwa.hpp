@@ -130,6 +130,7 @@ namespace ncbi
     // functions that can be used to cause inclusion of an algorithm
     // i.e. to keep it from being dead-stripped by the linker
     void includeJWA_none ( bool always_false );
+    void includeJWA_hmac ( bool always_false );
 
 }
 

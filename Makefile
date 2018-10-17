@@ -58,6 +58,7 @@ LIBJWTSRC =            \
 	jwt-claims         \
 	jws-factory        \
 	jwa-none           \
+	jwa-hmac           \
 	jwa-factory        \
 	jwt-lock           \
 	jwt-exception      \

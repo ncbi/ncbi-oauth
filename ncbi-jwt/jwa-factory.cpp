@@ -240,6 +240,7 @@ namespace ncbi
 
         // include algorithms for static linking
         includeJWA_none ( false );
+        includeJWA_hmac ( false );
     }
     
     JWAFactory :: ~ JWAFactory ()
