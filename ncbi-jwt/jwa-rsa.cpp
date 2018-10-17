@@ -36,6 +36,21 @@
 
 namespace ncbi
 {
+    /*
+     +-------------------+---------------------------------+
+     | "alg" Param Value | Digital Signature Algorithm     |
+     +-------------------+---------------------------------+
+     | RS256             | RSASSA-PKCS1-v1_5 using SHA-256 |
+     | RS384             | RSASSA-PKCS1-v1_5 using SHA-384 |
+     | RS512             | RSASSA-PKCS1-v1_5 using SHA-512 |
+     +-------------------+---------------------------------+
+     The RSASSA-PKCS1-v1_5 SHA-256 digital signature for a JWS is
+     validated as follows: submit the JWS Signing Input, the JWS
+     Signature, and the public key corresponding to the private key used
+     by the signer to the RSASSA-PKCS1-v1_5-VERIFY algorithm using SHA-256
+     as the hash function.
+     */
+    
     struct RSA_Signer : JWASigner
     {
         virtual std :: string sign ( const void * data, size_t bytes ) const

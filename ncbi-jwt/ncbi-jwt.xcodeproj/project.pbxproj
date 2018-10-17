@@ -8,11 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		0C7D32712177A6D700ECCF4B /* libmbedtls.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C7D32702177A6D700ECCF4B /* libmbedtls.dylib */; };
+		0C7D32792177AFC300ECCF4B /* jwa-none.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0C7D32762177AFC300ECCF4B /* jwa-none.cpp */; };
+		0C7D327A2177AFC300ECCF4B /* jwa-hmac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0C7D32772177AFC300ECCF4B /* jwa-hmac.cpp */; };
+		0C7D327B2177AFC300ECCF4B /* jwa-rsa.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0C7D32782177AFC300ECCF4B /* jwa-rsa.cpp */; };
 		0C92962E21233E7600BFE15D /* jwt-factory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0C92962C21233E7600BFE15D /* jwt-factory.cpp */; };
 		0C92962F21233E7600BFE15D /* jwt-claims.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0C92962D21233E7600BFE15D /* jwt-claims.cpp */; };
-		CE026B4A2177722F00A1C44F /* jwa-none.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE026B442177722E00A1C44F /* jwa-none.cpp */; };
 		CE026B4B2177722F00A1C44F /* jwt-lock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE026B452177722E00A1C44F /* jwt-lock.cpp */; };
-		CE026B4C2177722F00A1C44F /* jwa-hmac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE026B462177722F00A1C44F /* jwa-hmac.cpp */; };
 		CE026B4D2177722F00A1C44F /* jws-factory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE026B472177722F00A1C44F /* jws-factory.cpp */; };
 		CE026B4E2177722F00A1C44F /* jwa-factory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE026B482177722F00A1C44F /* jwa-factory.cpp */; };
 		CE026B4F2177722F00A1C44F /* jwt-exception.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE026B492177722F00A1C44F /* jwt-exception.cpp */; };
@@ -23,11 +24,12 @@
 
 /* Begin PBXFileReference section */
 		0C7D32702177A6D700ECCF4B /* libmbedtls.dylib */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libmbedtls.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		0C7D32762177AFC300ECCF4B /* jwa-none.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwa-none.cpp"; sourceTree = "<group>"; };
+		0C7D32772177AFC300ECCF4B /* jwa-hmac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwa-hmac.cpp"; sourceTree = "<group>"; };
+		0C7D32782177AFC300ECCF4B /* jwa-rsa.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwa-rsa.cpp"; sourceTree = "<group>"; };
 		0C92962C21233E7600BFE15D /* jwt-factory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwt-factory.cpp"; sourceTree = "<group>"; };
 		0C92962D21233E7600BFE15D /* jwt-claims.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwt-claims.cpp"; sourceTree = "<group>"; };
-		CE026B442177722E00A1C44F /* jwa-none.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwa-none.cpp"; sourceTree = "<group>"; };
 		CE026B452177722E00A1C44F /* jwt-lock.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwt-lock.cpp"; sourceTree = "<group>"; };
-		CE026B462177722F00A1C44F /* jwa-hmac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwa-hmac.cpp"; sourceTree = "<group>"; };
 		CE026B472177722F00A1C44F /* jws-factory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jws-factory.cpp"; sourceTree = "<group>"; };
 		CE026B482177722F00A1C44F /* jwa-factory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwa-factory.cpp"; sourceTree = "<group>"; };
 		CE026B492177722F00A1C44F /* jwt-exception.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwt-exception.cpp"; sourceTree = "<group>"; };
@@ -62,10 +64,11 @@
 		0C7D32722177A76200ECCF4B /* jwa-algs */ = {
 			isa = PBXGroup;
 			children = (
-				CE026B462177722F00A1C44F /* jwa-hmac.cpp */,
-				CE026B442177722E00A1C44F /* jwa-none.cpp */,
+				0C7D32772177AFC300ECCF4B /* jwa-hmac.cpp */,
+				0C7D32762177AFC300ECCF4B /* jwa-none.cpp */,
+				0C7D32782177AFC300ECCF4B /* jwa-rsa.cpp */,
 			);
-			path = "jwa-algs";
+			name = "jwa-algs";
 			sourceTree = "<group>";
 		};
 		CE0C38F920E68B1B003E7D51 /* Frameworks */ = {
@@ -188,15 +191,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CE026B4A2177722F00A1C44F /* jwa-none.cpp in Sources */,
 				CE026B4B2177722F00A1C44F /* jwt-lock.cpp in Sources */,
 				0C92962E21233E7600BFE15D /* jwt-factory.cpp in Sources */,
+				0C7D327A2177AFC300ECCF4B /* jwa-hmac.cpp in Sources */,
 				CE026B4D2177722F00A1C44F /* jws-factory.cpp in Sources */,
 				CEE54A45210FA6B0009ECFD8 /* base64.cpp in Sources */,
+				0C7D32792177AFC300ECCF4B /* jwa-none.cpp in Sources */,
 				CE026B4F2177722F00A1C44F /* jwt-exception.cpp in Sources */,
 				0C92962F21233E7600BFE15D /* jwt-claims.cpp in Sources */,
-				CE026B4C2177722F00A1C44F /* jwa-hmac.cpp in Sources */,
 				CE026B4E2177722F00A1C44F /* jwa-factory.cpp in Sources */,
+				0C7D327B2177AFC300ECCF4B /* jwa-rsa.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

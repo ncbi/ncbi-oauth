@@ -260,7 +260,7 @@ namespace ncbi
     JWAFactory :: Maps :: Maps ()
     {
         // TEMPORARY - for initial testing
-        //sign_accept . emplace ( "none" );
+        sign_accept . emplace ( "none" );
         
         // don't accept registration of ANY other algorithms by name
         sign_accept . emplace ( "HS256" );
