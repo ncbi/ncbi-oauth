@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		5C46D30B20EFCAD100E8B421 /* gtest-all.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5C46D30A20EFCAD100E8B421 /* gtest-all.cc */; };
 		5C965820211B5C78000DADEC /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5C96581E211B5C78000DADEC /* main.cpp */; };
+		CE026D27217799EA00A1C44F /* libmbedtls.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = CE026D26217799EA00A1C44F /* libmbedtls.dylib */; };
 		CE7C5FD820EE7D9E00156B72 /* libncbi-json.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = CE7C5FD720EE7D9E00156B72 /* libncbi-json.dylib */; };
 		CEE54A3C210F8F51009ECFD8 /* ncbi-jwt-ut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CEE54A3B210F8F51009ECFD8 /* ncbi-jwt-ut.cpp */; };
 		CEE54A3E210F9D2E009ECFD8 /* libncbi-jwt.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = CEE54A3D210F9D2E009ECFD8 /* libncbi-jwt.dylib */; };
@@ -30,6 +31,7 @@
 /* Begin PBXFileReference section */
 		5C46D30A20EFCAD100E8B421 /* gtest-all.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "gtest-all.cc"; path = "../googletest/googletest/src/gtest-all.cc"; sourceTree = "<group>"; };
 		5C96581E211B5C78000DADEC /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		CE026D26217799EA00A1C44F /* libmbedtls.dylib */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libmbedtls.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE7C5F8C20EE691600156B72 /* ncbi-oauth-test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "ncbi-oauth-test"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE7C5FCB20EE735500156B72 /* gtest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = gtest.framework; path = "../../../../../Users/user/Library/Developer/Xcode/DerivedData/gtest-cupceqngqeopgmcuokctoicdbhmk/Build/Products/Debug/gtest.framework"; sourceTree = "<group>"; };
 		CE7C5FCE20EE75C500156B72 /* libgtest.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libgtest.a; path = ../../googletest/build/googlemock/gtest/libgtest.a; sourceTree = "<group>"; };
@@ -45,6 +47,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CE026D27217799EA00A1C44F /* libmbedtls.dylib in Frameworks */,
 				CEE54A3E210F9D2E009ECFD8 /* libncbi-jwt.dylib in Frameworks */,
 				CE7C5FD820EE7D9E00156B72 /* libncbi-json.dylib in Frameworks */,
 			);
@@ -76,6 +79,7 @@
 		CE7C5FCA20EE735500156B72 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				CE026D26217799EA00A1C44F /* libmbedtls.dylib */,
 				CEE54A3D210F9D2E009ECFD8 /* libncbi-jwt.dylib */,
 				CE7C5FD720EE7D9E00156B72 /* libncbi-json.dylib */,
 				CE7C5FD020EE75EA00156B72 /* libgtest_main.a */,
@@ -264,6 +268,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				HEADER_SEARCH_PATHS = (
 					../googletest/googletest,
 					../inc,
@@ -277,6 +282,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				HEADER_SEARCH_PATHS = (
 					../googletest/googletest,
 					../inc,

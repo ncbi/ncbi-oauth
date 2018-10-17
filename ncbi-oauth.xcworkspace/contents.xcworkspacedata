@@ -16,4 +16,7 @@
    <FileRef
       location = "group:ncbi-jwt/ncbi-jwt.xcodeproj">
    </FileRef>
+   <FileRef
+      location = "group:mbedtls/mbedtls.xcodeproj">
+   </FileRef>
 </Workspace>

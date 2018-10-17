@@ -36,6 +36,7 @@
 #endif
 
 #include <vector>
+#include <string>
 
 namespace ncbi
 {

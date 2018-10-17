@@ -32,6 +32,7 @@
 #endif
 
 #include <atomic>
+#include <string>
 
 namespace ncbi
 {
