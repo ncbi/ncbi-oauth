@@ -71,6 +71,30 @@ ncbi-jwt: $(LIBDIR) $(LIBDIR)/libncbi-jwt.a
 $(LIBDIR)/libncbi-jwt.a: $(OBJDIR) $(LIBJWTOBJ) $(MAKEFILE)
 	ar -rc $@ $(LIBJWTOBJ)
 
+## mbedtls
+MBEDLIBS =                    \
+	$(LIBDIR)/libmbedcrypto.a \
+	$(LIBDIR)/libmbedx509.a   \
+	$(LIBDIR)/libmbedtls.a
+
+$(LIBDIR)/libmbedcrypto.a: mbedtls/libmbedcrypto.a
+	cp $< $@
+
+mbedtls/libmbedcrypto.a:
+	$(MAKE) -C mbedtls CFLAGS=-I../inc libmbedcrypto.a
+
+$(LIBDIR)/libmbedx509.a: mbedtls/libmbedx509.a
+	cp $< $@
+
+mbedtls/libmbedx509.a:
+	$(MAKE) -C mbedtls CFLAGS=-I../inc libmbedx509.a
+
+$(LIBDIR)/libmbedtls.a: mbedtls/libmbedtls.a
+	cp $< $@
+
+mbedtls/libmbedtls.a:
+	$(MAKE) -C mbedtls CFLAGS=-I../inc libmbedtls.a
+
 ## ncbi-oauth-test
 OAUTHTESTSRC =    \
 	main          \
@@ -81,13 +105,18 @@ OAUTHTESTSRC =    \
 OAUTHTESTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .$(OBJX),$(OAUTHTESTSRC)))
 
-OAUTHTESTLIB =  \
-	-L$(LIBDIR) \
-	-lncbi-jwt  \
-	-lncbi-json \
+OAUTHTESTLIB =   \
+	-L$(LIBDIR)  \
+	-lncbi-jwt   \
+	-lncbi-json  \
+	-lmbedcrypto \
+	-lmbedx509   \
+	-lmbedtls    \
 	-lpthread
 
 ncbi-oauth-test: $(BINDIR) $(BINDIR)/ncbi-oauth-test
+
+$(BINDIR)/ncbi-oauth-test: $(MBEDLIBS)
 
 $(BINDIR)/ncbi-oauth-test: $(OBJDIR) $(OAUTHTESTOBJ) $(MAKEFILE)
 	$(GPP) $(CFLAGS) -g -o $@ $(OAUTHTESTOBJ) $(OAUTHTESTLIB)
@@ -99,10 +128,13 @@ OAUTHFUZZSRC =    \
 OAUTHFUZZOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .$(OBJX),$(OAUTHFUZZSRC)))
 
-OAUTHFUZZLIB =  \
-	-L$(LIBDIR) \
-	-lncbi-jwt  \
-	-lncbi-json \
+OAUTHFUZZLIB =   \
+	-L$(LIBDIR)  \
+	-lncbi-jwt   \
+	-lncbi-json  \
+	-lmbedcrypto \
+	-lmbedx509   \
+	-lmbedtls    \
 	-lpthread
 
 ncbi-oauth-fuzz: $(BINDIR) $(BINDIR)/ncbi-oauth-fuzz
