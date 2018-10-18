@@ -104,7 +104,7 @@ namespace ncbi
         // claims can be any valid JSONValue
         void addClaim ( const std :: string & name, JSONValue * value, bool isFinal = false );
         void addClaimOrDeleteValue ( const std :: string & name, JSONValue * value, bool isFinal = false );
-        const JSONValue & getClaim ( const std :: string & name ) const;
+        JSONValue & getClaim ( const std :: string & name ) const;
         
         // validate claims read from JWT payload
         // mark protected claims as final

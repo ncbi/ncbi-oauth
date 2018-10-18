@@ -85,20 +85,21 @@ namespace ncbi
             if ( mbedtls_rsa_pkcs1_sign ( & ctx, NULL, NULL, MBEDTLS_RSA_PRIVATE, md_type, sizeof hash, hash, digest ) != 0 )
                 throw JWTException ( __func__, __LINE__, "failed to extract digest" );
             
-            // encode as base64url
-            return encodeBase64URL ( digest, dsize );
+#else
+            return "";
+#endif
         }
         
         virtual JWASigner * clone () const
         {
-            return new RSA_Signer ( alg, nam, key, md_type );
+            return new RSA_Signer ( nam, alg, key, md_type );
         }
         
-        RSA_Signer ( const std :: string & alg, const std :: string & name,
+        RSA_Signer ( const std :: string & name, const std :: string & alg,
                      const std :: string & key, mbedtls_md_type_t type )
-        : JWASigner ( alg, name, key )
-        , ctx ( cctx )
-        , md_type ( type )
+            : JWASigner ( name, alg, key )
+            , ctx ( cctx )
+            , md_type ( type )
         {
             /*
             mbedtls_mpi N;              public modulus.
@@ -156,7 +157,7 @@ namespace ncbi
     
     struct RSA_Verifier : JWAVerifier
     {
-        virtual void verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
+        virtual bool verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
         {
             // TBD the following quoteded code
             /*
@@ -209,14 +210,14 @@ namespace ncbi
         
         virtual JWAVerifier * clone () const
         {
-            return new RSA_Verifier ( alg, nam, key, md_type );
+            return new RSA_Verifier ( nam, alg, key, md_type );
         }
         
-        RSA_Verifier ( const std :: string & alg, const std :: string & name,
+        RSA_Verifier ( const std :: string & name, const std :: string & alg,
                        const std :: string & key, mbedtls_md_type_t type )
-        : JWAVerifier ( alg, name, key )
-        , ctx ( cctx )
-        , md_type ( type )
+            : JWAVerifier ( name, alg, key )
+            , ctx ( cctx )
+            , md_type ( type )
         {
             mbedtls_rsa_init ( & ctx, MBEDTLS_RSA_PKCS_V15, md_type );
             
@@ -239,14 +240,14 @@ namespace ncbi
     
     struct RSA_SignerFact : JWASignerFact
     {
-        virtual JWASigner * make ( const std :: string & alg,
-                                  const std :: string & name, const std :: string & key ) const
+        virtual JWASigner * make ( const std :: string & name,
+            const std :: string & alg, const std :: string & key ) const
         {
-            return new RSA_Signer ( alg, name, key, md_type );
+            return new RSA_Signer ( name, alg, key, md_type );
         }
         
         RSA_SignerFact ( const std :: string & alg, mbedtls_md_type_t type )
-        : md_type ( type )
+            : md_type ( type )
         {
             gJWAFactory . registerSignerFact ( alg, this );
         }
@@ -256,14 +257,14 @@ namespace ncbi
     
     struct RSA_VerifierFact : JWAVerifierFact
     {
-        virtual JWAVerifier * make ( const std :: string & alg,
-                                    const std :: string & name, const std :: string & key ) const
+        virtual JWAVerifier * make ( const std :: string & name,
+            const std :: string & alg, const std :: string & key ) const
         {
-            return new RSA_Verifier ( alg, name, key, md_type );
+            return new RSA_Verifier ( name, alg, key, md_type );
         }
         
         RSA_VerifierFact ( const std :: string & alg, mbedtls_md_type_t type )
-        : md_type ( type )
+            : md_type ( type )
         {
             gJWAFactory . registerVerifierFact ( alg, this );
         }
@@ -274,8 +275,8 @@ namespace ncbi
     static struct RSA_Registry
     {
         RSA_Registry ( const std :: string & alg, mbedtls_md_type_t md_type )
-        : signer_fact ( alg, md_type )
-        , verifier_fact ( alg, md_type )
+            : signer_fact ( alg, md_type )
+            , verifier_fact ( alg, md_type )
         {
         }
         
@@ -283,8 +284,8 @@ namespace ncbi
         RSA_VerifierFact verifier_fact;
         
     } rs256 ( "RS256", MBEDTLS_MD_SHA256 ),
-    rs384 ( "RS384", MBEDTLS_MD_SHA384 ),
-    rs512 ( "RS512", MBEDTLS_MD_SHA512 );
+      rs384 ( "RS384", MBEDTLS_MD_SHA384 ),
+      rs512 ( "RS512", MBEDTLS_MD_SHA512 );
     
     void includeJWA_rsa ( bool always_false )
     {

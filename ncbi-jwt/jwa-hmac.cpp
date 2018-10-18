@@ -45,6 +45,7 @@ namespace ncbi
 
             // extract the digest - maximum size is 512 bits
             unsigned char digest [ 512 / 8 ];
+            assert ( sizeof digest >= dsize );
             mbedtls_md_hmac_finish ( & ctx, digest );
 
             // reset the context for the next signature
@@ -59,9 +60,9 @@ namespace ncbi
             return new HMAC_Signer ( alg, nam, key, md_type );
         }
 
-        HMAC_Signer ( const std :: string & alg, const std :: string & name,
+        HMAC_Signer ( const std :: string & name, const std :: string & alg,
                 const std :: string & key, mbedtls_md_type_t type )
-            : JWASigner ( alg, name, key )
+            : JWASigner ( name, alg, key )
             , ctx ( cctx )
             , md_type ( type )
         {
@@ -95,13 +96,14 @@ namespace ncbi
 
     struct HMAC_Verifier : JWAVerifier
     {
-        virtual void verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
+        virtual bool verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
         {
             // hash the data
             mbedtls_md_hmac_update ( & ctx, ( const unsigned char * ) data, bytes );
 
             // extract the digest - maximum size is 512 bits
             unsigned char digest [ 512 / 8 ];
+            assert ( sizeof digest >= dsize );
             mbedtls_md_hmac_finish ( & ctx, digest );
 
             // reset the context for the next signature
@@ -112,21 +114,24 @@ namespace ncbi
 
             // test: the lengths must match
             if ( signature . size () != dsize )
-                throw JWTException ( __func__, __LINE__, "signature mismatch" );
+                return false;
 
             // the digest must match
             if ( memcmp ( digest, signature . data (), dsize ) != 0 )
-                throw JWTException ( __func__, __LINE__, "signature mismatch" );
+                return false;
+
+            // signature verified
+            return true;
         }
         
         virtual JWAVerifier * clone () const
         {
-            return new HMAC_Verifier ( alg, nam, key, md_type );
+            return new HMAC_Verifier ( nam, alg, key, md_type );
         }
 
-        HMAC_Verifier ( const std :: string & alg, const std :: string & name,
+        HMAC_Verifier ( const std :: string & name, const std :: string & alg,
                 const std :: string & key, mbedtls_md_type_t type )
-            : JWAVerifier ( alg, name, key )
+            : JWAVerifier ( name, alg, key )
             , ctx ( cctx )
             , md_type ( type )
         {
@@ -160,10 +165,10 @@ namespace ncbi
     
     struct HMAC_SignerFact : JWASignerFact
     {
-        virtual JWASigner * make ( const std :: string & alg,
-            const std :: string & name, const std :: string & key ) const
+        virtual JWASigner * make ( const std :: string & name,
+            const std :: string & alg, const std :: string & key ) const
         {
-            return new HMAC_Signer ( alg, name, key, md_type );
+            return new HMAC_Signer ( name, alg, key, md_type );
         }
 
         HMAC_SignerFact ( const std :: string & alg, mbedtls_md_type_t type )
@@ -177,10 +182,10 @@ namespace ncbi
 
     struct HMAC_VerifierFact : JWAVerifierFact
     {
-        virtual JWAVerifier * make ( const std :: string & alg,
-            const std :: string & name, const std :: string & key ) const
+        virtual JWAVerifier * make ( const std :: string & name,
+            const std :: string & alg, const std :: string & key ) const
         {
-            return new HMAC_Verifier ( alg, name, key, md_type );
+            return new HMAC_Verifier ( name, alg, key, md_type );
         }
 
         HMAC_VerifierFact ( const std :: string & alg, mbedtls_md_type_t type )

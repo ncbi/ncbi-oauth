@@ -57,20 +57,20 @@ namespace ncbi
      *  performs a brute force overwrite of key memory when destroyed
      */
 
+    const std :: string & JWAKeyHolder :: authority_name () const
+    {
+        return nam;
+    }
+
     const std :: string & JWAKeyHolder :: algorithm () const
     {
         return alg;
     }
     
-    const std :: string & JWAKeyHolder :: name () const
-    {
-        return nam;
-    }
-
-    JWAKeyHolder :: JWAKeyHolder ( const std :: string & _alg,
-            const std :: string & _nam, const std :: string & _key )
-        : alg ( _alg )
-        , nam ( _nam )
+    JWAKeyHolder :: JWAKeyHolder ( const std :: string & _nam,
+            const std :: string & _alg, const std :: string & _key )
+        : nam ( _nam )
+        , alg ( _alg )
         , key ( _key )
     {
     }
@@ -87,9 +87,9 @@ namespace ncbi
      *  performs the operation of generating a signature
      */
 
-    JWASigner :: JWASigner ( const std :: string & alg,
-            const std :: string & name, const std :: string & key )
-        : JWAKeyHolder ( alg, name, key )
+    JWASigner :: JWASigner ( const std :: string & name,
+            const std :: string & alg, const std :: string & key )
+        : JWAKeyHolder ( name, alg, key )
     {
     }
 
@@ -99,9 +99,9 @@ namespace ncbi
      *  performs the operation of verifying a signature
      */
 
-    JWAVerifier :: JWAVerifier ( const std :: string & alg,
-            const std :: string & name, const std :: string & key )
-        : JWAKeyHolder ( alg, name, key )
+    JWAVerifier :: JWAVerifier ( const std :: string & name,
+            const std :: string & alg, const std :: string & key )
+        : JWAKeyHolder ( name, alg, key )
     {
     }
 
@@ -129,8 +129,8 @@ namespace ncbi
      *  with polymorphic implementations
      */
 
-    JWASigner * JWAFactory :: makeSigner ( const std :: string & alg,
-            const std :: string & name, const std :: string & key ) const
+    JWASigner * JWAFactory :: makeSigner ( const std :: string & name,
+            const std :: string & alg, const std :: string & key ) const
     {
         // NB - expect this to be called after static constructors run
         assert ( maps != nullptr );
@@ -150,11 +150,11 @@ namespace ncbi
         assert ( fact != nullptr );
 
         // create the signer
-        return fact -> make ( alg, name, key );
+        return fact -> make ( name, alg, key );
     }
     
-    JWAVerifier * JWAFactory :: makeVerifier ( const std :: string & alg,
-            const std :: string & name, const std :: string & key ) const
+    JWAVerifier * JWAFactory :: makeVerifier ( const std :: string & name,
+            const std :: string & alg, const std :: string & key ) const
     {
         // NB - expect this to be called after static constructors run
         assert ( maps != nullptr );
@@ -174,7 +174,7 @@ namespace ncbi
         assert ( fact != nullptr );
 
         // create the verifier
-        return fact -> make ( alg, name, key );
+        return fact -> make ( name, alg, key );
     }
 
     void JWAFactory :: registerSignerFact ( const std :: string & alg, JWASignerFact * fact )
@@ -241,6 +241,7 @@ namespace ncbi
         // include algorithms for static linking
         //includeJWA_none ( false );
         includeJWA_hmac ( false );
+        includeJWA_rsa  ( false );
     }
     
     JWAFactory :: ~ JWAFactory ()

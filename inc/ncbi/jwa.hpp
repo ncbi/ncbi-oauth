@@ -39,18 +39,18 @@ namespace ncbi
     {
     public:
         
+        const std :: string & authority_name () const;
         const std :: string & algorithm () const;
-        const std :: string & name () const;
 
         virtual ~ JWAKeyHolder ();
         
     protected:
 
-        JWAKeyHolder ( const std :: string & alg,
-            const std :: string & name, const std :: string & key );
+        JWAKeyHolder ( const std :: string & authority_name,
+            const std :: string & alg, const std :: string & key );
 
-        std :: string alg;
         std :: string nam;
+        std :: string alg;
         std :: string key;
     };
 
@@ -63,34 +63,34 @@ namespace ncbi
         
     protected:
 
-        JWASigner ( const std :: string & alg,
-            const std :: string & name, const std :: string & key );
+        JWASigner ( const std :: string & authority_name,
+            const std :: string & alg, const std :: string & key );
     };
 
     class JWAVerifier : public JWAKeyHolder
     {
     public:
 
-        virtual void verify ( const void * data, size_t bytes, const std :: string & signature ) const = 0;
+        virtual bool verify ( const void * data, size_t bytes, const std :: string & signature ) const = 0;
         virtual JWAVerifier * clone () const = 0;
 
     protected:
 
-        JWAVerifier ( const std :: string & alg,
-            const std :: string & name, const std :: string & key );
+        JWAVerifier ( const std :: string & authority_name,
+            const std :: string & alg, const std :: string & key );
     };
 
     struct JWASignerFact
     {
-        virtual JWASigner * make ( const std :: string & alg,
-            const std :: string & name, const std :: string & key ) const = 0;
+        virtual JWASigner * make ( const std :: string & authority_name,
+            const std :: string & alg, const std :: string & key ) const = 0;
         virtual ~ JWASignerFact ();
     };
 
     struct JWAVerifierFact
     {
-        virtual JWAVerifier * make ( const std :: string & alg,
-            const std :: string & name, const std :: string & key ) const = 0;
+        virtual JWAVerifier * make ( const std :: string & authority_name,
+            const std :: string & alg, const std :: string & key ) const = 0;
         virtual ~ JWAVerifierFact ();
     };
     
@@ -98,10 +98,10 @@ namespace ncbi
     {
     public:
 
-        JWASigner * makeSigner ( const std :: string & alg,
-            const std :: string & name, const std :: string & key ) const;
-        JWAVerifier * makeVerifier ( const std :: string & alg,
-            const std :: string & name, const std :: string & key ) const;
+        JWASigner * makeSigner ( const std :: string & authority_name,
+            const std :: string & alg, const std :: string & key ) const;
+        JWAVerifier * makeVerifier ( const std :: string & authority_name,
+            const std :: string & alg, const std :: string & key ) const;
 
         void registerSignerFact ( const std :: string & alg, JWASignerFact * fact );
         void registerVerifierFact ( const std :: string & alg, JWAVerifierFact * fact );
@@ -132,6 +132,7 @@ namespace ncbi
     // i.e. to keep it from being dead-stripped by the linker
     void includeJWA_none ( bool always_false );
     void includeJWA_hmac ( bool always_false );
+    void includeJWA_rsa  ( bool always_false );
 
 }
 

@@ -45,37 +45,38 @@ namespace ncbi
             return new NONE_Signer ( alg, nam, key );
         }
 
-        NONE_Signer ( const std :: string & alg,
-                const std :: string & name, const std :: string & key )
-            : JWASigner ( alg, name, key )
+        NONE_Signer ( const std :: string & name,
+                const std :: string & alg, const std :: string & key )
+            : JWASigner ( name, alg, key )
         {
         }
     };
 
     struct NONE_Verifier : JWAVerifier
     {
-        virtual void verify ( const void * data, size_t bytes, const std :: string & signature ) const
+        virtual bool verify ( const void * data, size_t bytes, const std :: string & signature ) const
         {
+            return true;
         }
         
         virtual JWAVerifier * clone () const
         {
-            return new NONE_Verifier ( alg, nam, key );
+            return new NONE_Verifier ( nam, alg, key );
         }
 
-        NONE_Verifier ( const std :: string & alg,
-                const std :: string & name, const std :: string & key )
-            : JWAVerifier ( alg, name, key )
+        NONE_Verifier ( const std :: string & name,
+                const std :: string & alg, const std :: string & key )
+            : JWAVerifier ( name, alg, key )
         {
         }
     };
     
     struct NONE_SignerFact : JWASignerFact
     {
-        virtual JWASigner * make ( const std :: string & alg,
-            const std :: string & name, const std :: string & key ) const
+        virtual JWASigner * make ( const std :: string & name,
+            const std :: string & alg, const std :: string & key ) const
         {
-            return new NONE_Signer ( alg, name, key );
+            return new NONE_Signer ( name, alg, key );
         }
 
         NONE_SignerFact ( const std :: string & alg )
@@ -86,10 +87,10 @@ namespace ncbi
 
     struct NONE_VerifierFact : JWAVerifierFact
     {
-        virtual JWAVerifier * make ( const std :: string & alg,
-            const std :: string & name, const std :: string & key ) const
+        virtual JWAVerifier * make ( const std :: string & name,
+            const std :: string & alg, const std :: string & key ) const
         {
-            return new NONE_Verifier ( alg, name, key );
+            return new NONE_Verifier ( name, alg, key );
         }
 
         NONE_VerifierFact ( const std :: string & alg )
