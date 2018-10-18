@@ -83,7 +83,8 @@ namespace ncbi
              * \param sig      The buffer to hold the ciphertext.
              */
             unsigned char digest [ 512 / 8 ];
-            if ( mbedtls_rsa_pkcs1_sign ( & ctx, NULL, NULL, MBEDTLS_RSA_PRIVATE, md_type, sizeof hash, hash, digest ) != 0 )
+            if ( mbedtls_rsa_pkcs1_sign ( & ctx, NULL, NULL, MBEDTLS_RSA_PRIVATE, md_type,
+                                         sizeof hash, hash, digest ) != 0 )
                 throw JWTException ( __func__, __LINE__, "failed to extract digest" );
             
             // encode as base64url

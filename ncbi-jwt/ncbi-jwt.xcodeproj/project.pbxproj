@@ -18,6 +18,7 @@
 		CE026B4E2177722F00A1C44F /* jwa-factory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE026B482177722F00A1C44F /* jwa-factory.cpp */; };
 		CE026B4F2177722F00A1C44F /* jwt-exception.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE026B492177722F00A1C44F /* jwt-exception.cpp */; };
 		CE0C38FB20E68B1B003E7D51 /* libncbi-json.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = CE0C38FA20E68B1B003E7D51 /* libncbi-json.dylib */; };
+		CE5408F021792A4C00B30CF5 /* jwa-ecdsa.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE5408EF21792A4C00B30CF5 /* jwa-ecdsa.cpp */; };
 		CEE54A45210FA6B0009ECFD8 /* base64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CEE54A43210FA6B0009ECFD8 /* base64.cpp */; };
 		CEE54A46210FA6B0009ECFD8 /* base64-priv.hpp in Headers */ = {isa = PBXBuildFile; fileRef = CEE54A44210FA6B0009ECFD8 /* base64-priv.hpp */; };
 /* End PBXBuildFile section */
@@ -34,6 +35,7 @@
 		CE026B482177722F00A1C44F /* jwa-factory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwa-factory.cpp"; sourceTree = "<group>"; };
 		CE026B492177722F00A1C44F /* jwt-exception.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "jwt-exception.cpp"; sourceTree = "<group>"; };
 		CE0C38FA20E68B1B003E7D51 /* libncbi-json.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libncbi-json.dylib"; path = "../../../../../Users/user/Library/Developer/Xcode/DerivedData/ncbi-oauth-ccqkmtescumnuuanmckichlndcup/Build/Products/Debug/libncbi-json.dylib"; sourceTree = "<group>"; };
+		CE5408EF21792A4C00B30CF5 /* jwa-ecdsa.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "jwa-ecdsa.cpp"; sourceTree = "<group>"; };
 		CE720D8D20E549DF00FDB587 /* libncbi-jwt.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libncbi-jwt.dylib"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CEE54A43210FA6B0009ECFD8 /* base64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = base64.cpp; sourceTree = "<group>"; };
 		CEE54A44210FA6B0009ECFD8 /* base64-priv.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "base64-priv.hpp"; sourceTree = "<group>"; };
@@ -64,6 +66,7 @@
 		0C7D32722177A76200ECCF4B /* jwa-algs */ = {
 			isa = PBXGroup;
 			children = (
+				CE5408EF21792A4C00B30CF5 /* jwa-ecdsa.cpp */,
 				0C7D32772177AFC300ECCF4B /* jwa-hmac.cpp */,
 				0C7D32762177AFC300ECCF4B /* jwa-none.cpp */,
 				0C7D32782177AFC300ECCF4B /* jwa-rsa.cpp */,
@@ -197,6 +200,7 @@
 				CE026B4D2177722F00A1C44F /* jws-factory.cpp in Sources */,
 				CEE54A45210FA6B0009ECFD8 /* base64.cpp in Sources */,
 				0C7D32792177AFC300ECCF4B /* jwa-none.cpp in Sources */,
+				CE5408F021792A4C00B30CF5 /* jwa-ecdsa.cpp in Sources */,
 				CE026B4F2177722F00A1C44F /* jwt-exception.cpp in Sources */,
 				0C92962F21233E7600BFE15D /* jwt-claims.cpp in Sources */,
 				CE026B4E2177722F00A1C44F /* jwa-factory.cpp in Sources */,
