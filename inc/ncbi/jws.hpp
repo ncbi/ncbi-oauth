@@ -58,7 +58,8 @@ namespace ncbi
         // check that the JOSE header is completely understood
         // validates signature
         // or throw exception
-        void validate ( const JSONObject & hdr, const JWS & jws, size_t last_period ) const;
+        // returns authority-name of matching validator
+        const std :: string & validate ( const JSONObject & hdr, const JWS & jws, size_t last_period ) const;
         
         // additional verifiers
         void addVerifier ( const std :: string & authority_name,
