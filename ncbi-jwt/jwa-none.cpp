@@ -54,8 +54,9 @@ namespace ncbi
 
     struct NONE_Verifier : JWAVerifier
     {
-        virtual void verify ( const void * data, size_t bytes, const std :: string & signature ) const
+        virtual bool verify ( const void * data, size_t bytes, const std :: string & signature ) const
         {
+            return true;
         }
         
         virtual JWAVerifier * clone () const

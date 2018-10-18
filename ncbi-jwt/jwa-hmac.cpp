@@ -96,7 +96,7 @@ namespace ncbi
 
     struct HMAC_Verifier : JWAVerifier
     {
-        virtual void verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
+        virtual bool verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
         {
             // hash the data
             mbedtls_md_hmac_update ( & ctx, ( const unsigned char * ) data, bytes );
@@ -114,11 +114,14 @@ namespace ncbi
 
             // test: the lengths must match
             if ( signature . size () != dsize )
-                throw JWTException ( __func__, __LINE__, "signature mismatch" );
+                return false;
 
             // the digest must match
             if ( memcmp ( digest, signature . data (), dsize ) != 0 )
-                throw JWTException ( __func__, __LINE__, "signature mismatch" );
+                return false;
+
+            // signature verified
+            return true;
         }
         
         virtual JWAVerifier * clone () const

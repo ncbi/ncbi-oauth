@@ -143,9 +143,9 @@ namespace ncbi
     
     struct RSA_Verifier : JWAVerifier
     {
-        virtual void verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
+        virtual bool verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
         {
-
+            return false;
         }
         
         virtual JWAVerifier * clone () const

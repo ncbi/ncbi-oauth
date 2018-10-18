@@ -71,7 +71,7 @@ namespace ncbi
     {
     public:
 
-        virtual void verify ( const void * data, size_t bytes, const std :: string & signature ) const = 0;
+        virtual bool verify ( const void * data, size_t bytes, const std :: string & signature ) const = 0;
         virtual JWAVerifier * clone () const = 0;
 
     protected:
