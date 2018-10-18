@@ -55,32 +55,35 @@ namespace ncbi
     {
         virtual std :: string sign ( const void * data, size_t bytes ) const
         {
+            // checks if a context contains an RSA private key
+            // and perform basic consistency checks.
+            if ( mbedtls_rsa_check_privkey ( & ctx ) != 0  )
+                throw JWTException ( __func__, __LINE__, "failed to verify RSA context and private key" );
+            
+            // get info from the type
+            const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
+            size_t dsize = mbedtls_md_get_size ( info );
+            
+            // Compute hash
+            unsigned char hash [ 32 ];
+            if ( mbedtls_md ( info, ( const unsigned char * ) data, bytes, hash ) != 0 )
+                throw JWTException ( __func__, __LINE__, "failed to compute hash" );
+            
             /*
-             * Compute the SHA-256 hash of the input file,
-             * then calculate the RSA signature of the hash.
+             * \param ctx      The RSA context.
+             * \param f_rng    The RNG function. Needed for PKCS#1 v2.1 encoding and for
+             *                 #MBEDTLS_RSA_PRIVATE.
+             * \param p_rng    The RNG context.
+             * \param mode     #MBEDTLS_RSA_PUBLIC or #MBEDTLS_RSA_PRIVATE.
+             * \param md_alg   The message-digest algorithm used to hash the original data.
+             *                 Use #MBEDTLS_MD_NONE for signing raw data.
+             * \param hashlen  The length of the message digest. Only used if \p md_alg is #MBEDTLS_MD_NONE.
+             * \param hash     The buffer holding the message digest.
+             * \param sig      The buffer to hold the ciphertext.
              */
-            /*
-            mbedtls_printf( "\n  . Generating the RSA/SHA-256 signature" );
-            fflush( stdout );
-            
-            if( ( ret = mbedtls_md_file(
-                                        mbedtls_md_info_from_type( MBEDTLS_MD_SHA256 ),
-                                        argv[1], hash ) ) != 0 )
-            {
-                mbedtls_printf( " failed\n  ! Could not open or read %s\n\n", argv[1] );
-                goto exit;
-            }
-            
-            if( ( ret = mbedtls_rsa_pkcs1_sign( &rsa, NULL, NULL, MBEDTLS_RSA_PRIVATE, MBEDTLS_MD_SHA256,
-                                               20, hash, buf ) ) != 0 )
-            {
-                mbedtls_printf( " failed\n  ! mbedtls_rsa_pkcs1_sign returned -0x%0x\n\n", -ret );
-                goto exit;
-            }
-            */
-            
-            // extract the digest - maximum size is 512 bits
             unsigned char digest [ 512 / 8 ];
+            if ( mbedtls_rsa_pkcs1_sign ( & ctx, NULL, NULL, MBEDTLS_RSA_PRIVATE, md_type, sizeof hash, hash, digest ) != 0 )
+                throw JWTException ( __func__, __LINE__, "failed to extract digest" );
             
             // encode as base64url
             return encodeBase64URL ( digest, dsize );
@@ -97,43 +100,55 @@ namespace ncbi
         , ctx ( cctx )
         , md_type ( type )
         {
+            /*
+            mbedtls_mpi N;              public modulus.
+            mbedtls_mpi E;              public exponent.
+            mbedtls_mpi D;              private exponent.
+            mbedtls_mpi P;              first prime factor.
+            mbedtls_mpi Q;              second prime factor.
+            mbedtls_mpi DP;             <code>D % (P - 1)</code>.
+            mbedtls_mpi DQ;             <code>D % (Q - 1)</code>.
+            mbedtls_mpi QP;             <code>1 / (Q % P)</code>.
+            mbedtls_mpi RN;             cached <code>R^2 mod N</code>.
+            mbedtls_mpi RP;             cached <code>R^2 mod P</code>.
+            mbedtls_mpi RQ;             cached <code>R^2 mod Q</code>.
+            mbedtls_mpi Vi;             cached blinding value.
+            mbedtls_mpi Vf;             cached un-blinding value.
+            */
+            
             // simple context initialization
-            mbedtls_rsa_init ( &ctx, MBEDTLS_RSA_PKCS_V15,  md_type );
+            mbedtls_rsa_init ( & ctx, MBEDTLS_RSA_PKCS_V15, md_type );
             
-            mbedtls_mpi_init ( &N ); mbedtls_mpi_init ( &P ); mbedtls_mpi_init ( &Q );
-            mbedtls_mpi_init ( &D ); mbedtls_mpi_init ( &E ); mbedtls_mpi_init ( &DP );
-            mbedtls_mpi_init ( &DQ ); mbedtls_mpi_init ( &QP );
+            mbedtls_mpi_init ( & N ); mbedtls_mpi_init ( & P ); mbedtls_mpi_init ( & Q );
+            mbedtls_mpi_init ( & D ); mbedtls_mpi_init ( & E ); mbedtls_mpi_init ( & DP );
+            mbedtls_mpi_init ( & DQ ); mbedtls_mpi_init ( & QP );
             
-            if ( ( mbedtls_mpi_read_string ( &N , 16, key . data () ) ) != 0  ||
-                 ( mbedtls_mpi_read_string ( &E , 16, key . data () ) ) != 0  ||
-                 ( mbedtls_mpi_read_string ( &D , 16, key . data () ) ) != 0  ||
-                 ( mbedtls_mpi_read_string ( &P , 16, key . data () ) ) != 0  ||
-                 ( mbedtls_mpi_read_string ( &Q , 16, key . data () ) ) != 0  ||
-                 ( mbedtls_mpi_read_string ( &DP , 16, key . data () ) ) != 0 ||
-                 ( mbedtls_mpi_read_string ( &DQ , 16, key . data () ) ) != 0 ||
-                 ( mbedtls_mpi_read_string ( &QP , 16, key . data () ) ) != 0 )
+            if ( ( mbedtls_mpi_read_string ( & N , 16, key . data () ) ) != 0  ||
+                 ( mbedtls_mpi_read_string ( & E , 16, key . data () ) ) != 0  ||
+                 ( mbedtls_mpi_read_string ( & D , 16, key . data () ) ) != 0  ||
+                 ( mbedtls_mpi_read_string ( & P , 16, key . data () ) ) != 0  ||
+                 ( mbedtls_mpi_read_string ( & Q , 16, key . data () ) ) != 0  ||
+                 ( mbedtls_mpi_read_string ( & DP , 16, key . data () ) ) != 0 ||
+                 ( mbedtls_mpi_read_string ( & DQ , 16, key . data () ) ) != 0 ||
+                 ( mbedtls_mpi_read_string ( & QP , 16, key . data () ) ) != 0 )
                 throw JWTException ( __func__, __LINE__, "failed to read context data from key" );
             
-            if ( mbedtls_rsa_import ( & ctx, &N, &P, &Q, &D, &E ) != 0 )
+            if ( mbedtls_rsa_import ( & ctx, & N, & P, & Q, & D, & E ) != 0 )
                 throw JWTException ( __func__, __LINE__, "failed to import data to RSA context" );
             
             if ( mbedtls_rsa_complete ( & ctx ) != 0 )
                 throw JWTException ( __func__, __LINE__, "failed to initialize RSA context" );
-            
-            // get info from the type
-            const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
-            dsize = mbedtls_md_get_size ( info );
         }
         
         ~ RSA_Signer ()
         {
             mbedtls_rsa_free ( & ctx );
-            mbedtls_mpi_free( &N ); mbedtls_mpi_free( &P ); mbedtls_mpi_free( &Q );
-            mbedtls_mpi_free( &D ); mbedtls_mpi_free( &E ); mbedtls_mpi_free( &DP );
-            mbedtls_mpi_free( &DQ ); mbedtls_mpi_free( &QP );
+            mbedtls_mpi_free( & N ); mbedtls_mpi_free( & P ); mbedtls_mpi_free( & Q );
+            mbedtls_mpi_free( & D ); mbedtls_mpi_free( & E ); mbedtls_mpi_free( & DP );
+            mbedtls_mpi_free( & DQ ); mbedtls_mpi_free( & QP );
         }
         
-        size_t dsize;
+        //size_t dsize;
         mbedtls_mpi N, P, Q, D, E, DP, DQ, QP;
         mbedtls_rsa_context cctx, & ctx;
         mbedtls_md_type_t md_type;
@@ -143,7 +158,53 @@ namespace ncbi
     {
         virtual void verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
         {
-
+            // TBD the following quoteded code
+            /*
+             * Extract the RSA signature from the text file
+             
+             mbedtls_snprintf( filename, sizeof(filename), "%s.sig", argv[1] );
+             
+             if( ( f = fopen( filename, "rb" ) ) == NULL )
+             {
+             mbedtls_printf( "\n  ! Could not open %s\n\n", filename );
+             goto exit;
+             }
+             
+             i = 0;
+             while( fscanf( f, "%02X", &c ) > 0 &&
+             i < (int) sizeof( buf ) )
+             buf[i++] = (unsigned char) c;
+             
+             fclose( f );
+             
+             if( i != rsa.len )
+             {
+             mbedtls_printf( "\n  ! Invalid RSA signature format\n\n" );
+             goto exit;
+             }
+             */
+            
+            // get info from the type
+            const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
+            size_t dsize = mbedtls_md_get_size ( info );
+            
+            // Compute hash
+            unsigned char hash [ 32 ];
+            if ( mbedtls_md ( info, ( const unsigned char * ) data, bytes, hash ) != 0 )
+                throw JWTException ( __func__, __LINE__, "failed to compute hash" );
+            
+            unsigned char digest [ 512 / 8 ];
+            if ( mbedtls_rsa_pkcs1_verify ( & ctx, NULL, NULL, MBEDTLS_RSA_PUBLIC, md_type, sizeof hash, hash, digest ) != 0 )
+                throw JWTException ( __func__, __LINE__, "failed to verify signature" );
+            
+            Base64Payload signature = decodeBase64URL ( sig_base64 );
+            
+            if ( signature . size () != dsize )
+                throw JWTException ( __func__, __LINE__, "signature mismatch" );
+            
+            // the digest must match
+            if ( memcmp ( digest, signature . data (), dsize ) != 0 )
+                throw JWTException ( __func__, __LINE__, "signature mismatch" );
         }
         
         virtual JWAVerifier * clone () const
@@ -157,15 +218,22 @@ namespace ncbi
         , ctx ( cctx )
         , md_type ( type )
         {
+            mbedtls_rsa_init ( & ctx, MBEDTLS_RSA_PKCS_V15, md_type );
+            
+            if ( ( mbedtls_mpi_read_string ( & ctx . N , 16, key . data () ) ) != 0  ||
+                ( mbedtls_mpi_read_string ( & ctx . E , 16, key . data () ) ) != 0  )
+                throw JWTException ( __func__, __LINE__, "failed to read context data from key" );
+            
+            ctx . len = ( mbedtls_mpi_bitlen ( & ctx . N ) + 7 ) >> 3;
         }
         
         ~ RSA_Verifier ()
         {
-            mbedtls_md_free ( & ctx );
+            mbedtls_rsa_free ( & ctx );
         }
         
         size_t dsize;
-        mbedtls_md_context_t cctx, & ctx;
+        mbedtls_rsa_context cctx, & ctx;
         mbedtls_md_type_t md_type;
     };
     
