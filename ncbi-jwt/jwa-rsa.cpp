@@ -55,7 +55,7 @@ namespace ncbi
     {
         virtual std :: string sign ( const void * data, size_t bytes ) const
         {
-    
+            unsigned char digest [ 512 / 8 ];
             // encode as base64url
             return encodeBase64URL ( digest, dsize );
         }
@@ -71,15 +71,20 @@ namespace ncbi
         , ctx ( cctx )
         , md_type ( type )
         {
+            // simple context initialization
+            mbedtls_rsa_init  ( & ctx, MBEDTLS_RSA_PKCS_V15, md_type );
+            
+            const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
+            dsize = mbedtls_md_get_size ( info );
         }
         
         ~ RSA_Signer ()
         {
-            mbedtls_md_free ( & ctx );
+            mbedtls_rsa_free ( & ctx );
         }
         
         size_t dsize;
-        mbedtls_md_context_t cctx, & ctx;
+        mbedtls_rsa_context cctx, & ctx;
         mbedtls_md_type_t md_type;
     };
     
@@ -105,7 +110,6 @@ namespace ncbi
         
         ~ RSA_Verifier ()
         {
-            mbedtls_md_free ( & ctx );
         }
         
         size_t dsize;
