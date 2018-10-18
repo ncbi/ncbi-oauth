@@ -116,9 +116,9 @@ namespace ncbi
         }
     }
 
-    void JWSFactory :: addVerifier ( const std :: string & alg, const std :: string & name, const std :: string & key )
+    void JWSFactory :: addVerifier ( const std :: string & name, const std :: string & alg, const std :: string & key )
     {
-        JWAVerifier * verifier = gJWAFactory . makeVerifier ( alg, name, key );
+        JWAVerifier * verifier = gJWAFactory . makeVerifier ( name, alg, key );
         addl_verifiers . push_back ( verifier );
     }
 
@@ -164,13 +164,13 @@ namespace ncbi
         }
     }
 
-    JWSFactory :: JWSFactory ( const std :: string & alg, const std :: string & name,
+    JWSFactory :: JWSFactory ( const std :: string & name, const std :: string & alg,
              const std :: string & signing_key, const std :: string & verify_key )
         : signer ( nullptr )
         , verifier ( nullptr )
     {
-        signer = gJWAFactory . makeSigner ( alg, name, signing_key );
-        verifier = gJWAFactory . makeVerifier ( alg, name, verify_key );
+        signer = gJWAFactory . makeSigner ( name, alg, signing_key );
+        verifier = gJWAFactory . makeVerifier ( name, alg, verify_key );
     }
 
     JWSFactory :: ~ JWSFactory ()

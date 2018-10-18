@@ -22,7 +22,7 @@ namespace ncbi
     public:
         void SetUp ()
         {
-            jws_fact = new JWSFactory ( "HS384", "ncbi", "blarky2", "blarky2" );
+            jws_fact = new JWSFactory ( "ncbi", "HS384", "blarky2", "blarky2" );
             jwt_fact = new JWTFactory ( * jws_fact );
             jwt_fact -> setIssuer ( "ncbi" );
             jwt_fact -> setDuration ( 15 );
