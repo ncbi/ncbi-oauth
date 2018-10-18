@@ -77,7 +77,8 @@ namespace ncbi
              * \param mode     #MBEDTLS_RSA_PUBLIC or #MBEDTLS_RSA_PRIVATE.
              * \param md_alg   The message-digest algorithm used to hash the original data.
              *                 Use #MBEDTLS_MD_NONE for signing raw data.
-             * \param hashlen  The length of the message digest. Only used if \p md_alg is #MBEDTLS_MD_NONE.
+             * \param hashlen  The length of the message digest. Only used if \p md_alg is
+             *                 #MBEDTLS_MD_NONE.
              * \param hash     The buffer holding the message digest.
              * \param sig      The buffer to hold the ciphertext.
              */
@@ -85,9 +86,8 @@ namespace ncbi
             if ( mbedtls_rsa_pkcs1_sign ( & ctx, NULL, NULL, MBEDTLS_RSA_PRIVATE, md_type, sizeof hash, hash, digest ) != 0 )
                 throw JWTException ( __func__, __LINE__, "failed to extract digest" );
             
-#else
-            return "";
-#endif
+            // encode as base64url
+            return encodeBase64URL ( digest, dsize );
         }
         
         virtual JWASigner * clone () const
@@ -192,20 +192,22 @@ namespace ncbi
             // Compute hash
             unsigned char hash [ 32 ];
             if ( mbedtls_md ( info, ( const unsigned char * ) data, bytes, hash ) != 0 )
-                throw JWTException ( __func__, __LINE__, "failed to compute hash" );
+                return false;
             
             unsigned char digest [ 512 / 8 ];
             if ( mbedtls_rsa_pkcs1_verify ( & ctx, NULL, NULL, MBEDTLS_RSA_PUBLIC, md_type, sizeof hash, hash, digest ) != 0 )
-                throw JWTException ( __func__, __LINE__, "failed to verify signature" );
+                return false;
             
             Base64Payload signature = decodeBase64URL ( sig_base64 );
             
             if ( signature . size () != dsize )
-                throw JWTException ( __func__, __LINE__, "signature mismatch" );
+                return false;
             
             // the digest must match
             if ( memcmp ( digest, signature . data (), dsize ) != 0 )
-                throw JWTException ( __func__, __LINE__, "signature mismatch" );
+                return false;
+            
+            return true;
         }
         
         virtual JWAVerifier * clone () const
