@@ -55,7 +55,33 @@ namespace ncbi
     {
         virtual std :: string sign ( const void * data, size_t bytes ) const
         {
-    
+            /*
+             * Compute the SHA-256 hash of the input file,
+             * then calculate the RSA signature of the hash.
+             */
+            /*
+            mbedtls_printf( "\n  . Generating the RSA/SHA-256 signature" );
+            fflush( stdout );
+            
+            if( ( ret = mbedtls_md_file(
+                                        mbedtls_md_info_from_type( MBEDTLS_MD_SHA256 ),
+                                        argv[1], hash ) ) != 0 )
+            {
+                mbedtls_printf( " failed\n  ! Could not open or read %s\n\n", argv[1] );
+                goto exit;
+            }
+            
+            if( ( ret = mbedtls_rsa_pkcs1_sign( &rsa, NULL, NULL, MBEDTLS_RSA_PRIVATE, MBEDTLS_MD_SHA256,
+                                               20, hash, buf ) ) != 0 )
+            {
+                mbedtls_printf( " failed\n  ! mbedtls_rsa_pkcs1_sign returned -0x%0x\n\n", -ret );
+                goto exit;
+            }
+            */
+            
+            // extract the digest - maximum size is 512 bits
+            unsigned char digest [ 512 / 8 ];
+            
             // encode as base64url
             return encodeBase64URL ( digest, dsize );
         }
@@ -71,15 +97,45 @@ namespace ncbi
         , ctx ( cctx )
         , md_type ( type )
         {
+            // simple context initialization
+            mbedtls_rsa_init ( &ctx, MBEDTLS_RSA_PKCS_V15,  md_type );
+            
+            mbedtls_mpi_init ( &N ); mbedtls_mpi_init ( &P ); mbedtls_mpi_init ( &Q );
+            mbedtls_mpi_init ( &D ); mbedtls_mpi_init ( &E ); mbedtls_mpi_init ( &DP );
+            mbedtls_mpi_init ( &DQ ); mbedtls_mpi_init ( &QP );
+            
+            if ( ( mbedtls_mpi_read_string ( &N , 16, key . data () ) ) != 0  ||
+                 ( mbedtls_mpi_read_string ( &E , 16, key . data () ) ) != 0  ||
+                 ( mbedtls_mpi_read_string ( &D , 16, key . data () ) ) != 0  ||
+                 ( mbedtls_mpi_read_string ( &P , 16, key . data () ) ) != 0  ||
+                 ( mbedtls_mpi_read_string ( &Q , 16, key . data () ) ) != 0  ||
+                 ( mbedtls_mpi_read_string ( &DP , 16, key . data () ) ) != 0 ||
+                 ( mbedtls_mpi_read_string ( &DQ , 16, key . data () ) ) != 0 ||
+                 ( mbedtls_mpi_read_string ( &QP , 16, key . data () ) ) != 0 )
+                throw JWTException ( __func__, __LINE__, "failed to read context data from key" );
+            
+            if ( mbedtls_rsa_import ( & ctx, &N, &P, &Q, &D, &E ) != 0 )
+                throw JWTException ( __func__, __LINE__, "failed to import data to RSA context" );
+            
+            if ( mbedtls_rsa_complete ( & ctx ) != 0 )
+                throw JWTException ( __func__, __LINE__, "failed to initialize RSA context" );
+            
+            // get info from the type
+            const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
+            dsize = mbedtls_md_get_size ( info );
         }
         
         ~ RSA_Signer ()
         {
-            mbedtls_md_free ( & ctx );
+            mbedtls_rsa_free ( & ctx );
+            mbedtls_mpi_free( &N ); mbedtls_mpi_free( &P ); mbedtls_mpi_free( &Q );
+            mbedtls_mpi_free( &D ); mbedtls_mpi_free( &E ); mbedtls_mpi_free( &DP );
+            mbedtls_mpi_free( &DQ ); mbedtls_mpi_free( &QP );
         }
         
         size_t dsize;
-        mbedtls_md_context_t cctx, & ctx;
+        mbedtls_mpi N, P, Q, D, E, DP, DQ, QP;
+        mbedtls_rsa_context cctx, & ctx;
         mbedtls_md_type_t md_type;
     };
     
