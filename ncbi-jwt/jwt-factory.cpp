@@ -418,6 +418,13 @@ namespace ncbi
             duration = nbf_seconds;
     }
 
+    void JWTFactory :: setDefaultSkew ( long long dflt )
+    {
+        JWTLocker locker ( obj_lock );
+        if ( dflt >= 0 && dflt < 10 * 60 )
+            dflt_skew = dflt;
+    }
+
     void JWTFactory :: lock ()
     {
         obj_lock . flag . test_and_set ();
