@@ -29,6 +29,8 @@
 #include "base64-priv.hpp"
 
 #include <mbedtls/rsa.h>
+#include <mbedtls/error.h>
+#include <mbedtls/bignum.h>
 
 #include <iostream>
 #include <cstring>
@@ -36,6 +38,23 @@
 
 namespace ncbi
 {
+    static
+    std :: string mbedtls_error ( int err )
+    {
+        char buffer [ 256 ];
+        mbedtls_strerror ( err, buffer, sizeof buffer );
+        return std :: string ( buffer );
+    }
+
+    static
+    JWTException MBEDTLSException ( const char * func, unsigned int line, int err, const char * msg )
+    {
+        std :: string what ( msg );
+        what += ": ";
+        what += mbedtls_error ( err );
+        return JWTException ( func, line, what . c_str () );
+    }
+    
     /*
      +-------------------+---------------------------------+
      | "alg" Param Value | Digital Signature Algorithm     |
@@ -121,37 +140,81 @@ namespace ncbi
             // simple context initialization
             mbedtls_rsa_init ( & ctx, MBEDTLS_RSA_PKCS_V15, md_type );
             
-            mbedtls_mpi_init ( & N ); mbedtls_mpi_init ( & P ); mbedtls_mpi_init ( & Q );
-            mbedtls_mpi_init ( & D ); mbedtls_mpi_init ( & E ); mbedtls_mpi_init ( & DP );
-            mbedtls_mpi_init ( & DQ ); mbedtls_mpi_init ( & QP );
+            mbedtls_mpi N, P, Q, D, E, DP, DQ, QP;
             
-            if ( ( mbedtls_mpi_read_string ( & N , 16, key . data () ) ) != 0  ||
-                 ( mbedtls_mpi_read_string ( & E , 16, key . data () ) ) != 0  ||
-                 ( mbedtls_mpi_read_string ( & D , 16, key . data () ) ) != 0  ||
-                 ( mbedtls_mpi_read_string ( & P , 16, key . data () ) ) != 0  ||
-                 ( mbedtls_mpi_read_string ( & Q , 16, key . data () ) ) != 0  ||
-                 ( mbedtls_mpi_read_string ( & DP , 16, key . data () ) ) != 0 ||
-                 ( mbedtls_mpi_read_string ( & DQ , 16, key . data () ) ) != 0 ||
-                 ( mbedtls_mpi_read_string ( & QP , 16, key . data () ) ) != 0 )
-                throw JWTException ( __func__, __LINE__, "failed to read context data from key" );
+            mbedtls_mpi_init ( & N );
+            mbedtls_mpi_init ( & P );
+            mbedtls_mpi_init ( & Q );
+            mbedtls_mpi_init ( & D );
+            mbedtls_mpi_init ( & E );
+            mbedtls_mpi_init ( & DP );
+            mbedtls_mpi_init ( & DQ );
+            mbedtls_mpi_init ( & QP );
+
+            try
+            {
+                int status = mbedtls_mpi_read_string ( & N , 16, key . c_str () );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to read N context data from key" );
+                status = mbedtls_mpi_read_string ( & E , 16, key . data () );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to read E context data from key" );
+                status = mbedtls_mpi_read_string ( & D , 16, key . data () );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to read D context data from key" );
+                status = mbedtls_mpi_read_string ( & P , 16, key . data () );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to read P context data from key" );
+                status = mbedtls_mpi_read_string ( & Q , 16, key . data () );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to read Q context data from key" );
+                status = mbedtls_mpi_read_string ( & DP , 16, key . data () );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to read DP context data from key" );
+                status = mbedtls_mpi_read_string ( & DQ , 16, key . data () );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to read DQ context data from key" );
+                status = mbedtls_mpi_read_string ( & QP , 16, key . data () );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to read QP context data from key" );
+
+                status = mbedtls_rsa_import ( & ctx, & N, & P, & Q, & D, & E );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to import data to RSA context" );
+
+                status = mbedtls_rsa_complete ( & ctx );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to initialize RSA context" );
+            }
+            catch ( ... )
+            {
+                mbedtls_mpi_free( & N );
+                mbedtls_mpi_free( & P );
+                mbedtls_mpi_free( & Q );
+                mbedtls_mpi_free( & D );
+                mbedtls_mpi_free( & E );
+                mbedtls_mpi_free( & DP );
+                mbedtls_mpi_free( & DQ );
+                mbedtls_mpi_free( & QP );
+                throw;
+            }
             
-            if ( mbedtls_rsa_import ( & ctx, & N, & P, & Q, & D, & E ) != 0 )
-                throw JWTException ( __func__, __LINE__, "failed to import data to RSA context" );
-            
-            if ( mbedtls_rsa_complete ( & ctx ) != 0 )
-                throw JWTException ( __func__, __LINE__, "failed to initialize RSA context" );
+            mbedtls_mpi_free( & N );
+            mbedtls_mpi_free( & P );
+            mbedtls_mpi_free( & Q );
+            mbedtls_mpi_free( & D );
+            mbedtls_mpi_free( & E );
+            mbedtls_mpi_free( & DP );
+            mbedtls_mpi_free( & DQ );
+            mbedtls_mpi_free( & QP );
         }
         
         ~ RSA_Signer ()
         {
             mbedtls_rsa_free ( & ctx );
-            mbedtls_mpi_free( & N ); mbedtls_mpi_free( & P ); mbedtls_mpi_free( & Q );
-            mbedtls_mpi_free( & D ); mbedtls_mpi_free( & E ); mbedtls_mpi_free( & DP );
-            mbedtls_mpi_free( & DQ ); mbedtls_mpi_free( & QP );
         }
         
         //size_t dsize;
-        mbedtls_mpi N, P, Q, D, E, DP, DQ, QP;
         mbedtls_rsa_context cctx, & ctx;
         mbedtls_md_type_t md_type;
     };
@@ -160,43 +223,18 @@ namespace ncbi
     {
         virtual bool verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
         {
-            // TBD the following quoteded code
-            /*
-             * Extract the RSA signature from the text file
-             
-             mbedtls_snprintf( filename, sizeof(filename), "%s.sig", argv[1] );
-             
-             if( ( f = fopen( filename, "rb" ) ) == NULL )
-             {
-             mbedtls_printf( "\n  ! Could not open %s\n\n", filename );
-             goto exit;
-             }
-             
-             i = 0;
-             while( fscanf( f, "%02X", &c ) > 0 &&
-             i < (int) sizeof( buf ) )
-             buf[i++] = (unsigned char) c;
-             
-             fclose( f );
-             
-             if( i != rsa.len )
-             {
-             mbedtls_printf( "\n  ! Invalid RSA signature format\n\n" );
-             goto exit;
-             }
-             */
-            
             // get info from the type
             const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
             size_t dsize = mbedtls_md_get_size ( info );
             
             // Compute hash
-            unsigned char hash [ 32 ];
+            unsigned char hash [ 512 / 8 ];
             if ( mbedtls_md ( info, ( const unsigned char * ) data, bytes, hash ) != 0 )
                 return false;
             
             unsigned char digest [ 512 / 8 ];
-            if ( mbedtls_rsa_pkcs1_verify ( & ctx, NULL, NULL, MBEDTLS_RSA_PUBLIC, md_type, sizeof hash, hash, digest ) != 0 )
+            assert ( sizeof digest >= dsize );
+            if ( mbedtls_rsa_pkcs1_verify ( & ctx, NULL, NULL, MBEDTLS_RSA_PUBLIC, md_type, dsize, hash, digest ) != 0 )
                 return false;
             
             Base64Payload signature = decodeBase64URL ( sig_base64 );
@@ -223,11 +261,15 @@ namespace ncbi
             , md_type ( type )
         {
             mbedtls_rsa_init ( & ctx, MBEDTLS_RSA_PKCS_V15, md_type );
-            
-            if ( ( mbedtls_mpi_read_string ( & ctx . N , 16, key . data () ) ) != 0  ||
-                ( mbedtls_mpi_read_string ( & ctx . E , 16, key . data () ) ) != 0  )
-                throw JWTException ( __func__, __LINE__, "failed to read context data from key" );
-            
+
+            int status = mbedtls_mpi_read_string ( & ctx . N , 16, key . data () );
+            if ( status != 0 )
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to read context data from key" );
+            status = mbedtls_mpi_read_string ( & ctx . E , 16, key . data () );
+            if ( status != 0 )
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to read context data from key" );
+
+            // what is this attempting to do?
             ctx . len = ( mbedtls_mpi_bitlen ( & ctx . N ) + 7 ) >> 3;
         }
         

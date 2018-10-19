@@ -29,6 +29,7 @@
 #include "base64-priv.hpp"
 
 #include <mbedtls/md.h>
+#include <mbedtls/error.h>
 
 #include <iostream>
 #include <cstring>
@@ -36,6 +37,23 @@
 
 namespace ncbi
 {
+    static
+    std :: string mbedtls_error ( int err )
+    {
+        char buffer [ 256 ];
+        mbedtls_strerror ( err, buffer, sizeof buffer );
+        return std :: string ( buffer );
+    }
+
+    static
+    JWTException MBEDTLSException ( const char * func, unsigned int line, int err, const char * msg )
+    {
+        std :: string what ( msg );
+        what += ": ";
+        what += mbedtls_error ( err );
+        return JWTException ( func, line, what . c_str () );
+    }
+    
     struct HMAC_Signer : JWASigner
     {
         virtual std :: string sign ( const void * data, size_t bytes ) const
@@ -76,12 +94,12 @@ namespace ncbi
             // selects the digest algorithm and allocates internal structures
             int status = mbedtls_md_setup ( & ctx, info, 1 );
             if ( status != 0 )
-                throw JWTException ( __func__, __LINE__, "failed to setup HMAC context" );
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to setup HMAC context" );
 
             // bind the key to the context
             status = mbedtls_md_hmac_starts ( & ctx, ( const unsigned char * ) key . data (), key . size () );
             if ( status != 0 )
-                throw JWTException ( __func__, __LINE__, "failed to bind key to HMAC context" );
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to bind key to HMAC context" );
         }
 
         ~ HMAC_Signer ()
@@ -145,12 +163,12 @@ namespace ncbi
             // selects the digest algorithm and allocates internal structures
             int status = mbedtls_md_setup ( & ctx, info, 1 );
             if ( status != 0 )
-                throw JWTException ( __func__, __LINE__, "failed to setup HMAC context" );
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to setup HMAC context" );
 
             // bind the key to the context
             status = mbedtls_md_hmac_starts ( & ctx, ( const unsigned char * ) key . data (), key . size () );
             if ( status != 0 )
-                throw JWTException ( __func__, __LINE__, "failed to bind key to HMAC context" );
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to bind key to HMAC context" );
         }
 
         ~ HMAC_Verifier ()
