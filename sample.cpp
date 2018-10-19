@@ -28,6 +28,7 @@ int main ( int argc, char * argv [], char * envp [] )
         // in the near future, private keys will only be available
         // via a service for storing/retrieving secrets
         std :: string signing_key ( "secret-hmac-key" );
+        std :: string signing_kid ( "key-id-1234" );
         // NB - since we're using a symmetric algorithm for today,
         // the keys must be identical. Once we switch to RSA keys,
         // they will necessarily be different.
@@ -46,7 +47,7 @@ int main ( int argc, char * argv [], char * envp [] )
           as it is needed. It is intended to be declared in "main()" or high
           up in the call chain and to live for the duration of the process.
         */
-        JWSFactory jws_fact ( signing_authority, algorithm, signing_key, verification_key );
+        JWSFactory jws_fact ( signing_authority, algorithm, signing_key, signing_kid, verification_key );
         
         /*
           now that we have JWS, which is the ability to sign and verify signatures,
@@ -75,7 +76,7 @@ int main ( int argc, char * argv [], char * envp [] )
         std :: cerr
             << "JSON exception: '"
             << x . what ()
-            << '\n'
+            << "'\n"
             ;
         return 1;
     }
@@ -84,7 +85,7 @@ int main ( int argc, char * argv [], char * envp [] )
         std :: cerr
             << "JWT exception: '"
             << x . what ()
-            << '\n'
+            << "'\n"
             ;
         return 2;
     }

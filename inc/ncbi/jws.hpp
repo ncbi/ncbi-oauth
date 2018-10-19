@@ -71,7 +71,8 @@ namespace ncbi
         
         // create a standard factory
         JWSFactory ( const std :: string & authority_name, const std :: string & alg,
-             const std :: string & signing_key, const std :: string & verify_key );
+            const std :: string & signing_key, const std :: string & signing_kid,
+            const std :: string & verify_key );
         ~ JWSFactory ();
         
     private:
@@ -79,6 +80,7 @@ namespace ncbi
         const JWASigner * signer;
         const JWAVerifier * verifier;
         std :: vector < const JWAVerifier * > addl_verifiers;
+        std :: string signing_kid;
     };
 }
 

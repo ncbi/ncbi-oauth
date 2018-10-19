@@ -50,6 +50,16 @@ namespace ncbi
         try
         {
             hdr . setValue ( "alg", alg );
+            JSONValue * kid = JSONValue :: makeString ( signing_kid );
+            try
+            {
+                hdr . setValue ( "kid", kid );
+            }
+            catch ( ... )
+            {
+                delete kid;
+                throw;
+            }
         }
         catch ( ... )
         {
@@ -185,9 +195,10 @@ namespace ncbi
     }
 
     JWSFactory :: JWSFactory ( const std :: string & name, const std :: string & alg,
-             const std :: string & signing_key, const std :: string & verify_key )
+            const std :: string & signing_key, const std :: string & _signing_kid, const std :: string & verify_key )
         : signer ( nullptr )
         , verifier ( nullptr )
+        , signing_kid ( _signing_kid )
     {
         signer = gJWAFactory . makeSigner ( name, alg, signing_key );
         verifier = gJWAFactory . makeVerifier ( name, alg, verify_key );
