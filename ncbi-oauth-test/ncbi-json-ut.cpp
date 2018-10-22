@@ -36,10 +36,8 @@ namespace ncbi
             switch ( type )
             {
                 case Object:
-                    EXPECT_ANY_THROW ( JSONObject :: make ( json ) );
-                    break;
                 case Array:
-                    EXPECT_ANY_THROW ( JSONArray :: test_parse ( json ) );
+                    EXPECT_ANY_THROW ( JSON :: parse ( json ) );
                     break;
                 case Value:
                     EXPECT_ANY_THROW ( JSONValue :: test_parse ( json, consume_all ) );
@@ -52,13 +50,9 @@ namespace ncbi
             switch ( type )
             {
                 case Object:
-                {
-                    jObj = JSONObject :: make ( json );
-                    break;
-                }
                 case Array:
                 {
-                    jObj = JSONArray :: test_parse ( json );
+                    jObj = JSON :: parse ( json );
                     break;
                 }
                 case Value:
@@ -363,7 +357,7 @@ namespace ncbi
         void make_and_verify_eq ( const std :: string &json, const std :: string &expected )
         {
             assert ( jObj == nullptr );
-            jObj = JSONObject :: make ( json );
+            jObj = JSONObject :: parse ( json );
             EXPECT_STREQ ( jObj -> toJSON() . c_str(), expected . c_str () );
         }
         
@@ -1160,7 +1154,7 @@ namespace ncbi
                         size_t num_read = fread ( buff, 1, fSize, file );
                         if ( num_read == ( size_t ) fSize )
                         {
-                            EXPECT_ANY_THROW ( delete JSONObject :: make ( std :: string ( buff, num_read ) ) );
+                            EXPECT_ANY_THROW ( delete JSON :: parse ( std :: string ( buff, num_read ) ) );
                         }
                     }
                     catch ( ... )

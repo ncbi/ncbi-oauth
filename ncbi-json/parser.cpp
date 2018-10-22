@@ -411,29 +411,6 @@ namespace ncbi
    
     /* JSONArray
      **********************************************************************************/
-    JSONArray * JSONArray :: test_parse ( const std :: string & json )
-    {
-        if ( json . empty () )
-            throw JSONException ( __func__, __LINE__, "Empty JSON source" );
-        
-        if ( json . size () > default_limits . json_string_size )
-            throw JSONException ( __func__, __LINE__, "JSON source exceeds allowed size limit" );
-        
-        size_t pos = 0;
-        if ( ! skip_whitespace( json, pos ) || json [ pos ] != '[' )
-            throw JSONException ( __func__, __LINE__, "Expected: '{'" ); // test hit
-        
-        JSONArray *array = parse ( default_limits, json, pos, 0 );
-        
-        if ( pos < json . size () )
-        {
-            delete array;
-            throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" ); // test hit
-        }
-        
-        return array;
-    }
-    
     JSONArray * JSONArray :: parse ( const Limits & lim, const std :: string & json, size_t & pos, unsigned int depth )
     {
         assert ( json [ pos ] == '[' );
@@ -491,34 +468,15 @@ namespace ncbi
      **********************************************************************************/
     
     // make an object from JSON source
-    JSONObject * JSONObject :: make ( const std :: string & json )
+    JSONObject * JSONObject :: parse ( const std :: string & json )
     {
-        if ( json . empty () )
-            throw JSONException ( __func__, __LINE__, "Empty JSON source" ); // test hit
-        
-        if ( json . size () > default_limits . json_string_size )
-            throw JSONException ( __func__, __LINE__, "JSON source exceeds allowed size limit" );
-        
-        size_t pos = 0;
-        
-        if ( ! skip_whitespace ( json, pos ) || json [ pos ] != '{' )
-            throw JSONException ( __func__, __LINE__, "Expected: '{'" ); // test hit
-        
-        JSONObject *obj = parse ( default_limits, json, pos, 0 );
-
-        if ( pos < json . size () )
-        {
-            delete obj;
-            throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" );
-        }
-        
-        return obj;
+        return parse ( default_limits, json );
     }
     
-    JSONObject * JSONObject :: make ( const Limits & lim, const std :: string & json )
+    JSONObject * JSONObject :: parse ( const JSONValue :: Limits & lim, const std :: string & json )
     {
         if ( json . empty () )
-            throw JSONException ( __func__, __LINE__, "Empty JSON source" ); // test hit
+            throw JSONException ( __func__, __LINE__, "Empty JSON source" );
         
         if ( json . size () > lim . json_string_size )
             throw JSONException ( __func__, __LINE__, "JSON source exceeds allowed size limit" );
@@ -526,8 +484,8 @@ namespace ncbi
         size_t pos = 0;
         
         if ( ! skip_whitespace ( json, pos ) || json [ pos ] != '{' )
-            throw JSONException ( __func__, __LINE__, "Expected: '{'" ); // test hit
-        
+            throw JSONException ( __func__, __LINE__, "Expected: '{'" );
+
         JSONObject *obj = parse ( lim, json, pos, 0 );
         
         if ( pos < json . size () )
@@ -615,4 +573,45 @@ namespace ncbi
         return obj;
     }
     
+    
+    /* JSON
+     **********************************************************************************/
+    
+    // make an object from JSON source
+    JSONValue * JSON :: parse ( const std :: string & json )
+    {
+        return parse ( JSONValue :: default_limits, json );
+    }
+    
+    JSONValue * JSON :: parse ( const JSONValue :: Limits & lim, const std :: string & json )
+    {
+        if ( json . empty () )
+            throw JSONException ( __func__, __LINE__, "Empty JSON source" );
+        
+        if ( json . size () > lim . json_string_size )
+            throw JSONException ( __func__, __LINE__, "JSON source exceeds allowed size limit" );
+        
+        size_t pos = 0;
+        
+        if ( ! skip_whitespace ( json, pos ) )
+            throw JSONException ( __func__, __LINE__, "Expected: '{' or '['" );
+
+        JSONValue *val = nullptr;
+        switch ( json [ pos ] )
+        {
+        case '{':
+            val = JSONObject :: parse ( lim, json, pos, 0 );
+            break;
+        case '[':
+            val = JSONArray :: parse ( lim, json, pos, 0 );
+            break;
+        default:
+            throw JSONException ( __func__, __LINE__, "Expected: '{' or '['" );
+        }
+        
+        if ( pos < json . size () )
+            throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" );
+        
+        return val;
+    }
 }

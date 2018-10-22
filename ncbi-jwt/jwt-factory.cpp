@@ -255,7 +255,7 @@ namespace ncbi
             // TBD - set other limits
 
             // parse header
-            jose = JSONObject :: make ( lim, header );
+            jose = JSONObject :: parse ( lim, header );
         }
         catch ( JSONException & x )
         {
@@ -356,7 +356,7 @@ namespace ncbi
                 // 10. trust JSON parser enough to parse the raw JSON text of the payload
                 // we should have already validated the sender
                 lim . recursion_depth = 100; // TBD - determine valid limit
-                JSONObject *payload = JSONObject :: make ( lim, pay );
+                JSONObject *payload = JSONObject :: parse ( lim, pay );
                 try
                 {
 

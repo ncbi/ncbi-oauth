@@ -34,6 +34,7 @@
 
 namespace ncbi
 {
+    class JSON;
     class JSONArray;
     class JSONObject;
     
@@ -201,10 +202,10 @@ namespace ncbi
         std :: vector < JSONValue * > array;
         bool locked;
         
+        friend class JSON;
         friend class JSONValue;
         
         // for testing
-        static JSONArray * test_parse ( const std :: string & json );
         friend class JSONFixture_WhiteBox;
     };
     
@@ -218,10 +219,10 @@ namespace ncbi
         // make an empty object
         static JSONObject * make ();
 
-        // make an object from JSON source
-        static JSONObject * make ( const std :: string & json );
-        static JSONObject * make ( const Limits & lim, const std :: string & json );
-
+        // make an object from source
+        static JSONObject * parse ( const std :: string & json );
+        static JSONObject * parse ( const Limits & lim, const std :: string & json );
+        
         // JSONValue interface implementations
         virtual bool isObject () const
         { return true; }
@@ -281,7 +282,17 @@ namespace ncbi
         std :: map < std :: string, std :: pair < bool, JSONValue * > > members;
         bool locked;
         
+        friend class JSON;
         friend class JSONValue;
+    };
+
+    class JSON
+    {
+    public:
+        
+        // make an object from JSON source
+        static JSONValue * parse ( const std :: string & json );
+        static JSONValue * parse ( const JSONValue :: Limits & lim, const std :: string & json );
     };
 
 }
