@@ -122,7 +122,7 @@ namespace ncbi
             
             unsigned char digest [ 512 / 8 ];
             assert ( sizeof digest >= dsize );
-            if ( mbedtls_rsa_pkcs1_verify ( & ctx, NULL, NULL, MBEDTLS_RSA_PUBLIC, md_type, dsize, hash, digest ) != 0 )
+            if ( mbedtls_rsa_pkcs1_verify ( & ctx, NULL, NULL, MBEDTLS_RSA_PUBLIC, md_type, ( unsigned int ) dsize, hash, digest ) != 0 )
                 return false;
             
             Base64Payload signature = decodeBase64URL ( sig_base64 );
