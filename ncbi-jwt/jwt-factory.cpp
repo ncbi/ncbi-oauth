@@ -362,6 +362,7 @@ namespace ncbi
 
                     // create claims from JSON payload
                     JWTClaims claims ( payload );
+                    payload = nullptr;
 
                     // claim set is already built, but not validated
                     // TBD - validate claims, mark protected claims as final
