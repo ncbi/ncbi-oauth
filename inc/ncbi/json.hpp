@@ -126,6 +126,8 @@ namespace ncbi
         static Limits default_limits;
         
         JSONValue ();
+
+        friend class JSON;
         
         // for testing
         static JSONValue * test_parse ( const std :: string & json, bool consume_all );
