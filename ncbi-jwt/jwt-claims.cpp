@@ -171,7 +171,7 @@ namespace ncbi
         }
     }
     
-    const JSONValue & JWTClaims :: getClaim ( const std :: string & name ) const
+    JSONValue & JWTClaims :: getClaim ( const std :: string & name ) const
     {
         return claims -> getValue ( name );
     }

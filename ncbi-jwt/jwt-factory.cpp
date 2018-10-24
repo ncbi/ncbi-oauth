@@ -362,6 +362,7 @@ namespace ncbi
 
                     // create claims from JSON payload
                     JWTClaims claims ( payload );
+                    payload = nullptr;
 
                     // claim set is already built, but not validated
                     // TBD - validate claims, mark protected claims as final
@@ -416,6 +417,13 @@ namespace ncbi
         JWTLocker locker ( obj_lock );
         if ( nbf_seconds >= 0 )
             duration = nbf_seconds;
+    }
+
+    void JWTFactory :: setDefaultSkew ( long long dflt )
+    {
+        JWTLocker locker ( obj_lock );
+        if ( dflt >= 0 && dflt < 10 * 60 )
+            dflt_skew = dflt;
     }
 
     void JWTFactory :: lock ()

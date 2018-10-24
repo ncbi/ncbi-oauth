@@ -50,6 +50,16 @@ namespace ncbi
         try
         {
             hdr . setValue ( "alg", alg );
+            JSONValue * kid = JSONValue :: makeString ( signing_kid );
+            try
+            {
+                hdr . setValue ( "kid", kid );
+            }
+            catch ( ... )
+            {
+                delete kid;
+                throw;
+            }
         }
         catch ( ... )
         {
@@ -97,7 +107,7 @@ namespace ncbi
         return jws;
     }
 
-    void JWSFactory :: validate ( const JSONObject & hdr, const JWS & jws, size_t last_period ) const
+    const std :: string & JWSFactory :: validate ( const JSONObject & hdr, const JWS & jws, size_t last_period ) const
     {
         // the "last_period" tells us already where to split the jws
         assert ( last_period < jws . size () );
@@ -105,20 +115,40 @@ namespace ncbi
         std :: string content = jws . substr ( 0, last_period );
         std :: string signature = jws . substr ( last_period + 1 );
 
-        // TBD - loop through other verifiers as well
-        verifier -> verify ( content . data (), content . size (), signature );
+        // loop through verifiers
+        const JWAVerifier * v = verifier;
+        assert ( v != nullptr );
+        if ( ! v -> verify ( content . data (), content . size (), signature ) )
+        {
+            v = nullptr;
+            
+            size_t i, count = addl_verifiers . size ();
+            for ( i = 0; i < count; ++ i )
+            {
+                v = addl_verifiers [ i ];
+                assert ( v != nullptr );
+                if ( v -> verify ( content . data (), content . size (), signature ) )
+                    break;
+                v = nullptr;
+            }
+
+            if ( v == nullptr )
+                throw JWTException ( __func__, __LINE__, "signature not recognized" );
+        }
 
         if ( hdr . exists ( "alg" ) )
         {
             std :: string alg = hdr . getValue ( "alg" ) . toString ();
-            if ( alg . compare ( verifier -> algorithm () ) != 0 )
+            if ( alg . compare ( v -> algorithm () ) != 0 )
                 throw JWTException ( __func__, __LINE__, "algorithm does not match" );
         }
+
+        return v -> authority_name ();
     }
 
-    void JWSFactory :: addVerifier ( const std :: string & alg, const std :: string & name, const std :: string & key )
+    void JWSFactory :: addVerifier ( const std :: string & name, const std :: string & alg, const std :: string & key )
     {
-        JWAVerifier * verifier = gJWAFactory . makeVerifier ( alg, name, key );
+        JWAVerifier * verifier = gJWAFactory . makeVerifier ( name, alg, key );
         addl_verifiers . push_back ( verifier );
     }
 
@@ -164,13 +194,14 @@ namespace ncbi
         }
     }
 
-    JWSFactory :: JWSFactory ( const std :: string & alg, const std :: string & name,
-             const std :: string & signing_key, const std :: string & verify_key )
+    JWSFactory :: JWSFactory ( const std :: string & name, const std :: string & alg,
+            const std :: string & signing_key, const std :: string & _signing_kid, const std :: string & verify_key )
         : signer ( nullptr )
         , verifier ( nullptr )
+        , signing_kid ( _signing_kid )
     {
-        signer = gJWAFactory . makeSigner ( alg, name, signing_key );
-        verifier = gJWAFactory . makeVerifier ( alg, name, verify_key );
+        signer = gJWAFactory . makeSigner ( name, alg, signing_key );
+        verifier = gJWAFactory . makeVerifier ( name, alg, verify_key );
     }
 
     JWSFactory :: ~ JWSFactory ()

@@ -52,23 +52,27 @@ namespace ncbi
         // sign using compact serialization
         // signing input is:
         //   ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))
+        // returned string is BAE64URL encoded
         JWS signCompact ( JSONObject & hdr, const void * payload, size_t bytes ) const;
         
         // check that the JOSE header is completely understood
         // validates signature
         // or throw exception
-        void validate ( const JSONObject & hdr, const JWS & jws, size_t last_period ) const;
+        // returns authority-name of matching validator
+        const std :: string & validate ( const JSONObject & hdr, const JWS & jws, size_t last_period ) const;
         
         // additional verifiers
-        void addVerifier ( const std :: string & alg, const std :: string & name, const std :: string & key );
+        void addVerifier ( const std :: string & authority_name,
+            const std :: string & alg, const std :: string & key );
         
         // copy construction
         JWSFactory & operator = ( const JWSFactory & fact );
         JWSFactory ( const JWSFactory & fact );
         
         // create a standard factory
-        JWSFactory ( const std :: string & alg, const std :: string & name,
-             const std :: string & signing_key, const std :: string & verify_key );
+        JWSFactory ( const std :: string & authority_name, const std :: string & alg,
+            const std :: string & signing_key, const std :: string & signing_kid,
+            const std :: string & verify_key );
         ~ JWSFactory ();
         
     private:
@@ -76,6 +80,7 @@ namespace ncbi
         const JWASigner * signer;
         const JWAVerifier * verifier;
         std :: vector < const JWAVerifier * > addl_verifiers;
+        std :: string signing_kid;
     };
 }
 

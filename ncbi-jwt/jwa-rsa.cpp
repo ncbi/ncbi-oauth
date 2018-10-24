@@ -29,6 +29,8 @@
 #include "base64-priv.hpp"
 
 #include <mbedtls/rsa.h>
+#include <mbedtls/error.h>
+#include <mbedtls/bignum.h>
 
 #include <iostream>
 #include <cstring>
@@ -36,6 +38,23 @@
 
 namespace ncbi
 {
+    static
+    std :: string mbedtls_error ( int err )
+    {
+        char buffer [ 256 ];
+        mbedtls_strerror ( err, buffer, sizeof buffer );
+        return std :: string ( buffer );
+    }
+
+    static
+    JWTException MBEDTLSException ( const char * func, unsigned int line, int err, const char * msg )
+    {
+        std :: string what ( msg );
+        what += ": ";
+        what += mbedtls_error ( err );
+        return JWTException ( func, line, what . c_str () );
+    }
+    
     /*
      +-------------------+---------------------------------+
      | "alg" Param Value | Digital Signature Algorithm     |
@@ -62,14 +81,14 @@ namespace ncbi
         
         virtual JWASigner * clone () const
         {
-            return new RSA_Signer ( alg, nam, key, md_type );
+            return new RSA_Signer ( nam, alg, key, md_type );
         }
         
-        RSA_Signer ( const std :: string & alg, const std :: string & name,
+        RSA_Signer ( const std :: string & name, const std :: string & alg,
                      const std :: string & key, mbedtls_md_type_t type )
-        : JWASigner ( alg, name, key )
-        , ctx ( cctx )
-        , md_type ( type )
+            : JWASigner ( name, alg, key )
+            , ctx ( cctx )
+            , md_type ( type )
         {
             // simple context initialization
             mbedtls_rsa_init  ( & ctx, MBEDTLS_RSA_PKCS_V15, md_type );
@@ -90,22 +109,56 @@ namespace ncbi
     
     struct RSA_Verifier : JWAVerifier
     {
-        virtual void verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
+        virtual bool verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
         {
-
+            // get info from the type
+            const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
+            size_t dsize = mbedtls_md_get_size ( info );
+            
+            // Compute hash
+            unsigned char hash [ 512 / 8 ];
+            if ( mbedtls_md ( info, ( const unsigned char * ) data, bytes, hash ) != 0 )
+                return false;
+            
+            unsigned char digest [ 512 / 8 ];
+            assert ( sizeof digest >= dsize );
+            if ( mbedtls_rsa_pkcs1_verify ( & ctx, NULL, NULL, MBEDTLS_RSA_PUBLIC, md_type, dsize, hash, digest ) != 0 )
+                return false;
+            
+            Base64Payload signature = decodeBase64URL ( sig_base64 );
+            
+            if ( signature . size () != dsize )
+                return false;
+            
+            // the digest must match
+            if ( memcmp ( digest, signature . data (), dsize ) != 0 )
+                return false;
+            
+            return true;
         }
         
         virtual JWAVerifier * clone () const
         {
-            return new RSA_Verifier ( alg, nam, key, md_type );
+            return new RSA_Verifier ( nam, alg, key, md_type );
         }
         
-        RSA_Verifier ( const std :: string & alg, const std :: string & name,
+        RSA_Verifier ( const std :: string & name, const std :: string & alg,
                        const std :: string & key, mbedtls_md_type_t type )
-        : JWAVerifier ( alg, name, key )
-        , ctx ( cctx )
-        , md_type ( type )
+            : JWAVerifier ( name, alg, key )
+            , ctx ( cctx )
+            , md_type ( type )
         {
+            mbedtls_rsa_init ( & ctx, MBEDTLS_RSA_PKCS_V15, md_type );
+
+            int status = mbedtls_mpi_read_string ( & ctx . N , 16, key . data () );
+            if ( status != 0 )
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to read context data from key" );
+            status = mbedtls_mpi_read_string ( & ctx . E , 16, key . data () );
+            if ( status != 0 )
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to read context data from key" );
+
+            // what is this attempting to do?
+            ctx . len = ( mbedtls_mpi_bitlen ( & ctx . N ) + 7 ) >> 3;
         }
         
         ~ RSA_Verifier ()
@@ -113,20 +166,20 @@ namespace ncbi
         }
         
         size_t dsize;
-        mbedtls_md_context_t cctx, & ctx;
+        mbedtls_rsa_context cctx, & ctx;
         mbedtls_md_type_t md_type;
     };
     
     struct RSA_SignerFact : JWASignerFact
     {
-        virtual JWASigner * make ( const std :: string & alg,
-                                  const std :: string & name, const std :: string & key ) const
+        virtual JWASigner * make ( const std :: string & name,
+            const std :: string & alg, const std :: string & key ) const
         {
-            return new RSA_Signer ( alg, name, key, md_type );
+            return new RSA_Signer ( name, alg, key, md_type );
         }
         
         RSA_SignerFact ( const std :: string & alg, mbedtls_md_type_t type )
-        : md_type ( type )
+            : md_type ( type )
         {
             gJWAFactory . registerSignerFact ( alg, this );
         }
@@ -136,14 +189,14 @@ namespace ncbi
     
     struct RSA_VerifierFact : JWAVerifierFact
     {
-        virtual JWAVerifier * make ( const std :: string & alg,
-                                    const std :: string & name, const std :: string & key ) const
+        virtual JWAVerifier * make ( const std :: string & name,
+            const std :: string & alg, const std :: string & key ) const
         {
-            return new RSA_Verifier ( alg, name, key, md_type );
+            return new RSA_Verifier ( name, alg, key, md_type );
         }
         
         RSA_VerifierFact ( const std :: string & alg, mbedtls_md_type_t type )
-        : md_type ( type )
+            : md_type ( type )
         {
             gJWAFactory . registerVerifierFact ( alg, this );
         }
@@ -154,8 +207,8 @@ namespace ncbi
     static struct RSA_Registry
     {
         RSA_Registry ( const std :: string & alg, mbedtls_md_type_t md_type )
-        : signer_fact ( alg, md_type )
-        , verifier_fact ( alg, md_type )
+            : signer_fact ( alg, md_type )
+            , verifier_fact ( alg, md_type )
         {
         }
         
@@ -163,8 +216,8 @@ namespace ncbi
         RSA_VerifierFact verifier_fact;
         
     } rs256 ( "RS256", MBEDTLS_MD_SHA256 ),
-    rs384 ( "RS384", MBEDTLS_MD_SHA384 ),
-    rs512 ( "RS512", MBEDTLS_MD_SHA512 );
+      rs384 ( "RS384", MBEDTLS_MD_SHA384 ),
+      rs512 ( "RS512", MBEDTLS_MD_SHA512 );
     
     void includeJWA_rsa ( bool always_false )
     {
