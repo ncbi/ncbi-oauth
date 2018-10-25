@@ -50,9 +50,6 @@ namespace ncbi
                     case '\\':
                         esc = "\\\\";
                         break;
-                    case '/':
-                        esc = "\\/";
-                        break;
                     case '\b':
                         esc = "\\b";
                         break;
