@@ -26,6 +26,7 @@
 
 #include <ncbi/jwt.hpp>
 #include <ncbi/jws.hpp>
+#include <ncbi/jwk.hpp>
 #include "base64-priv.hpp"
 
 #include <iostream>
@@ -63,8 +64,8 @@ namespace ncbi
             obj -> getValue ( "aud" ) . toArray () . lock ();
         }
 
-        // a non-negative duration is transferred to claims
-        if ( duration >= 0 )
+        // a positive duration is transferred to claims
+        if ( duration > 0 )
             claims . setDuration ( duration );
 
         // a non-negative "nbf" is transferred

@@ -8,6 +8,7 @@
 
 #include "gtest/gtest.h"
 #include <ncbi/jws.hpp>
+#include <ncbi/jwk.hpp>
 #include <ncbi/jwt.hpp>
 
 #include <iostream>
@@ -22,10 +23,22 @@ namespace ncbi
     public:
         void SetUp ()
         {
-            jws_fact = new JWSFactory ( "ncbi", "HS384", "blarky2", "key-id-1234", "blarky2" );
-            jwt_fact = new JWTFactory ( * jws_fact );
-            jwt_fact -> setIssuer ( "ncbi" );
-            jwt_fact -> setDuration ( 15 );
+            HMAC_JWKey * key = HMAC_JWKey :: make ( "key-id-1234" );
+            try
+            {
+                key -> setValue ( "blarky2" );
+
+                jws_fact = new JWSFactory ( "ncbi", "HS384", key );
+                jwt_fact = new JWTFactory ( * jws_fact );
+                jwt_fact -> setIssuer ( "ncbi" );
+                jwt_fact -> setDuration ( 15 );
+            }
+            catch ( ... )
+            {
+                key -> release ();
+                throw;
+            }
+            key -> release ();
         }
         
         void TearDown ()

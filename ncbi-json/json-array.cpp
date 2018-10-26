@@ -69,6 +69,15 @@ namespace ncbi
 
         return copy;
     }
+    
+    void JSONArray :: invalidate ()
+    {
+        size_t i, count = array . size ();
+        for ( i = 0; i < count; ++ i )
+        {
+            array [ i ] -> invalidate ();
+        }
+    }
 
     // asks whether array is empty
     bool JSONArray :: isEmpty () const

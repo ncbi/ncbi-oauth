@@ -61,6 +61,10 @@ LIBJWTSRC =            \
 	jwt-factory        \
 	jwt-claims         \
 	jws-factory        \
+	jwk-hmac           \
+	jwk-rsa            \
+	jwk-ec             \
+	jwk-cmn            \
 	jwa-none           \
 	jwa-hmac           \
 	jwa-rsa            \

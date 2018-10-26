@@ -117,6 +117,9 @@ namespace ncbi
 
         // create a copy
         virtual JSONValue * clone () const;
+
+        // invalidate and overwrite contents
+        virtual void invalidate () = 0;
         
         virtual ~JSONValue ();
 
@@ -186,6 +189,9 @@ namespace ncbi
         // lock the array against change
         void lock ();
 
+        // invalidate and overwrite contents
+        void invalidate ();
+
         // C++ assignment
         JSONArray & operator = ( const JSONArray & array );
         JSONArray ( const JSONArray & a );
@@ -251,10 +257,12 @@ namespace ncbi
         // set entry to a new value
         // throws exception if entry exists and is final
         void setValue ( const std :: string & name, JSONValue * val );
+        void setValueOrDelete ( const std :: string & name, JSONValue * val );
 
         // set entry to a final value
         // throws exception if entry exists and is final
         void setFinalValue ( const std :: string & name, JSONValue * val );
+        void setFinalValueOrDelete ( const std :: string & name, JSONValue * val );
 
         // get named value
         JSONValue & getValue ( const std :: string & name );
@@ -265,6 +273,9 @@ namespace ncbi
         
         // lock the object against change
         void lock ();
+
+        // invalidate and overwrite contents
+        void invalidate ();
 
         // C++ assignment
         JSONObject & operator = ( const JSONObject & obj );

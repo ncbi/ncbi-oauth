@@ -71,6 +71,12 @@ namespace ncbi
         return copy;
     }
 
+    void JSONObject :: invalidate ()
+    {
+        for ( auto it = members . begin (); it != members . end (); ++ it )
+            it -> second . second -> invalidate ();
+    }
+
     // asks whether object is empty
     bool JSONObject :: isEmpty () const
     {
@@ -130,6 +136,19 @@ namespace ncbi
         }
     }
 
+    void JSONObject :: setValueOrDelete ( const std :: string & name, JSONValue * val )
+    {
+        try
+        {
+            setValue ( name, val );
+        }
+        catch ( ... )
+        {
+            delete val;
+            throw;
+        }
+    }
+
     // set entry to a final value
     // throws exception if entry exists and is final
     void JSONObject :: setFinalValue ( const std :: string & name, JSONValue * val )
@@ -151,6 +170,19 @@ namespace ncbi
             // overwrite value
             delete it -> second . second;
             it -> second . second = val;
+        }
+    }
+
+    void JSONObject :: setFinalValueOrDelete ( const std :: string & name, JSONValue * val )
+    {
+        try
+        {
+            setFinalValue ( name, val );
+        }
+        catch ( ... )
+        {
+            delete val;
+            throw;
         }
     }
 

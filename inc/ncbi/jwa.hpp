@@ -33,6 +33,8 @@
 
 namespace ncbi
 {
+    class JWK;
+
     // JSON Web Algorithms - RFC 7518
 
     class JWAKeyHolder
@@ -41,17 +43,18 @@ namespace ncbi
         
         const std :: string & authority_name () const;
         const std :: string & algorithm () const;
+        std :: string keyID () const;
 
         virtual ~ JWAKeyHolder ();
         
     protected:
 
         JWAKeyHolder ( const std :: string & authority_name,
-            const std :: string & alg, const std :: string & key );
+            const std :: string & alg, JWK * key );
 
         std :: string nam;
         std :: string alg;
-        std :: string key;
+        JWK * key;
     };
 
     class JWASigner : public JWAKeyHolder
@@ -64,7 +67,7 @@ namespace ncbi
     protected:
 
         JWASigner ( const std :: string & authority_name,
-            const std :: string & alg, const std :: string & key );
+            const std :: string & alg, JWK * key );
     };
 
     class JWAVerifier : public JWAKeyHolder
@@ -77,20 +80,20 @@ namespace ncbi
     protected:
 
         JWAVerifier ( const std :: string & authority_name,
-            const std :: string & alg, const std :: string & key );
+            const std :: string & alg, JWK * key );
     };
 
     struct JWASignerFact
     {
         virtual JWASigner * make ( const std :: string & authority_name,
-            const std :: string & alg, const std :: string & key ) const = 0;
+            const std :: string & alg, JWK * key ) const = 0;
         virtual ~ JWASignerFact ();
     };
 
     struct JWAVerifierFact
     {
         virtual JWAVerifier * make ( const std :: string & authority_name,
-            const std :: string & alg, const std :: string & key ) const = 0;
+            const std :: string & alg, JWK * key ) const = 0;
         virtual ~ JWAVerifierFact ();
     };
     
@@ -99,9 +102,9 @@ namespace ncbi
     public:
 
         JWASigner * makeSigner ( const std :: string & authority_name,
-            const std :: string & alg, const std :: string & key ) const;
+            const std :: string & alg, JWK * key ) const;
         JWAVerifier * makeVerifier ( const std :: string & authority_name,
-            const std :: string & alg, const std :: string & key ) const;
+            const std :: string & alg, JWK * key ) const;
 
         void registerSignerFact ( const std :: string & alg, JWASignerFact * fact );
         void registerVerifierFact ( const std :: string & alg, JWAVerifierFact * fact );

@@ -31,6 +31,8 @@
 #include <ncbi/json.hpp>
 #endif
 
+#include <cstring>
+
 namespace ncbi
 {
     std :: string double_to_string ( long double val, unsigned int precision );
@@ -50,6 +52,7 @@ namespace ncbi
         virtual std :: string toString () const = 0;
         virtual std :: string toJSON () const;
         virtual JSONPrimitive * clone () const = 0;
+        virtual void invalidate () = 0;
         virtual ~ JSONPrimitive () {}
     };
     
@@ -64,6 +67,9 @@ namespace ncbi
 
         virtual JSONPrimitive * clone () const
         { return new JSONBoolean ( value ); }
+
+        virtual void invalidate ()
+        { value = false; }
         
         JSONBoolean ( bool val )
             : value ( val )
@@ -82,6 +88,9 @@ namespace ncbi
 
         virtual JSONPrimitive * clone () const
         { return new JSONInteger ( value ); }
+
+        virtual void invalidate ()
+        { value = 0; }
         
         JSONInteger ( long long int val )
             : value ( val )
@@ -100,6 +109,11 @@ namespace ncbi
 
         virtual JSONPrimitive * clone () const
         { return new JSONNumber ( value ); }
+
+        virtual void invalidate ()
+        {
+            memset ( ( void * ) value . data (), ' ', value . size () );
+        }
         
         JSONNumber ( const std :: string & val )
             : value ( val )
@@ -124,6 +138,11 @@ namespace ncbi
 
         virtual JSONPrimitive * clone () const
         { return new JSONString ( value ); }
+
+        virtual void invalidate ()
+        {
+            memset ( ( void * ) value . data (), ' ', value . size () );
+        }
         
         JSONString ( const std :: string & val )
             : value ( val )
@@ -159,6 +178,8 @@ namespace ncbi
         virtual std :: string toJSON () const;
 
         virtual JSONValue * clone () const;
+
+        virtual void invalidate ();
         
         // parses "null"
         static JSONValue * parse ( const std :: string & json, size_t & pos );

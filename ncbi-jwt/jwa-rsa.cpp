@@ -25,6 +25,7 @@
  */
 
 #include <ncbi/jwa.hpp>
+#include <ncbi/jwk.hpp>
 #include <ncbi/jwt.hpp>
 #include "base64-priv.hpp"
 
@@ -85,7 +86,7 @@ namespace ncbi
         }
         
         RSA_Signer ( const std :: string & name, const std :: string & alg,
-                     const std :: string & key, mbedtls_md_type_t type )
+                     JWK * key, mbedtls_md_type_t type )
             : JWASigner ( name, alg, key )
             , ctx ( cctx )
             , md_type ( type )
@@ -111,6 +112,7 @@ namespace ncbi
     {
         virtual bool verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
         {
+#if 0
             // get info from the type
             const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
             size_t dsize = mbedtls_md_get_size ( info );
@@ -133,7 +135,7 @@ namespace ncbi
             // the digest must match
             if ( memcmp ( digest, signature . data (), dsize ) != 0 )
                 return false;
-            
+#endif            
             return true;
         }
         
@@ -143,13 +145,14 @@ namespace ncbi
         }
         
         RSA_Verifier ( const std :: string & name, const std :: string & alg,
-                       const std :: string & key, mbedtls_md_type_t type )
+                       JWK * key, mbedtls_md_type_t type )
             : JWAVerifier ( name, alg, key )
             , ctx ( cctx )
             , md_type ( type )
         {
             mbedtls_rsa_init ( & ctx, MBEDTLS_RSA_PKCS_V15, md_type );
 
+#if 0
             int status = mbedtls_mpi_read_string ( & ctx . N , 16, key . data () );
             if ( status != 0 )
                 throw MBEDTLSException ( __func__, __LINE__, status, "failed to read context data from key" );
@@ -158,7 +161,8 @@ namespace ncbi
                 throw MBEDTLSException ( __func__, __LINE__, status, "failed to read context data from key" );
 
             // what is this attempting to do?
-            ctx . len = ( mbedtls_mpi_bitlen ( & ctx . N ) + 7 ) >> 3;
+            ctx . len = ( mbedtls_mpi_bitlen ( & ctx . N ) + 7 ) >> 3;f
+#endif
         }
         
         ~ RSA_Verifier ()
@@ -173,7 +177,7 @@ namespace ncbi
     struct RSA_SignerFact : JWASignerFact
     {
         virtual JWASigner * make ( const std :: string & name,
-            const std :: string & alg, const std :: string & key ) const
+            const std :: string & alg, JWK * key ) const
         {
             return new RSA_Signer ( name, alg, key, md_type );
         }
@@ -190,7 +194,7 @@ namespace ncbi
     struct RSA_VerifierFact : JWAVerifierFact
     {
         virtual JWAVerifier * make ( const std :: string & name,
-            const std :: string & alg, const std :: string & key ) const
+            const std :: string & alg, JWK * key ) const
         {
             return new RSA_Verifier ( name, alg, key, md_type );
         }
@@ -224,9 +228,9 @@ namespace ncbi
         if ( always_false )
         {
             std :: string empty;
-            rs256 . signer_fact . make ( empty, empty, empty );
-            rs384 . signer_fact . make ( empty, empty, empty );
-            rs512 . signer_fact . make ( empty, empty, empty );
+            rs256 . signer_fact . make ( empty, empty, nullptr );
+            rs384 . signer_fact . make ( empty, empty, nullptr );
+            rs512 . signer_fact . make ( empty, empty, nullptr );
         }
     }
 }

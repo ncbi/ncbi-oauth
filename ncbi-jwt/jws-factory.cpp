@@ -25,6 +25,7 @@
  */
 
 #include <ncbi/jws.hpp>
+#include <ncbi/jwk.hpp>
 #include <ncbi/jwt.hpp>
 #include "base64-priv.hpp"
 
@@ -50,6 +51,7 @@ namespace ncbi
         try
         {
             hdr . setValue ( "alg", alg );
+            std :: string signing_kid = signer -> keyID ();
             JSONValue * kid = JSONValue :: makeString ( signing_kid );
             try
             {
@@ -146,7 +148,19 @@ namespace ncbi
         return v -> authority_name ();
     }
 
-    void JWSFactory :: addVerifier ( const std :: string & name, const std :: string & alg, const std :: string & key )
+    void JWSFactory :: addVerifier ( const std :: string & name, const std :: string & alg, HMAC_JWKey * key )
+    {
+        JWAVerifier * verifier = gJWAFactory . makeVerifier ( name, alg, key );
+        addl_verifiers . push_back ( verifier );
+    }
+
+    void JWSFactory :: addVerifier ( const std :: string & name, const std :: string & alg, RSAPublic_JWKey * key )
+    {
+        JWAVerifier * verifier = gJWAFactory . makeVerifier ( name, alg, key );
+        addl_verifiers . push_back ( verifier );
+    }
+
+    void JWSFactory :: addVerifier ( const std :: string & name, const std :: string & alg, EllipticCurvePublic_JWKey * key )
     {
         JWAVerifier * verifier = gJWAFactory . makeVerifier ( name, alg, key );
         addl_verifiers . push_back ( verifier );
@@ -195,10 +209,27 @@ namespace ncbi
     }
 
     JWSFactory :: JWSFactory ( const std :: string & name, const std :: string & alg,
-            const std :: string & signing_key, const std :: string & _signing_kid, const std :: string & verify_key )
+            HMAC_JWKey * key )
         : signer ( nullptr )
         , verifier ( nullptr )
-        , signing_kid ( _signing_kid )
+    {
+        signer = gJWAFactory . makeSigner ( name, alg, key );
+        verifier = gJWAFactory . makeVerifier ( name, alg, key );
+    }
+
+    JWSFactory :: JWSFactory ( const std :: string & name, const std :: string & alg,
+            RSAPrivate_JWKey * signing_key, RSAPublic_JWKey * verify_key )
+        : signer ( nullptr )
+        , verifier ( nullptr )
+    {
+        signer = gJWAFactory . makeSigner ( name, alg, signing_key );
+        verifier = gJWAFactory . makeVerifier ( name, alg, verify_key );
+    }
+
+    JWSFactory :: JWSFactory ( const std :: string & name, const std :: string & alg,
+            EllipticCurvePrivate_JWKey * signing_key, EllipticCurvePublic_JWKey * verify_key )
+        : signer ( nullptr )
+        , verifier ( nullptr )
     {
         signer = gJWAFactory . makeSigner ( name, alg, signing_key );
         verifier = gJWAFactory . makeVerifier ( name, alg, verify_key );
