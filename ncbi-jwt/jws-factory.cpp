@@ -74,6 +74,7 @@ namespace ncbi
                 // convert the header to text
                 std :: string hdr_json = hdr . toJSON ();
 
+/*
         std :: cout
             << "  JOSE Header:\n"
             << "    "
@@ -84,7 +85,7 @@ namespace ncbi
             << std :: string ( ( const char * ) payload, bytes )
             << '\n'
             ;
-
+*/
                 // encode the header with base64url
                 jws = encodeBase64URL ( hdr_json . data (), hdr_json . size () );
             }
