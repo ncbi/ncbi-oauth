@@ -29,6 +29,7 @@
 #include <ncbi/jwt.hpp>
 #include "base64-priv.hpp"
 
+#include <mbedtls/md.h>
 #include <mbedtls/rsa.h>
 #include <mbedtls/error.h>
 #include <mbedtls/bignum.h>
@@ -55,6 +56,17 @@ namespace ncbi
         what += mbedtls_error ( err );
         return JWTException ( func, line, what . c_str () );
     }
+
+    static void mpiRead ( mbedtls_mpi & x, const std :: string & val )
+    {
+        // the string is in base64url encoding
+        Base64Payload raw = decodeBase64URL ( val );
+
+        // presumably, it can just be read into the multi-precision number
+        int status = mbedtls_mpi_read_binary ( & x, raw . data (), raw . size () );
+        if ( status != 0 )
+            throw MBEDTLSException ( __func__, __LINE__, status, "failed to read RSA key data" );
+    }
     
     /*
      +-------------------+---------------------------------+
@@ -75,36 +87,124 @@ namespace ncbi
     {
         virtual std :: string sign ( const void * data, size_t bytes ) const
         {
+            // start digest computation
+            int status = mbedtls_md_starts ( & sha_ctx );
+            if ( status != 0 )
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to start SHA computation" );
+
+            // compute checksum
+            status = mbedtls_md_update ( & sha_ctx, ( unsigned char * ) data, bytes );            
+            if ( status != 0 )
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to compute SHA checksum" );
+
             unsigned char digest [ 512 / 8 ];
+            assert ( sizeof digest >= dsize );
+            status = mbedtls_md_finish ( & sha_ctx, digest );
+            if ( status != 0 )
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to compute SHA digest" );
+
+            unsigned char sig [ MBEDTLS_MPI_MAX_SIZE ];
+            status = mbedtls_rsa_pkcs1_sign ( & rsa_ctx,
+                                              nullptr, nullptr, // TBD - RNG needed?
+                                              MBEDTLS_RSA_PRIVATE,
+                                              md_type,
+                                              dsize,
+                                              digest,
+                                              sig
+                );
+            if ( status != 0 )
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to compute RSA signature" );
+
             // encode as base64url
-            return encodeBase64URL ( digest, dsize );
+            return encodeBase64URL ( sig, rsa_ctx . len );
         }
         
         virtual JWASigner * clone () const
         {
             return new RSA_Signer ( nam, alg, key, md_type );
         }
+
+        void readKey ( RSAPrivate_JWKey * key )
+        {
+            mbedtls_mpi N, P, Q, D, E;
+            mbedtls_mpi_init ( & N );
+            mbedtls_mpi_init ( & P );
+            mbedtls_mpi_init ( & Q );
+            mbedtls_mpi_init ( & D );
+            mbedtls_mpi_init ( & E );
+
+            try
+            {
+                mpiRead ( N, key -> getModulus () );
+                mpiRead ( P, key -> getFirstPrimeFactor () );
+                mpiRead ( Q, key -> getSecondPrimeFactor () );
+                mpiRead ( D, key -> getPrivateExponent () );
+                mpiRead ( E, key -> getExponent () );
+
+                int status = mbedtls_rsa_import ( & rsa_ctx, & N, & P, & Q, & D, & E );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to import RSA key data" );
+
+                status = mbedtls_rsa_complete ( & rsa_ctx );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to complete RSA key data" );
+
+                status = mbedtls_rsa_check_privkey ( & rsa_ctx );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to validate RSA key data" );
+            }
+            catch ( ... )
+            {
+                mbedtls_mpi_free ( & N );
+                mbedtls_mpi_free ( & P );
+                mbedtls_mpi_free ( & Q );
+                mbedtls_mpi_free ( & D );
+                mbedtls_mpi_free ( & E );
+                throw;
+            }
+
+            mbedtls_mpi_free ( & N );
+            mbedtls_mpi_free ( & P );
+            mbedtls_mpi_free ( & Q );
+            mbedtls_mpi_free ( & D );
+            mbedtls_mpi_free ( & E );
+        }
         
         RSA_Signer ( const std :: string & name, const std :: string & alg,
                      JWK * key, mbedtls_md_type_t type )
             : JWASigner ( name, alg, key )
-            , ctx ( cctx )
+            , rsa_ctx ( rsa_cctx )
+            , sha_ctx ( sha_cctx )
             , md_type ( type )
         {
-            // simple context initialization
-            mbedtls_rsa_init  ( & ctx, MBEDTLS_RSA_PKCS_V15, md_type );
-            
+            // the RSA context must be initialized
+            mbedtls_rsa_init  ( & rsa_ctx, MBEDTLS_RSA_PKCS_V15, 0 );
+
+            // the SHA context must be initialized
+            mbedtls_md_init ( & sha_ctx );
+
+            // get hash info from the type
             const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
             dsize = mbedtls_md_get_size ( info );
+
+            // allocate internal structures and bind to "info"
+            int status = mbedtls_md_setup ( & sha_ctx, info, 0 );
+            if ( status != 0 )
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to setup RSA/SHA context" );
+
+            // we are supposed to have validated this as an RSA key
+            readKey ( reinterpret_cast < RSAPrivate_JWKey * > ( key ) );
         }
         
         ~ RSA_Signer ()
         {
-            mbedtls_rsa_free ( & ctx );
+            mbedtls_rsa_free ( & rsa_ctx );
+            mbedtls_md_free ( & sha_ctx );
         }
         
         size_t dsize;
-        mbedtls_rsa_context cctx, & ctx;
+        mbedtls_rsa_context rsa_cctx, & rsa_ctx;
+        mbedtls_md_context_t sha_cctx, & sha_ctx;
         mbedtls_md_type_t md_type;
     };
     
@@ -112,30 +212,37 @@ namespace ncbi
     {
         virtual bool verify ( const void * data, size_t bytes, const std :: string & sig_base64 ) const
         {
-#if 0
-            // get info from the type
-            const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
-            size_t dsize = mbedtls_md_get_size ( info );
-            
-            // Compute hash
-            unsigned char hash [ 512 / 8 ];
-            if ( mbedtls_md ( info, ( const unsigned char * ) data, bytes, hash ) != 0 )
-                return false;
-            
+            // start digest computation
+            int status = mbedtls_md_starts ( & sha_ctx );
+            if ( status != 0 )
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to start SHA computation" );
+
+            // compute checksum
+            status = mbedtls_md_update ( & sha_ctx, ( unsigned char * ) data, bytes );            
+            if ( status != 0 )
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to compute SHA checksum" );
+
             unsigned char digest [ 512 / 8 ];
             assert ( sizeof digest >= dsize );
-            if ( mbedtls_rsa_pkcs1_verify ( & ctx, NULL, NULL, MBEDTLS_RSA_PUBLIC, md_type, ( unsigned int ) dsize, hash, digest ) != 0 )
-                return false;
-            
+            status = mbedtls_md_finish ( & sha_ctx, digest );
+            if ( status != 0 )
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to compute SHA digest" );
+
             Base64Payload signature = decodeBase64URL ( sig_base64 );
-            
-            if ( signature . size () != dsize )
+            if ( signature . size () != rsa_ctx . len )
                 return false;
-            
-            // the digest must match
-            if ( memcmp ( digest, signature . data (), dsize ) != 0 )
+
+            status = mbedtls_rsa_pkcs1_verify ( & rsa_ctx,
+                                                nullptr, nullptr, // TBD - RNG needed?
+                                                MBEDTLS_RSA_PUBLIC,
+                                                md_type,
+                                                dsize,
+                                                digest,
+                                                signature . data ()
+                );
+            if ( status != 0 )
                 return false;
-#endif            
+
             return true;
         }
         
@@ -143,34 +250,76 @@ namespace ncbi
         {
             return new RSA_Verifier ( nam, alg, key, md_type );
         }
+
+        void readKey ( RSAPublic_JWKey * key )
+        {
+            mbedtls_mpi N, E;
+            mbedtls_mpi_init ( & N );
+            mbedtls_mpi_init ( & E );
+
+            try
+            {
+                mpiRead ( N, key -> getModulus () );
+                mpiRead ( E, key -> getExponent () );
+
+                int status = mbedtls_rsa_import ( & rsa_ctx, & N, 0, 0, 0, & E );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to import RSA key data" );
+
+                status = mbedtls_rsa_complete ( & rsa_ctx );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to complete RSA key data" );
+
+                status = mbedtls_rsa_check_pubkey ( & rsa_ctx );
+                if ( status != 0 )
+                    throw MBEDTLSException ( __func__, __LINE__, status, "failed to validate RSA key data" );
+            }
+            catch ( ... )
+            {
+                mbedtls_mpi_free ( & N );
+                mbedtls_mpi_free ( & E );
+                throw;
+            }
+
+            mbedtls_mpi_free ( & N );
+            mbedtls_mpi_free ( & E );
+        }
         
         RSA_Verifier ( const std :: string & name, const std :: string & alg,
                        JWK * key, mbedtls_md_type_t type )
             : JWAVerifier ( name, alg, key )
-            , ctx ( cctx )
+            , rsa_ctx ( rsa_cctx )
+            , sha_ctx ( sha_cctx )
             , md_type ( type )
         {
-            mbedtls_rsa_init ( & ctx, MBEDTLS_RSA_PKCS_V15, md_type );
+            // the RSA context must be initialized
+            mbedtls_rsa_init  ( & rsa_ctx, MBEDTLS_RSA_PKCS_V15, 0 );
 
-#if 0
-            int status = mbedtls_mpi_read_string ( & ctx . N , 16, key . data () );
-            if ( status != 0 )
-                throw MBEDTLSException ( __func__, __LINE__, status, "failed to read context data from key" );
-            status = mbedtls_mpi_read_string ( & ctx . E , 16, key . data () );
-            if ( status != 0 )
-                throw MBEDTLSException ( __func__, __LINE__, status, "failed to read context data from key" );
+            // the SHA context must be initialized
+            mbedtls_md_init ( & sha_ctx );
 
-            // what is this attempting to do?
-            ctx . len = ( mbedtls_mpi_bitlen ( & ctx . N ) + 7 ) >> 3;f
-#endif
+            // get hash info from the type
+            const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
+            dsize = mbedtls_md_get_size ( info );
+
+            // allocate internal structures and bind to "info"
+            int status = mbedtls_md_setup ( & sha_ctx, info, 0 );
+            if ( status != 0 )
+                throw MBEDTLSException ( __func__, __LINE__, status, "failed to setup RSA/SHA context" );
+
+            // we are supposed to have validated this as an RSA key
+            readKey ( reinterpret_cast < RSAPublic_JWKey * > ( key ) );
         }
         
         ~ RSA_Verifier ()
         {
+            mbedtls_rsa_free ( & rsa_ctx );
+            mbedtls_md_free ( & sha_ctx );
         }
         
         size_t dsize;
-        mbedtls_rsa_context cctx, & ctx;
+        mbedtls_rsa_context rsa_cctx, & rsa_ctx;
+        mbedtls_md_context_t sha_cctx, & sha_ctx;
         mbedtls_md_type_t md_type;
     };
     
@@ -179,6 +328,9 @@ namespace ncbi
         virtual JWASigner * make ( const std :: string & name,
             const std :: string & alg, JWK * key ) const
         {
+            if ( key -> getType () . compare ( "RS" ) != 0 )
+                throw JWTException ( __func__, __LINE__, "bad key type" );
+
             return new RSA_Signer ( name, alg, key, md_type );
         }
         
@@ -196,6 +348,9 @@ namespace ncbi
         virtual JWAVerifier * make ( const std :: string & name,
             const std :: string & alg, JWK * key ) const
         {
+            if ( key -> getType () . compare ( "RS" ) != 0 )
+                throw JWTException ( __func__, __LINE__, "bad key type" );
+
             return new RSA_Verifier ( name, alg, key, md_type );
         }
         

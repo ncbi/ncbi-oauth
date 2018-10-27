@@ -92,7 +92,9 @@ namespace ncbi
             const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
             dsize = mbedtls_md_get_size ( info );
 
-            // selects the digest algorithm and allocates internal structures
+            // TBD - verify key size against digest size
+
+            // allocates internal structures and binds to "info"
             int status = mbedtls_md_setup ( & ctx, info, 1 );
             if ( status != 0 )
                 throw MBEDTLSException ( __func__, __LINE__, status, "failed to setup HMAC context" );
@@ -189,6 +191,9 @@ namespace ncbi
         virtual JWASigner * make ( const std :: string & name,
             const std :: string & alg, JWK * key ) const
         {
+            if ( key -> getType () . compare ( "oct" ) != 0 )
+                throw JWTException ( __func__, __LINE__, "bad key type" );
+
             return new HMAC_Signer ( name, alg, key, md_type );
         }
 
@@ -206,6 +211,9 @@ namespace ncbi
         virtual JWAVerifier * make ( const std :: string & name,
             const std :: string & alg, JWK * key ) const
         {
+            if ( key -> getType () . compare ( "oct" ) != 0 )
+                throw JWTException ( __func__, __LINE__, "bad key type" );
+
             return new HMAC_Verifier ( name, alg, key, md_type );
         }
 

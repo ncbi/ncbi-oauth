@@ -84,10 +84,6 @@ namespace ncbi
 
     JWAKeyHolder :: ~ JWAKeyHolder ()
     {
-#if 0
-        // brute force, but reliable
-        memset ( const_cast < char * > ( key . data () ), ' ', key . size () );
-#endif
         key -> release ();
         key = nullptr;
     }
