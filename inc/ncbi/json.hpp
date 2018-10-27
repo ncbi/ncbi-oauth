@@ -37,6 +37,8 @@ namespace ncbi
     class JSON;
     class JSONArray;
     class JSONObject;
+    struct JSONString;
+    struct JSONNumber;
     
     /* JSONException
      **********************************************************************************/
@@ -124,6 +126,9 @@ namespace ncbi
         virtual ~JSONValue ();
 
     protected:
+
+        static JSONValue * makeParsedNumber ( const std :: string & val );
+        static JSONValue * makeParsedString ( const std :: string & val );
         
         static JSONValue * parse ( const Limits & lim, const std :: string & json, size_t & pos, unsigned int depth );
         static Limits default_limits;
@@ -131,6 +136,8 @@ namespace ncbi
         JSONValue ();
 
         friend class JSON;
+        friend struct JSONNumber;
+        friend struct JSONString;
         
         // for testing
         static JSONValue * test_parse ( const std :: string & json, bool consume_all );
