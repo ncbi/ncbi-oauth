@@ -317,6 +317,8 @@ namespace ncbi
                 }
             }
         }
+
+        return * this;
     }
 
     JWKSet :: JWKSet ()
