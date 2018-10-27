@@ -15,6 +15,12 @@
 
 namespace ncbi
 {
+    // call this function with a reasonable but fixed value
+    // before generating any JWT so that the result is predictable
+    //
+    // setting the value to 0 will revert to a real timestamp
+    void jwt_setStaticCurrentTime ( long long cur_time );
+
     /* JWT
      *
      **********************************************************************************/
@@ -23,6 +29,10 @@ namespace ncbi
     public:
         void SetUp ()
         {
+            // fix the current time to a known value
+            jwt_setStaticCurrentTime ( 1540664164 );
+
+            // make a symmetric key
             HMAC_JWKey * key = HMAC_JWKey :: make ( "key-id-1234" );
             try
             {
@@ -45,6 +55,9 @@ namespace ncbi
         {
             delete jwt_fact;
             delete jws_fact;
+
+            // restore timestamp behavior
+            jwt_setStaticCurrentTime ( 0 );
         }
         
     protected:
