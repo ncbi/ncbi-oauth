@@ -30,6 +30,7 @@
 #include "base64-priv.hpp"
 
 #include <iostream>
+#include <climits>
 
 namespace ncbi
 {
@@ -40,7 +41,7 @@ namespace ncbi
 
         // construct the claims object
         // while retaining access to object
-        JWTClaims claims ( obj );
+        JWTClaims claims ( obj, require_iat_on_validate, require_exp_on_validate );
 
         // issuer may have been set on factory
         // install into claims if so
@@ -121,28 +122,38 @@ namespace ncbi
         
         JWTLocker claims_lock ( claims . obj_lock );
 
-        // test duration to be non-negative
-        if ( claims . duration < 0 )
-            throw JWTException ( __func__, __LINE__, "claims must have a specific duration" );
-        if ( claims . not_before > claims . duration )
-            throw JWTException ( __func__, __LINE__, "claims would become valid only after expiration" );
+        // test for duration
+        if ( require_exp_on_generate && claims . duration <= 0 )
+            throw JWTException ( __func__, __LINE__, "claims must have a specific non-zero duration" );
 
         JSONObject * json = claims . claims;
 
-        // capture time
-        long long cur_time = now ();
+        // capture time, which is "iat"
+        long long iat = now ();
 
-        // set "iat"
-        claims . setValueOrDelete ( "iat", JSONValue :: makeInteger ( cur_time ) );
+        // generate nbf
+        long long nbf = iat;
+        if ( claims . not_before > 0 )
+            nbf += claims . not_before;
+
+        // generate exp
+        long long exp = LLONG_MAX;
+        if ( claims . duration > 0 )
+            exp = nbf + claims . duration;
+
+        // set "iat" if required or if either of the other timestamps are there
+        if ( require_iat_on_generate || claims . duration > 0 || claims . not_before > 0 )
+            claims . setValueOrDelete ( "iat", JSONValue :: makeInteger ( iat ) );
         try
         {
             // set "exp"
-            claims . setValueOrDelete ( "exp", JSONValue :: makeInteger ( cur_time + claims . duration ) );
+            if ( claims . duration > 0 )
+                claims . setValueOrDelete ( "exp", JSONValue :: makeInteger ( exp ) );
             try
             {
                 // potentially set "nbf"
                 if ( claims . not_before >= 0 )
-                    claims . setValueOrDelete ( "nbf", JSONValue :: makeInteger ( cur_time + claims . not_before ) );
+                    claims . setValueOrDelete ( "nbf", JSONValue :: makeInteger ( nbf ) );
                 try
                 {
                     // at this point, we can convert the claims object to a string
@@ -362,7 +373,7 @@ namespace ncbi
                 {
 
                     // create claims from JSON payload
-                    JWTClaims claims ( payload );
+                    JWTClaims claims ( payload, require_iat_on_validate, require_exp_on_validate );
                     payload = nullptr;
 
                     // claim set is already built, but not validated
@@ -427,6 +438,18 @@ namespace ncbi
             dflt_skew = dflt;
     }
 
+    void JWTFactory :: requireGenerateExp ( bool required )
+    {
+        JWTLocker locker ( obj_lock );
+        require_exp_on_generate = required;
+    }
+
+    void JWTFactory :: requireValidateExp ( bool required )
+    {
+        JWTLocker locker ( obj_lock );
+        require_exp_on_validate = required;
+    }
+
     void JWTFactory :: lock ()
     {
         obj_lock . flag . test_and_set ();
@@ -441,7 +464,12 @@ namespace ncbi
         sub = jwt_fact . sub;
         duration = jwt_fact . duration;
         not_before = jwt_fact . not_before;
+
         dflt_skew = jwt_fact . dflt_skew;
+        require_iat_on_generate = jwt_fact . require_iat_on_generate;
+        require_exp_on_generate = jwt_fact . require_exp_on_generate;
+        require_iat_on_validate = jwt_fact . require_iat_on_validate;
+        require_exp_on_validate = jwt_fact . require_exp_on_validate;
         
         aud . clear ();
         size_t i, count = jwt_fact . aud . size ();
@@ -460,6 +488,10 @@ namespace ncbi
         , duration ( jwt_fact . duration )
         , not_before ( jwt_fact . not_before )
         , dflt_skew ( jwt_fact . dflt_skew )
+        , require_iat_on_generate ( jwt_fact . require_iat_on_generate )
+        , require_exp_on_generate ( jwt_fact . require_exp_on_generate )
+        , require_iat_on_validate ( jwt_fact . require_iat_on_validate )
+        , require_exp_on_validate ( jwt_fact . require_exp_on_validate )
     {
         size_t i, count = jwt_fact . aud . size ();
         for ( i = 0; i < count; ++ i )
@@ -473,6 +505,10 @@ namespace ncbi
         , duration ( -1 )
         , not_before ( -1 )
         , dflt_skew ( 0 )
+        , require_iat_on_generate ( true )
+        , require_exp_on_generate ( true )
+        , require_iat_on_validate ( false )
+        , require_exp_on_validate ( false )
     {
     }
     
@@ -481,6 +517,10 @@ namespace ncbi
         , duration ( -1 )
         , not_before ( -1 )
         , dflt_skew ( 0 )
+        , require_iat_on_generate ( true )
+        , require_exp_on_generate ( true )
+        , require_iat_on_validate ( false )
+        , require_exp_on_validate ( false )
     {
     }
     
@@ -501,9 +541,22 @@ namespace ncbi
         // or some other source of unique numbers
         return "";
     }
+
+#if JWT_TESTING
+    static long long jwt_static_cur_time;
+
+    void jwt_setStaticCurrentTime ( long long cur_time )
+    {
+        jwt_static_cur_time = cur_time;
+    }
+#endif
     
     long long int JWTFactory :: now ()
     {
+#if JWT_TESTING
+        if ( jwt_static_cur_time > 0 )
+            return jwt_static_cur_time;
+#endif
         return ( long long int ) time ( nullptr );
     }
 
