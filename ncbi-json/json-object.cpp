@@ -111,6 +111,44 @@ namespace ncbi
         return names;
     }
         
+    // add a new ( name, value ) pair
+    // "name" must be unique or an exception will be thrown
+    void JSONObject :: addNameValuePair ( const std :: string & name, JSONValue * val )
+    {
+        auto it = members . find ( name );
+        
+        // error if it exists
+        if ( it != members . end () )
+        {
+            std :: string what ( "duplicate member name: '" );
+            what += name;
+            what += "'";
+            throw JSONException ( __func__, __LINE__, what . c_str () );
+        }
+
+        std :: pair < bool, JSONValue * > pair ( false, val );
+        members . emplace ( name, pair );
+    }
+        
+    // add a new ( name, value ) pair
+    // "name" must be unique or an exception will be thrown
+    void JSONObject :: addFinalNameValuePair ( const std :: string & name, JSONValue * val )
+    {
+        auto it = members . find ( name );
+        
+        // error if it exists
+        if ( it != members . end () )
+        {
+            std :: string what ( "duplicate member name: '" );
+            what += name;
+            what += "'";
+            throw JSONException ( __func__, __LINE__, what . c_str () );
+        }
+
+        std :: pair < bool, JSONValue * > pair ( true, val );
+        members . emplace ( name, pair );
+    }
+        
     // set entry to a new value
     // throws exception if entry exists and is final
     void JSONObject :: setValue ( const std :: string & name, JSONValue * val )

@@ -253,6 +253,11 @@ namespace ncbi
         
         // return names/keys
         std :: vector < std :: string > getNames () const;
+
+        // add a new ( name, value ) pair
+        // "name" must be unique or an exception will be thrown
+        void addNameValuePair ( const std :: string & name, JSONValue * val );
+        void addFinalNameValuePair ( const std :: string & name, JSONValue * val );
         
         // set entry to a new value
         // throws exception if entry exists and is final

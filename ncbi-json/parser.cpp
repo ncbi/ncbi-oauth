@@ -519,31 +519,40 @@ namespace ncbi
                 JSONValue *name = JSONString :: parse ( lim, json, pos );
                 if ( name == nullptr )
                     throw JSONException ( __func__, __LINE__, "Failed to create JSON object" );
-                
-                // skip to ':'
-                if ( ! skip_whitespace ( json, pos ) || json [ pos ] != ':' )
+
+                try
                 {
-                    delete name;
-                    throw JSONException ( __func__, __LINE__, "Expected: ':'" ); // test hit
+                    // skip to ':'
+                    if ( ! skip_whitespace ( json, pos ) || json [ pos ] != ':' )
+                        throw JSONException ( __func__, __LINE__, "Expected: ':'" ); // test hit
+                
+                    // skip over ':'
+                    ++ pos;
+                
+                    // get JSON value;
+                    {
+                        JSONValue *value = JSONValue :: parse ( lim, json, pos, depth );
+                        try
+                        {
+                            if ( value == nullptr )
+                                throw JSONException ( __func__, __LINE__, "Failed to create JSON object" );
+                            
+                            obj -> addNameValuePair ( name -> toString(), value );
+                        }
+                        catch ( ... )
+                        {
+                            delete value;
+                            throw;
+                        }
+                    }
+                
+                    if ( obj -> count () > default_limits . object_mbr_count )
+                        throw JSONException ( __func__, __LINE__, "Array element count exceeds limit" );
                 }
-                
-                // skip over ':'
-                ++ pos;
-                
-                // get JSON value;
-                JSONValue *value = JSONValue :: parse ( lim, json, pos, depth );
-                if ( value == nullptr )
+                catch ( ... )
                 {
                     delete name;
-                    throw JSONException ( __func__, __LINE__, "Failed to create JSON object" );
-                }
-                
-                obj -> setValue ( name -> toString(), value );
-                
-                if ( obj -> count () > default_limits . object_mbr_count )
-                {
-                    delete name;
-                    throw JSONException ( __func__, __LINE__, "Array element count exceeds limit" );
+                    throw;
                 }
                 
                 delete name;
