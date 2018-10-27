@@ -29,6 +29,7 @@
 #include "base64-priv.hpp"
 
 #include <iostream>
+#include <climits>
 #include <cassert>
 
 namespace ncbi
@@ -186,12 +187,24 @@ namespace ncbi
 
         try
         {
-            long long exp, nbf, iat = 0;
+            // timestamps
+            long long iat, nbf, exp;
+
+            // initialize timestamps to limits
+            exp = LLONG_MAX;
+            iat = nbf = 0;
             
             // validate expiration against "cur_time"
-            exp = claims -> getValue ( "exp" ) . toInteger ();
-            if ( ( cur_time - skew ) >= exp )
-                throw JWTException ( __func__, __LINE__, "claims have expired" );
+            if ( claims -> exists ( "exp" ) )
+            {
+                exp = claims -> getValue ( "exp" ) . toInteger ();
+                if ( ( cur_time - skew ) >= exp )
+                    throw JWTException ( __func__, __LINE__, "claims have expired" );
+            }
+            else if ( require_exp_on_validate )
+            {
+                throw JWTException ( __func__, __LINE__, "policy mandates existence of 'exp' claim" );
+            }
 
             // validate issue time against "cur_time"
             if ( claims -> exists ( "iat" ) )
@@ -205,6 +218,10 @@ namespace ncbi
                 // validate issue time against "cur_time"
                 if ( ( cur_time + skew ) < iat )
                     throw JWTException ( __func__, __LINE__, "claims created in the future" );
+            }
+            else if ( require_iat_on_validate )
+            {
+                throw JWTException ( __func__, __LINE__, "policy mandates existence of 'exp' claim" );
             }
 
             // validate first valid time against "cur_time"
@@ -262,6 +279,8 @@ namespace ncbi
         not_before = jwt . not_before;
         have_duration = jwt . have_duration;
         have_not_before = jwt . have_not_before;
+        require_iat_on_validate = jwt . require_iat_on_validate;
+        require_exp_on_validate = jwt . require_exp_on_validate;
         
         return *this;
     }
@@ -272,6 +291,8 @@ namespace ncbi
         , not_before ( jwt . not_before )
         , have_duration ( jwt . have_duration )
         , have_not_before ( jwt . have_not_before )
+        , require_iat_on_validate ( jwt . require_iat_on_validate )
+        , require_exp_on_validate ( jwt . require_exp_on_validate )
     {
         assert ( jwt . claims != nullptr );
         claims = static_cast < JSONObject * > ( jwt . claims -> clone () );
@@ -313,12 +334,15 @@ namespace ncbi
         }
     }
     
-    JWTClaims :: JWTClaims ( JSONObject * _claims )
+    JWTClaims :: JWTClaims ( JSONObject * _claims,
+            bool _require_iat_on_validate, bool _require_exp_on_validate )
         : claims ( _claims )
         , duration ( -1 )
         , not_before ( -1 )
         , have_duration ( false )
         , have_not_before ( false )
+        , require_iat_on_validate ( _require_iat_on_validate )
+        , require_exp_on_validate ( _require_exp_on_validate )
     {
         if ( claims == nullptr )
             throw JWTException ( __func__, __LINE__, "INTERNAL ERROR: NULL claims reference" );
