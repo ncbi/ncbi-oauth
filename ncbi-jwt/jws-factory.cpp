@@ -34,6 +34,15 @@
 
 namespace ncbi
 {
+#if JWT_TESTING
+    static bool ignore_signature_mismatch;
+    static std :: string unrecognized_string ( "unrecognized" );
+
+    void setIgnoreSignatureMismatch ( bool ignore )
+    {
+        ignore_signature_mismatch = ignore;
+    }
+#endif
 
     JWS JWSFactory :: signCompact ( JSONObject & hdr, const void * payload, size_t bytes ) const
     {
@@ -137,14 +146,47 @@ namespace ncbi
             }
 
             if ( v == nullptr )
+            {
+#if JWT_TESTING
+                if ( ignore_signature_mismatch )
+                {
+                    std :: cerr
+                        << __func__
+                        << ':'
+                        << __LINE__
+                        << " - signature not recognized"
+                        << '\n'
+                        ;
+                    return unrecognized_string;
+                }
+#endif
                 throw JWTException ( __func__, __LINE__, "signature not recognized" );
+            }
         }
 
         if ( hdr . exists ( "alg" ) )
         {
             std :: string alg = hdr . getValue ( "alg" ) . toString ();
             if ( alg . compare ( v -> algorithm () ) != 0 )
+            {
+#if JWT_TESTING
+                if ( ignore_signature_mismatch )
+                {
+                    std :: cerr
+                        << __func__
+                        << ':'
+                        << __LINE__
+                        << " - algorithm does not match: "
+                        << alg
+                        << " vs. "
+                        << v -> algorithm ()
+                        << '\n'
+                        ;
+                }
+                else
+#endif
                 throw JWTException ( __func__, __LINE__, "algorithm does not match" );
+            }
         }
 
         return v -> authority_name ();
