@@ -113,6 +113,7 @@ namespace ncbi
 
         // serialization
         std :: string toJSON () const;
+        std :: string readableJSON ( unsigned int indent = 0 ) const;
         
         // C++ assignment
         JWTClaims & operator = ( const JWTClaims & jwt );

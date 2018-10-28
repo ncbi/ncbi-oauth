@@ -256,6 +256,14 @@ namespace ncbi
         assert ( claims != nullptr );
         return claims -> toJSON ();
     }
+
+    std :: string JWTClaims :: readableJSON ( unsigned int indent ) const
+    {
+        JWTLocker locker ( obj_lock );
+
+        assert ( claims != nullptr );
+        return claims -> readableJSON ( indent );
+    }
     
     JWTClaims & JWTClaims :: operator = ( const JWTClaims & jwt )
     {

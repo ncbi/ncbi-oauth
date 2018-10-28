@@ -165,6 +165,9 @@ namespace ncbi
         { return * this; }
         virtual JSONValue * clone () const;
 
+        // for creating a "readable" JSON text
+        std :: string readableJSON ( unsigned int indent = 0 ) const;
+
         // asks whether array is empty
         bool isEmpty () const;
 
@@ -248,6 +251,9 @@ namespace ncbi
         virtual const JSONObject & toObject () const
         { return * this; }
         virtual JSONValue * clone () const;
+
+        // for creating a "readable" JSON text
+        std :: string readableJSON ( unsigned int indent = 0 ) const;
 
         // asks whether object is empty
         bool isEmpty () const;

@@ -62,6 +62,51 @@ namespace ncbi
         return to_string;
     }
     
+    std :: string JSONObject :: readableJSON ( unsigned int indent ) const
+    {
+        std :: string margin;
+        for ( unsigned int i = 0; i < indent; ++ i )
+            margin += "    ";
+
+        std :: string to_string = margin + "{";
+        margin += "    ";
+
+        const char* sep = "\n";
+        
+        for ( auto it = members . begin (); it != members . end (); ++ it )
+        {
+            std :: string key =  it -> first;
+            
+            JSONValue* value = it -> second . second;
+            
+            to_string += sep;
+            to_string += margin;
+            to_string += string_to_json ( key );
+            if ( value -> isArray () )
+            {
+                to_string += " :\n";
+                to_string += value -> toArray () . readableJSON ( indent + 1 );
+            }
+            else if ( value -> isObject () )
+            {
+                to_string += " :\n";
+                to_string += value -> toObject () . readableJSON ( indent + 1 );
+            }
+            else
+            {
+                to_string += " : " + value -> toJSON ();
+            }
+            
+            sep = ",\n";
+        }
+        
+        to_string += "\n";
+        to_string += margin . substr ( 4 );
+        to_string += "}";
+        
+        return to_string;
+    }
+    
     JSONValue * JSONObject :: clone () const
     {
         JSONObject *copy = new JSONObject ();

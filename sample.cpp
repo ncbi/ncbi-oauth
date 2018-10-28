@@ -236,8 +236,7 @@ static void do_even_more_stuff ( const JWTFactory & jwt_fact )
     /* If you arrived HERE, then the "jwt" passed validation */
     std :: cout
         << "And here's what was recovered from JWT:\n"
-        << "  "
-        << claims2 . toJSON ()
+        << claims2 . readableJSON ( 1 )
         << '\n'
         ;
 }
