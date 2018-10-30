@@ -113,6 +113,7 @@ namespace ncbi
 
         // serialization
         std :: string toJSON () const;
+        std :: string readableJSON ( unsigned int indent = 0 ) const;
         
         // C++ assignment
         JWTClaims & operator = ( const JWTClaims & jwt );
@@ -132,7 +133,7 @@ namespace ncbi
         void setFinalValueOrDelete ( const std :: string & name, JSONValue * value ) const;
         
         JWTClaims ();
-        JWTClaims ( JSONObject * claims );
+        JWTClaims ( JSONObject * claims, bool require_iat_on_validate, bool require_exp_on_validate );
 
         JSONObject * claims;
         long long duration;
@@ -140,6 +141,8 @@ namespace ncbi
         JWTLock obj_lock;
         bool have_duration;
         bool have_not_before;
+        bool require_iat_on_validate;
+        bool require_exp_on_validate;
 
         friend class JWTFactory;
         friend class JWTClaimsLock;
@@ -172,6 +175,10 @@ namespace ncbi
         long long getDefaultSkew () const
         { return dflt_skew; }
         void setDefaultSkew ( long long dflt );
+
+        // behavior of "exp" claim
+        void requireGenerateExp ( bool required );
+        void requireValidateExp ( bool required );
 
         // prevent further modifications
         void lock ();
@@ -210,8 +217,14 @@ namespace ncbi
         std :: vector < std :: string > aud;
         long long duration;
         long long not_before;
+
+        // properties for validation
         long long dflt_skew;
         JWTLock obj_lock;
+        bool require_iat_on_generate;
+        bool require_exp_on_generate;
+        bool require_iat_on_validate;
+        bool require_exp_on_validate;
         
         static std :: atomic < unsigned long long > id_seq;
     };

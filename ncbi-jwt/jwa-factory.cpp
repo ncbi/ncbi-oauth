@@ -25,6 +25,7 @@
  */
 
 #include <ncbi/jwa.hpp>
+#include <ncbi/jwk.hpp>
 #include <ncbi/jwt.hpp>
 
 #include <iostream>
@@ -66,19 +67,25 @@ namespace ncbi
     {
         return alg;
     }
+
+    std :: string JWAKeyHolder :: keyID () const
+    {
+        return key -> getID ();
+    }
     
     JWAKeyHolder :: JWAKeyHolder ( const std :: string & _nam,
-            const std :: string & _alg, const std :: string & _key )
+            const std :: string & _alg, JWK * _key )
         : nam ( _nam )
         , alg ( _alg )
-        , key ( _key )
+        , key ( nullptr )
     {
+        key = _key -> duplicate ();
     }
 
     JWAKeyHolder :: ~ JWAKeyHolder ()
     {
-        // brute force, but reliable
-        memset ( const_cast < char * > ( key . data () ), ' ', key . size () );
+        key -> release ();
+        key = nullptr;
     }
 
     /* JWASigner
@@ -88,7 +95,7 @@ namespace ncbi
      */
 
     JWASigner :: JWASigner ( const std :: string & name,
-            const std :: string & alg, const std :: string & key )
+            const std :: string & alg, JWK * key )
         : JWAKeyHolder ( name, alg, key )
     {
     }
@@ -100,7 +107,7 @@ namespace ncbi
      */
 
     JWAVerifier :: JWAVerifier ( const std :: string & name,
-            const std :: string & alg, const std :: string & key )
+            const std :: string & alg, JWK * key )
         : JWAKeyHolder ( name, alg, key )
     {
     }
@@ -130,7 +137,7 @@ namespace ncbi
      */
 
     JWASigner * JWAFactory :: makeSigner ( const std :: string & name,
-            const std :: string & alg, const std :: string & key ) const
+            const std :: string & alg, JWK * key ) const
     {
         // NB - expect this to be called after static constructors run
         assert ( maps != nullptr );
@@ -154,7 +161,7 @@ namespace ncbi
     }
     
     JWAVerifier * JWAFactory :: makeVerifier ( const std :: string & name,
-            const std :: string & alg, const std :: string & key ) const
+            const std :: string & alg, JWK * key ) const
     {
         // NB - expect this to be called after static constructors run
         assert ( maps != nullptr );

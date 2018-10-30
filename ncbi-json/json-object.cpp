@@ -62,6 +62,51 @@ namespace ncbi
         return to_string;
     }
     
+    std :: string JSONObject :: readableJSON ( unsigned int indent ) const
+    {
+        std :: string margin;
+        for ( unsigned int i = 0; i < indent; ++ i )
+            margin += "    ";
+
+        std :: string to_string = margin + "{";
+        margin += "    ";
+
+        const char* sep = "\n";
+        
+        for ( auto it = members . begin (); it != members . end (); ++ it )
+        {
+            std :: string key =  it -> first;
+            
+            JSONValue* value = it -> second . second;
+            
+            to_string += sep;
+            to_string += margin;
+            to_string += string_to_json ( key );
+            if ( value -> isArray () )
+            {
+                to_string += " :\n";
+                to_string += value -> toArray () . readableJSON ( indent + 1 );
+            }
+            else if ( value -> isObject () )
+            {
+                to_string += " :\n";
+                to_string += value -> toObject () . readableJSON ( indent + 1 );
+            }
+            else
+            {
+                to_string += " : " + value -> toJSON ();
+            }
+            
+            sep = ",\n";
+        }
+        
+        to_string += "\n";
+        to_string += margin . substr ( 4 );
+        to_string += "}";
+        
+        return to_string;
+    }
+    
     JSONValue * JSONObject :: clone () const
     {
         JSONObject *copy = new JSONObject ();
@@ -69,6 +114,12 @@ namespace ncbi
         *copy = *this;
         
         return copy;
+    }
+
+    void JSONObject :: invalidate ()
+    {
+        for ( auto it = members . begin (); it != members . end (); ++ it )
+            it -> second . second -> invalidate ();
     }
 
     // asks whether object is empty
@@ -105,6 +156,44 @@ namespace ncbi
         return names;
     }
         
+    // add a new ( name, value ) pair
+    // "name" must be unique or an exception will be thrown
+    void JSONObject :: addNameValuePair ( const std :: string & name, JSONValue * val )
+    {
+        auto it = members . find ( name );
+        
+        // error if it exists
+        if ( it != members . end () )
+        {
+            std :: string what ( "duplicate member name: '" );
+            what += name;
+            what += "'";
+            throw JSONException ( __func__, __LINE__, what . c_str () );
+        }
+
+        std :: pair < bool, JSONValue * > pair ( false, val );
+        members . emplace ( name, pair );
+    }
+        
+    // add a new ( name, value ) pair
+    // "name" must be unique or an exception will be thrown
+    void JSONObject :: addFinalNameValuePair ( const std :: string & name, JSONValue * val )
+    {
+        auto it = members . find ( name );
+        
+        // error if it exists
+        if ( it != members . end () )
+        {
+            std :: string what ( "duplicate member name: '" );
+            what += name;
+            what += "'";
+            throw JSONException ( __func__, __LINE__, what . c_str () );
+        }
+
+        std :: pair < bool, JSONValue * > pair ( true, val );
+        members . emplace ( name, pair );
+    }
+        
     // set entry to a new value
     // throws exception if entry exists and is final
     void JSONObject :: setValue ( const std :: string & name, JSONValue * val )
@@ -130,6 +219,19 @@ namespace ncbi
         }
     }
 
+    void JSONObject :: setValueOrDelete ( const std :: string & name, JSONValue * val )
+    {
+        try
+        {
+            setValue ( name, val );
+        }
+        catch ( ... )
+        {
+            delete val;
+            throw;
+        }
+    }
+
     // set entry to a final value
     // throws exception if entry exists and is final
     void JSONObject :: setFinalValue ( const std :: string & name, JSONValue * val )
@@ -151,6 +253,19 @@ namespace ncbi
             // overwrite value
             delete it -> second . second;
             it -> second . second = val;
+        }
+    }
+
+    void JSONObject :: setFinalValueOrDelete ( const std :: string & name, JSONValue * val )
+    {
+        try
+        {
+            setFinalValue ( name, val );
+        }
+        catch ( ... )
+        {
+            delete val;
+            throw;
         }
     }
 

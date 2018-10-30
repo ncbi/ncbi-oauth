@@ -1,6 +1,7 @@
 #include <ncbi/json.hpp>
 #include <ncbi/jwt.hpp>
 #include <ncbi/jws.hpp>
+#include <ncbi/jwk.hpp>
 
 #include <iostream>
 
@@ -29,10 +30,10 @@ int main ( int argc, char * argv [], char * envp [] )
         // via a service for storing/retrieving secrets
         std :: string signing_key ( "secret-hmac-key" );
         std :: string signing_kid ( "key-id-1234" );
-        // NB - since we're using a symmetric algorithm for today,
-        // the keys must be identical. Once we switch to RSA keys,
-        // they will necessarily be different.
-        std :: string verification_key ( signing_key );
+
+        // create an HMAC key
+        HMAC_JWKey * jwk = HMAC_JWKey :: make ( signing_kid );
+        jwk -> setValue ( signing_key );
 
         /*
           now that we have keys and basically the configuration information,
@@ -47,7 +48,10 @@ int main ( int argc, char * argv [], char * envp [] )
           as it is needed. It is intended to be declared in "main()" or high
           up in the call chain and to live for the duration of the process.
         */
-        JWSFactory jws_fact ( signing_authority, algorithm, signing_key, signing_kid, verification_key );
+        JWSFactory jws_fact ( signing_authority, algorithm, jwk );
+
+        // can dump our reference now
+        jwk -> release ();
         
         /*
           now that we have JWS, which is the ability to sign and verify signatures,
@@ -232,8 +236,7 @@ static void do_even_more_stuff ( const JWTFactory & jwt_fact )
     /* If you arrived HERE, then the "jwt" passed validation */
     std :: cout
         << "And here's what was recovered from JWT:\n"
-        << "  "
-        << claims2 . toJSON ()
+        << claims2 . readableJSON ( 1 )
         << '\n'
         ;
 }

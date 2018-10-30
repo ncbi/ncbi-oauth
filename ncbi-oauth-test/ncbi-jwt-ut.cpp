@@ -8,12 +8,19 @@
 
 #include "gtest/gtest.h"
 #include <ncbi/jws.hpp>
+#include <ncbi/jwk.hpp>
 #include <ncbi/jwt.hpp>
 
 #include <iostream>
 
 namespace ncbi
 {
+    // call this function with a reasonable but fixed value
+    // before generating any JWT so that the result is predictable
+    //
+    // setting the value to 0 will revert to a real timestamp
+    void jwt_setStaticCurrentTime ( long long cur_time );
+
     /* JWT
      *
      **********************************************************************************/
@@ -66,18 +73,35 @@ namespace ncbi
 
         void SetUp ()
         {
-            jws_fact = new JWSFactory ( "ncbi", "HS384", "blarky2", "key-id-1234", "blarky2" );
-            jwt_fact = new JWTFactory ( * jws_fact );
-            ASSERT_NO_THROW ( jwt_fact -> setIssuer ( "ncbi" ) );
-            ASSERT_NO_THROW ( jwt_fact -> setSubject ( "john doe" ) );
-            ASSERT_NO_THROW ( jwt_fact -> setDuration ( 15 ) );
-            //ASSERT_NO_THROW ( jwt_fact -> setNotBefore ( 60 ) );
+            // fix the current time to a known value
+            jwt_setStaticCurrentTime ( 1540664164 );
+
+            // make a symmetric key
+            HMAC_JWKey * key = HMAC_JWKey :: make ( "key-id-1234" );
+            try
+            {
+                key -> setValue ( "blarky2" );
+
+                jws_fact = new JWSFactory ( "ncbi", "HS384", key );
+                jwt_fact = new JWTFactory ( * jws_fact );
+                jwt_fact -> setIssuer ( "ncbi" );
+                jwt_fact -> setDuration ( 15 );
+            }
+            catch ( ... )
+            {
+                key -> release ();
+                throw;
+            }
+            key -> release ();
         }
         
         void TearDown ()
         {
             delete jwt_fact;
             delete jws_fact;
+
+            // restore timestamp behavior
+            jwt_setStaticCurrentTime ( 0 );
         }
         
     protected:

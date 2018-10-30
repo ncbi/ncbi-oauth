@@ -61,15 +61,15 @@ namespace ncbi
     
     JSONValue * JSONValue :: makeDouble ( long double val, unsigned int precision )
     {
-        return makeNumber ( double_to_string ( val, precision ) );
+        return makeParsedNumber ( double_to_string ( val, precision ) );
     }
     
-    JSONValue * JSONValue :: makeNumber ( const std :: string & val )
+    JSONValue * JSONValue :: makeParsedNumber ( const std :: string & val )
     {
         return new JSONWrapper ( jvt_num, new JSONNumber ( val ) );
     }
     
-    JSONValue * JSONValue :: makeString ( const std :: string & val )
+    JSONValue * JSONValue :: makeParsedString ( const std :: string & val )
     {
         return new JSONWrapper ( jvt_str, new JSONString ( val ) );
     }

@@ -25,6 +25,7 @@
  */
 
 #include <ncbi/jws.hpp>
+#include <ncbi/jwk.hpp>
 #include <ncbi/jwt.hpp>
 #include "base64-priv.hpp"
 
@@ -33,6 +34,15 @@
 
 namespace ncbi
 {
+#if JWT_TESTING
+    static bool ignore_signature_mismatch;
+    static std :: string unrecognized_string ( "unrecognized" );
+
+    void setIgnoreSignatureMismatch ( bool ignore )
+    {
+        ignore_signature_mismatch = ignore;
+    }
+#endif
 
     JWS JWSFactory :: signCompact ( JSONObject & hdr, const void * payload, size_t bytes ) const
     {
@@ -50,6 +60,7 @@ namespace ncbi
         try
         {
             hdr . setValue ( "alg", alg );
+            std :: string signing_kid = signer -> keyID ();
             JSONValue * kid = JSONValue :: makeString ( signing_kid );
             try
             {
@@ -74,6 +85,7 @@ namespace ncbi
                 // convert the header to text
                 std :: string hdr_json = hdr . toJSON ();
 
+#if JWT_TESTING
         std :: cout
             << "  JOSE Header:\n"
             << "    "
@@ -84,6 +96,7 @@ namespace ncbi
             << std :: string ( ( const char * ) payload, bytes )
             << '\n'
             ;
+#endif
 
                 // encode the header with base64url
                 jws = encodeBase64URL ( hdr_json . data (), hdr_json . size () );
@@ -133,20 +146,65 @@ namespace ncbi
             }
 
             if ( v == nullptr )
+            {
+#if JWT_TESTING
+                if ( ignore_signature_mismatch )
+                {
+                    std :: cerr
+                        << __func__
+                        << ':'
+                        << __LINE__
+                        << " - signature not recognized"
+                        << '\n'
+                        ;
+                    return unrecognized_string;
+                }
+#endif
                 throw JWTException ( __func__, __LINE__, "signature not recognized" );
+            }
         }
 
         if ( hdr . exists ( "alg" ) )
         {
             std :: string alg = hdr . getValue ( "alg" ) . toString ();
             if ( alg . compare ( v -> algorithm () ) != 0 )
+            {
+#if JWT_TESTING
+                if ( ignore_signature_mismatch )
+                {
+                    std :: cerr
+                        << __func__
+                        << ':'
+                        << __LINE__
+                        << " - algorithm does not match: "
+                        << alg
+                        << " vs. "
+                        << v -> algorithm ()
+                        << '\n'
+                        ;
+                }
+                else
+#endif
                 throw JWTException ( __func__, __LINE__, "algorithm does not match" );
+            }
         }
 
         return v -> authority_name ();
     }
 
-    void JWSFactory :: addVerifier ( const std :: string & name, const std :: string & alg, const std :: string & key )
+    void JWSFactory :: addVerifier ( const std :: string & name, const std :: string & alg, HMAC_JWKey * key )
+    {
+        JWAVerifier * verifier = gJWAFactory . makeVerifier ( name, alg, key );
+        addl_verifiers . push_back ( verifier );
+    }
+
+    void JWSFactory :: addVerifier ( const std :: string & name, const std :: string & alg, RSAPublic_JWKey * key )
+    {
+        JWAVerifier * verifier = gJWAFactory . makeVerifier ( name, alg, key );
+        addl_verifiers . push_back ( verifier );
+    }
+
+    void JWSFactory :: addVerifier ( const std :: string & name, const std :: string & alg, EllipticCurvePublic_JWKey * key )
     {
         JWAVerifier * verifier = gJWAFactory . makeVerifier ( name, alg, key );
         addl_verifiers . push_back ( verifier );
@@ -195,10 +253,27 @@ namespace ncbi
     }
 
     JWSFactory :: JWSFactory ( const std :: string & name, const std :: string & alg,
-            const std :: string & signing_key, const std :: string & _signing_kid, const std :: string & verify_key )
+            HMAC_JWKey * key )
         : signer ( nullptr )
         , verifier ( nullptr )
-        , signing_kid ( _signing_kid )
+    {
+        signer = gJWAFactory . makeSigner ( name, alg, key );
+        verifier = gJWAFactory . makeVerifier ( name, alg, key );
+    }
+
+    JWSFactory :: JWSFactory ( const std :: string & name, const std :: string & alg,
+            RSAPrivate_JWKey * signing_key, RSAPublic_JWKey * verify_key )
+        : signer ( nullptr )
+        , verifier ( nullptr )
+    {
+        signer = gJWAFactory . makeSigner ( name, alg, signing_key );
+        verifier = gJWAFactory . makeVerifier ( name, alg, verify_key );
+    }
+
+    JWSFactory :: JWSFactory ( const std :: string & name, const std :: string & alg,
+            EllipticCurvePrivate_JWKey * signing_key, EllipticCurvePublic_JWKey * verify_key )
+        : signer ( nullptr )
+        , verifier ( nullptr )
     {
         signer = gJWAFactory . makeSigner ( name, alg, signing_key );
         verifier = gJWAFactory . makeVerifier ( name, alg, verify_key );

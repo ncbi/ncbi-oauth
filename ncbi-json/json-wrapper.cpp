@@ -168,6 +168,12 @@ namespace ncbi
         return new JSONWrapper ( type, value -> clone () );
     }
 
+    void JSONWrapper :: invalidate ()
+    {
+        if ( value != nullptr )
+            value -> invalidate ();
+    }
+
     JSONWrapper & JSONWrapper :: operator = ( const JSONWrapper & val )
     {
         JSONPrimitive * copy = val . value ? val . value -> clone () : nullptr;
