@@ -48,8 +48,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				CE026D27217799EA00A1C44F /* libmbedtls.dylib in Frameworks */,
-				CEE54A3E210F9D2E009ECFD8 /* libncbi-jwt.dylib in Frameworks */,
 				CE7C5FD820EE7D9E00156B72 /* libncbi-json.dylib in Frameworks */,
+				CEE54A3E210F9D2E009ECFD8 /* libncbi-jwt.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -59,8 +59,8 @@
 		CE7C5F8320EE691600156B72 = {
 			isa = PBXGroup;
 			children = (
-				CEE54A3B210F8F51009ECFD8 /* ncbi-jwt-ut.cpp */,
 				DE7FAAC1211BA539000AF2D5 /* ncbi-json-ut.cpp */,
+				CEE54A3B210F8F51009ECFD8 /* ncbi-jwt-ut.cpp */,
 				5C96581E211B5C78000DADEC /* main.cpp */,
 				5C46D30A20EFCAD100E8B421 /* gtest-all.cc */,
 				CE7C5F8D20EE691600156B72 /* Products */,
@@ -80,8 +80,8 @@
 			isa = PBXGroup;
 			children = (
 				CE026D26217799EA00A1C44F /* libmbedtls.dylib */,
-				CEE54A3D210F9D2E009ECFD8 /* libncbi-jwt.dylib */,
 				CE7C5FD720EE7D9E00156B72 /* libncbi-json.dylib */,
+				CEE54A3D210F9D2E009ECFD8 /* libncbi-jwt.dylib */,
 				CE7C5FD020EE75EA00156B72 /* libgtest_main.a */,
 				CE7C5FCE20EE75C500156B72 /* libgtest.a */,
 				CE7C5FCB20EE735500156B72 /* gtest.framework */,
@@ -145,10 +145,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CEE54A3C210F8F51009ECFD8 /* ncbi-jwt-ut.cpp in Sources */,
 				5C965820211B5C78000DADEC /* main.cpp in Sources */,
 				5C46D30B20EFCAD100E8B421 /* gtest-all.cc in Sources */,
 				DE7FAAC2211BA539000AF2D5 /* ncbi-json-ut.cpp in Sources */,
+				CEE54A3C210F8F51009ECFD8 /* ncbi-jwt-ut.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
