@@ -27,6 +27,50 @@ namespace ncbi
     class JWTFixture_BasicConstruction : public :: testing :: Test
     {
     public:
+        void printClaims ( JWTClaims claims, bool recovered = false )
+        {
+            if ( ! recovered )
+            {
+                std :: cout
+                << "---- JSON Claims ----\n"
+                << "    "
+                << claims . toJSON ()
+                << "\n---- JSON Claims ----\n"
+                << std :: endl
+                ;
+            }
+            else
+            {
+                std :: cout
+                << "---- Decoded Claims ----\n"
+                << "    "
+                << claims . toJSON ()
+                << "\n---- Decoded Claims ----"
+                << std :: endl
+                ;
+            }
+        }
+        
+        void printJWT ( JWT jwt )
+        {
+            std :: cout
+            << "---- JWT ----\n"
+            << "    "
+            << jwt
+            << "\n---- JWT ----\n"
+            << std :: endl
+            ;
+        }
+        
+        void printJWTTransitionStack ( JWTClaims json, JWT jwt, JWTClaims decoded )
+        {
+            std :: cout << "{" << std :: endl;
+            printClaims ( json );
+            printJWT ( jwt );
+            printClaims ( decoded, true );
+            std :: cout << "}\n" << std :: endl;
+        }
+
         void SetUp ()
         {
             // fix the current time to a known value
@@ -63,33 +107,18 @@ namespace ncbi
         JWSFactory * jws_fact;
         JWTFactory * jwt_fact;
     };
+    
    
-    TEST_F ( JWTFixture_BasicConstruction, JWT_Hello )
+    TEST_F ( JWTFixture_BasicConstruction, JWT_Example )
     {
         JWTClaims claims = jwt_fact -> make ();
-        claims . addClaimOrDeleteValue ( "hello", JSONValue :: makeString ( "there" ) );
-        std :: cout
-            << "hello test:\n"
-            << "  JSON:\n"
-            << "    "
-            << claims . toJSON ()
-            << '\n'
-            ;
+        claims . addClaimOrDeleteValue ( "example", JSONValue :: makeString ( "hello there" ) );
+        
         JWT jwt = jwt_fact -> sign ( claims );
-        std :: cout
-            << "  JWT:\n"
-            << "    "
-            << jwt
-            << '\n'
-            ;
 
-        JWTClaims recovered = jwt_fact -> decode ( jwt );
-        std :: cout
-            << "Recovered claims:\n"
-            << "  "
-            << recovered . toJSON ()
-            << std :: endl
-            ;
+        JWTClaims decoded = jwt_fact -> decode ( jwt );
+        
+        printJWTTransitionStack ( claims, jwt, decoded );
     }
 
 } // namespace
