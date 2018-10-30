@@ -89,6 +89,7 @@ namespace ncbi
 
     RSAPrivate_JWKey * RSAPrivate_JWKey :: make ( const std :: string & kid )
     {
+        return nullptr;
     }
 
     // modulus "n"

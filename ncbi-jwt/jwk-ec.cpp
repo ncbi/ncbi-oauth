@@ -100,6 +100,7 @@ namespace ncbi
 
     EllipticCurvePrivate_JWKey * EllipticCurvePrivate_JWKey :: make ( const std :: string & kid )
     {
+        return nullptr;
     }
 
     // curve "crv"

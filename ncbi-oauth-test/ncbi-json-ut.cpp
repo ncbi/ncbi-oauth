@@ -344,6 +344,8 @@ namespace ncbi
     class JSONFixture_BlackBox : public :: testing :: Test
     {
     public:
+        enum JSONType { Object, Array, Value };
+        
         void SetUp ()
         {
             jObj = nullptr;
@@ -359,6 +361,20 @@ namespace ncbi
             assert ( jObj == nullptr );
             jObj = JSONObject :: parse ( json );
             EXPECT_STREQ ( jObj -> toJSON() . c_str(), expected . c_str () );
+        }
+        
+        void make_throw ( JSONType type, const std :: string &json, bool consume_all = true )
+        {
+            switch ( type )
+            {
+                case Object:
+                case Array:
+                    EXPECT_ANY_THROW ( JSON :: parse ( json ) );
+                    break;
+                case Value:
+                    FAIL();
+                    break;
+            }
         }
         
     protected:
@@ -449,6 +465,22 @@ namespace ncbi
     TEST_F ( JSONFixture_BlackBox, JSONObject_Member_Array )
     {
         make_and_verify_eq ( "{\"\":[true,false]}", "{\"\":[true,false]}" );
+    }
+    
+    // Addon Tests
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Addon1 )
+    {
+        make_and_verify_eq ( "{\"modDateA\": \"\",\"modDate\": 0}" ,
+                             "{\"modDate\":0,\"modDateA\":\"\"}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Addon2 )
+    {
+        make_and_verify_eq ( "{\"modDate\": \"\",\"modDateA\": 0}" ,
+                            "{\"modDate\":\"\",\"modDateA\":0}" );
+    }
+    TEST_F ( JSONFixture_BlackBox, JSONObject_Addon3 )
+    {
+        make_throw ( Object, "{\"modDate\": \"\",\"modDate\": \"\"}" );
     }
     
     /* JSONValue Construction - Method
