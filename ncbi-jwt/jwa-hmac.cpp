@@ -80,7 +80,7 @@ namespace ncbi
         }
 
         HMAC_Signer ( const std :: string & name, const std :: string & alg,
-                JWK * key, mbedtls_md_type_t type )
+                const JWK * key, mbedtls_md_type_t type )
             : JWASigner ( name, alg, key )
             , ctx ( cctx )
             , md_type ( type )
@@ -152,7 +152,7 @@ namespace ncbi
         }
 
         HMAC_Verifier ( const std :: string & name, const std :: string & alg,
-                JWK * key, mbedtls_md_type_t type )
+                const JWK * key, mbedtls_md_type_t type )
             : JWAVerifier ( name, alg, key )
             , ctx ( cctx )
             , md_type ( type )
@@ -189,7 +189,7 @@ namespace ncbi
     struct HMAC_SignerFact : JWASignerFact
     {
         virtual JWASigner * make ( const std :: string & name,
-            const std :: string & alg, JWK * key ) const
+            const std :: string & alg, const JWK * key ) const
         {
             if ( key -> getType () . compare ( "oct" ) != 0 )
                 throw JWTException ( __func__, __LINE__, "bad key type" );
@@ -209,7 +209,7 @@ namespace ncbi
     struct HMAC_VerifierFact : JWAVerifierFact
     {
         virtual JWAVerifier * make ( const std :: string & name,
-            const std :: string & alg, JWK * key ) const
+            const std :: string & alg, const JWK * key ) const
         {
             if ( key -> getType () . compare ( "oct" ) != 0 )
                 throw JWTException ( __func__, __LINE__, "bad key type" );

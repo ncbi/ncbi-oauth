@@ -34,72 +34,47 @@
 
 namespace ncbi
 {
-    EllipticCurvePublic_JWKey * EllipticCurvePublic_JWKey :: make ( const std :: string & kid, const std :: string & use )
+    const EllipticCurvePrivate_JWKey * EllipticCurvePrivate_JWKey :: make ( const std :: string & curve,
+        const std :: string & use, const std :: string & alg, const std :: string & kid )
     {
-        EllipticCurvePublic_JWKey * key = new EllipticCurvePublic_JWKey ( kid );
+        JSONObject * props = JSONObject :: make ();
         try
         {
-            key -> setUse ( use );
+            props -> setValueOrDelete ( "kty", JSONValue :: makeString ( "EC" ) );
+            props -> setValueOrDelete ( "kid", JSONValue :: makeString ( kid ) );
+            props -> setValueOrDelete ( "alg", JSONValue :: makeString ( alg ) );
+            props -> setValueOrDelete ( "use", JSONValue :: makeString ( use ) );
+
+            // TBD - create key and get properties
+
+            return make ( props );
         }
         catch ( ... )
         {
-            key -> release ();
+            props -> invalidate ();
+            delete props;
             throw;
         }
-        return key;
     }
 
-    // curve "crv"
-    std :: string EllipticCurvePublic_JWKey :: getCurve () const
+    bool EllipticCurvePrivate_JWKey :: isEllipticCurve () const
     {
-        return props -> getValue ( "crv" ) . toString ();
+        return true;
     }
 
-    void EllipticCurvePublic_JWKey :: setCurve ( const std :: string & crv )
+    bool EllipticCurvePrivate_JWKey :: isPrivate () const
     {
-        props -> setValueOrDelete ( "crv", JSONValue :: makeString ( crv ) );
+        return true;
     }
 
-    // X coordinate "x"
-    std :: string EllipticCurvePublic_JWKey :: getXCoordinate () const
+    const EllipticCurvePrivate_JWKey * EllipticCurvePrivate_JWKey :: toEllipticCurvePrivate () const
     {
-        return props -> getValue ( "x" ) . toString ();
+        return reinterpret_cast < const EllipticCurvePrivate_JWKey * > ( duplicate () );
     }
 
-    void EllipticCurvePublic_JWKey :: setXCoordinate ( const std :: string & x )
+    const EllipticCurvePublic_JWKey * EllipticCurvePrivate_JWKey :: toEllipticCurvePublic () const
     {
-        props -> setValueOrDelete ( "x", JSONValue :: makeString ( x ) );
-    }
-
-    // Y coordinate "y"
-    std :: string EllipticCurvePublic_JWKey :: getYCoordinate () const
-    {
-        return props -> getValue ( "y" ) . toString ();
-    }
-
-    void EllipticCurvePublic_JWKey :: setYCoordinate ( const std :: string & y )
-    {
-        props -> setValueOrDelete ( "y", JSONValue :: makeString ( y ) );
-    }
-
-    EllipticCurvePublic_JWKey * EllipticCurvePublic_JWKey :: make ( JSONObject * props )
-    {
-        return new EllipticCurvePublic_JWKey ( props );
-    }
-
-    // "kty" = "EC"
-    EllipticCurvePublic_JWKey :: EllipticCurvePublic_JWKey ( const std :: string & kid )
-        : JWK ( kid, "EC" )
-    {
-    }
-
-    EllipticCurvePublic_JWKey :: EllipticCurvePublic_JWKey ( JSONObject * props )
-        : JWK ( props )
-    {
-    }
-
-    EllipticCurvePrivate_JWKey * EllipticCurvePrivate_JWKey :: make ( const std :: string & kid )
-    {
+        return EllipticCurvePublic_JWKey :: derive ( this );
     }
 
     // curve "crv"
@@ -108,20 +83,10 @@ namespace ncbi
         return props -> getValue ( "crv" ) . toString ();
     }
 
-    void EllipticCurvePrivate_JWKey :: setCurve ( const std :: string & crv )
-    {
-        props -> setValueOrDelete ( "crv", JSONValue :: makeString ( crv ) );
-    }
-
     // X coordinate "x"
     std :: string EllipticCurvePrivate_JWKey :: getXCoordinate () const
     {
         return props -> getValue ( "x" ) . toString ();
-    }
-
-    void EllipticCurvePrivate_JWKey :: setXCoordinate ( const std :: string & x )
-    {
-        props -> setValueOrDelete ( "x", JSONValue :: makeString ( x ) );
     }
 
     // Y coordinate "y"
@@ -130,20 +95,10 @@ namespace ncbi
         return props -> getValue ( "y" ) . toString ();
     }
 
-    void EllipticCurvePrivate_JWKey :: setYCoordinate ( const std :: string & y )
-    {
-        props -> setValueOrDelete ( "y", JSONValue :: makeString ( y ) );
-    }
-
     // ECC private key "d"
     std :: string EllipticCurvePrivate_JWKey :: getECCPrivateKey () const
     {
         return props -> getValue ( "d" ) . toString ();
-    }
-
-    void EllipticCurvePrivate_JWKey :: setECCPrivateKey ( const std :: string & d )
-    {
-        props -> setValueOrDelete ( "d", JSONValue :: makeString ( d ) );
     }
 
     EllipticCurvePrivate_JWKey * EllipticCurvePrivate_JWKey :: make ( JSONObject * props )
@@ -152,12 +107,69 @@ namespace ncbi
     }
 
     // "kty" = "EC"
-    EllipticCurvePrivate_JWKey :: EllipticCurvePrivate_JWKey ( const std :: string & kid )
-        : JWK ( kid, "EC" )
+    EllipticCurvePrivate_JWKey :: EllipticCurvePrivate_JWKey ( JSONObject * props )
+        : JWK ( props )
     {
     }
 
-    EllipticCurvePrivate_JWKey :: EllipticCurvePrivate_JWKey ( JSONObject * props )
+
+    const EllipticCurvePublic_JWKey * EllipticCurvePublic_JWKey :: derive ( const EllipticCurvePrivate_JWKey * priv )
+    {
+        JSONObject * props = JSONObject :: make ();
+        try
+        {
+            props -> setValueOrDelete ( "kty", JSONValue :: makeString ( priv -> getType () ) );
+            props -> setValueOrDelete ( "kid", JSONValue :: makeString ( priv -> getID () ) );
+            props -> setValueOrDelete ( "alg", JSONValue :: makeString ( priv -> getAlg () ) );
+            props -> setValueOrDelete ( "crv", JSONValue :: makeString ( priv -> getCurve () ) );
+            props -> setValueOrDelete ( "x", JSONValue :: makeString ( priv -> getXCoordinate () ) );
+            props -> setValueOrDelete ( "y", JSONValue :: makeString ( priv -> getYCoordinate () ) );
+            return make ( props );
+        }
+        catch ( ... )
+        {
+            props -> invalidate ();
+            delete props;
+            throw;
+        }
+    }
+
+    bool EllipticCurvePublic_JWKey :: isEllipticCurve () const
+    {
+        return true;
+    }
+
+     const EllipticCurvePublic_JWKey * EllipticCurvePublic_JWKey :: toEllipticCurvePublic () const
+    {
+        return reinterpret_cast < const EllipticCurvePublic_JWKey * > ( duplicate () );
+    }
+
+    // curve "crv"
+    std :: string EllipticCurvePublic_JWKey :: getCurve () const
+    {
+        return props -> getValue ( "crv" ) . toString ();
+    }
+
+    // X coordinate "x"
+    std :: string EllipticCurvePublic_JWKey :: getXCoordinate () const
+    {
+        return props -> getValue ( "x" ) . toString ();
+    }
+
+    // Y coordinate "y"
+    std :: string EllipticCurvePublic_JWKey :: getYCoordinate () const
+    {
+        return props -> getValue ( "y" ) . toString ();
+    }
+
+    EllipticCurvePublic_JWKey * EllipticCurvePublic_JWKey :: make ( JSONObject * props )
+    {
+        // TBD - check values
+        return new EllipticCurvePublic_JWKey ( props );
+    }
+
+    // "kty" = "EC"
+    EllipticCurvePublic_JWKey :: EllipticCurvePublic_JWKey ( JSONObject * props )
         : JWK ( props )
     {
     }

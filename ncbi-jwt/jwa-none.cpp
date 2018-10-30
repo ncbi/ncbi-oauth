@@ -46,7 +46,7 @@ namespace ncbi
         }
 
         NONE_Signer ( const std :: string & name,
-                const std :: string & alg, JWK * key )
+                const std :: string & alg, const JWK * key )
             : JWASigner ( name, alg, key )
         {
         }
@@ -65,7 +65,7 @@ namespace ncbi
         }
 
         NONE_Verifier ( const std :: string & name,
-                const std :: string & alg, JWK * key )
+                const std :: string & alg, const JWK * key )
             : JWAVerifier ( name, alg, key )
         {
         }
@@ -74,7 +74,7 @@ namespace ncbi
     struct NONE_SignerFact : JWASignerFact
     {
         virtual JWASigner * make ( const std :: string & name,
-            const std :: string & alg, JWK * key ) const
+            const std :: string & alg, const JWK * key ) const
         {
             return new NONE_Signer ( name, alg, key );
         }
@@ -88,7 +88,7 @@ namespace ncbi
     struct NONE_VerifierFact : JWAVerifierFact
     {
         virtual JWAVerifier * make ( const std :: string & name,
-            const std :: string & alg, JWK * key ) const
+            const std :: string & alg, const JWK * key ) const
         {
             return new NONE_Verifier ( name, alg, key );
         }

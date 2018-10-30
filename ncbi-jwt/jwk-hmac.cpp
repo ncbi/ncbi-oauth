@@ -34,21 +34,44 @@
 
 namespace ncbi
 {
-    HMAC_JWKey * HMAC_JWKey :: make ( const std :: string & kid )
+    const HMAC_JWKey * HMAC_JWKey :: make ( unsigned int key_bits,
+        const std :: string & use, const std :: string & alg, const std :: string & kid )
     {
-        return new HMAC_JWKey ( kid );
+        JSONObject * props = JSONObject :: make ();
+        try
+        {
+            props -> setValueOrDelete ( "kty", JSONValue :: makeString ( "oct" ) );
+            props -> setValueOrDelete ( "kid", JSONValue :: makeString ( kid ) );
+            props -> setValueOrDelete ( "alg", JSONValue :: makeString ( alg ) );
+            props -> setValueOrDelete ( "use", JSONValue :: makeString ( use ) );
+
+            // TBD - create key and set value
+            props -> setValueOrDelete ( "k", JSONValue :: makeString ( kid ) );
+
+            return make ( props );
+        }
+        catch ( ... )
+        {
+            props -> invalidate ();
+            delete props;
+            throw;
+        }
+    }
+
+    bool HMAC_JWKey :: isSymmetric () const
+    {
+        return true;
+    }
+
+    const HMAC_JWKey * HMAC_JWKey :: toHMAC () const
+    {
+        return reinterpret_cast < const HMAC_JWKey * > ( duplicate () );
     }
 
     // get/set symmetric key "k"
     std :: string HMAC_JWKey :: getValue () const
     {
         return props -> getValue ( "k" ) . toString ();
-    }
-
-    void HMAC_JWKey :: setValue ( const std :: string & k )
-    {
-        // TBD - inspect value
-        props -> setValueOrDelete ( "k", JSONValue :: makeString ( k ) );
     }
 
     HMAC_JWKey * HMAC_JWKey :: make ( JSONObject * props )
@@ -58,11 +81,6 @@ namespace ncbi
     }
 
     // "kty" = "oct"
-    HMAC_JWKey :: HMAC_JWKey ( const std :: string & kid )
-        : JWK ( kid, "oct" )
-    {
-    }
-
     HMAC_JWKey :: HMAC_JWKey ( JSONObject * props )
         : JWK ( props )
     {

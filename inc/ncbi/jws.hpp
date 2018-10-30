@@ -69,24 +69,18 @@ namespace ncbi
         const std :: string & validate ( const JSONObject & hdr, const JWS & jws, size_t last_period ) const;
         
         // additional verifiers
+        // duplicates reference when successful
         void addVerifier ( const std :: string & authority_name,
-            const std :: string & alg, HMAC_JWKey * key );
-        void addVerifier ( const std :: string & authority_name,
-            const std :: string & alg, RSAPublic_JWKey * key );
-        void addVerifier ( const std :: string & authority_name,
-            const std :: string & alg, EllipticCurvePublic_JWKey * key );
+            const std :: string & alg, const JWK * key );
         
         // copy construction
         JWSFactory & operator = ( const JWSFactory & fact );
         JWSFactory ( const JWSFactory & fact );
         
         // create a standard factory
+        // duplicates key reference when successful
         JWSFactory ( const std :: string & authority_name,
-            const std :: string & alg, HMAC_JWKey * key );
-        JWSFactory ( const std :: string & authority_name, const std :: string & alg,
-            RSAPrivate_JWKey * signing_key, RSAPublic_JWKey * verify_key );
-        JWSFactory ( const std :: string & authority_name, const std :: string & alg,
-            EllipticCurvePrivate_JWKey * signing_key, EllipticCurvePublic_JWKey * verify_key );
+            const std :: string & alg, const JWK * key );
         ~ JWSFactory ();
         
     private:

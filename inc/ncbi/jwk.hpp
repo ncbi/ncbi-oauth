@@ -36,6 +36,11 @@ namespace ncbi
     // forwards
     class JWKSet;
     class JSONObject;
+    class HMAC_JWKey;
+    class RSAPublic_JWKey;
+    class RSAPrivate_JWKey;
+    class EllipticCurvePublic_JWKey;
+    class EllipticCurvePrivate_JWKey;
 
     // JSON Web Key - RFC 7517
 
@@ -43,7 +48,23 @@ namespace ncbi
     {
     public:
 
-        static JWK * parse ( const std :: string & json_text );
+        // inflate a JWK from JSON text
+        static const JWK * parse ( const std :: string & json_text );
+
+        // questions about key that don't involve looking at values
+        virtual bool forSigning () const;
+        virtual bool forEncryption () const;
+        virtual bool isSymmetric () const;
+        virtual bool isPrivate () const;
+        virtual bool isRSA () const;
+        virtual bool isEllipticCurve () const;
+
+        // safe casts
+        virtual const HMAC_JWKey * toHMAC () const;
+        virtual const RSAPrivate_JWKey * toRSAPrivate () const;
+        virtual const RSAPublic_JWKey * toRSAPublic () const;
+        virtual const EllipticCurvePrivate_JWKey * toEllipticCurvePrivate () const;
+        virtual const EllipticCurvePublic_JWKey * toEllipticCurvePublic () const;
 
         // "kty"
         //  MANDATORY in a JWK (section 4.1)
@@ -58,18 +79,19 @@ namespace ncbi
         // "alg"
         //  identifies the algorithm (section 4.4)
         std :: string getAlg () const;
-        void setAlg ( const std :: string & alg );
 
         // "use"
-        //  only for public keys (section 4.2)
+        //  needed for public keys (section 4.2)
         //  legal values are "sig" (signature) and "enc" (encryption)
         std :: string getUse () const;
-        void setUse ( const std :: string & use );
 
+        // serialize as JSON text
         std :: string toJSON () const;
 
+        // for creating a "readable" JSON text
+        std :: string readableJSON ( unsigned int indent = 0 ) const;
+
         // primitive memory management
-        JWK * duplicate ();
         const JWK * duplicate () const;
         void release () const;
 
@@ -77,7 +99,6 @@ namespace ncbi
 
         virtual ~ JWK ();
 
-        JWK ( const std :: string & kid, const std :: string & kty );
         JWK ( JSONObject * props );
 
         JSONObject * props;
@@ -85,6 +106,190 @@ namespace ncbi
 
         friend class JWKSet;
     };
+
+    class HMAC_JWKey : public JWK
+    {
+    public:
+
+        // make a new symmetric HMAC shared-secret key with randomly generated value
+        //  "key_bits" size of the key in bits - must be multiple of 8
+        //  "use" - "sig" for signing, "enc" for encryption
+        //  "alg" - algorithm id in { "HS256", "HS384", "HS512" }
+        static const HMAC_JWKey * make ( unsigned int key_bits,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
+
+        // JWK overrides
+        virtual bool isSymmetric () const;
+        virtual const HMAC_JWKey * toHMAC () const;
+
+        // get symmetric key "k"
+        std :: string getValue () const;
+
+    private:
+
+        static HMAC_JWKey * make ( JSONObject * props );
+
+        // "kty" = "oct"
+        HMAC_JWKey ( JSONObject * props );
+
+        friend class JWK;
+    };
+
+    class RSAPrivate_JWKey : public JWK
+    {
+    public:
+
+        // make a new asymmetric RSA private key with randomly generated value
+        //  "key_bits" size of the key in bits - must be multiple of 8
+        //  "use" - "sig" for signing, "enc" for encryption
+        //  "alg" - algorithm id in { "RS256", "RS384", "RS512" }
+        static const RSAPrivate_JWKey * make ( unsigned int key_bits,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
+
+        // JWK overrides
+        virtual bool isRSA () const;
+        virtual bool isPrivate () const;
+        virtual const RSAPrivate_JWKey * toRSAPrivate () const;
+        virtual const RSAPublic_JWKey * toRSAPublic () const;
+
+        // modulus "n"
+        std :: string getModulus () const;
+
+        // exponent "e"
+        std :: string getExponent () const;
+
+        // private exponent "d"
+        std :: string getPrivateExponent () const;
+
+        // first prime factor "p"
+        std :: string getFirstPrimeFactor () const;
+
+        // second prime factor "q"
+        std :: string getSecondPrimeFactor () const;
+
+        // first factor CRT exponent "dp"
+        std :: string getFirstFactorCRTExponent () const;
+
+        // second factor CRT exponent "dq"
+        std :: string getSecondFactorCRTExponent () const;
+
+        // first CRT coefficient "qi"
+        std :: string getFirstCRTCoefficient () const;
+
+        // other primes "oth"
+        //  prime factor "r"
+        //  factor CRT exponent "d"
+        //  factor CRT coefficient "t"
+        size_t numOtherPrimes () const;
+        const JSONObject & getOtherPrime ( unsigned int idx ) const;
+
+    private:
+
+        static RSAPrivate_JWKey * make ( JSONObject * props );
+
+        // "kty" = "RSA"
+        RSAPrivate_JWKey ( JSONObject * props );
+
+        friend class JWK;
+    };
+
+    class RSAPublic_JWKey : public JWK
+    {
+    public:
+
+        // derive a public key from private
+        static const RSAPublic_JWKey * derive ( const RSAPrivate_JWKey * priv );
+
+        // JWK overrides
+        virtual bool isRSA () const;
+        virtual const RSAPublic_JWKey * toRSAPublic () const;
+
+        // modulus "n"
+        std :: string getModulus () const;
+
+        // exponent "e"
+        std :: string getExponent () const;
+
+    private:
+
+        static RSAPublic_JWKey * make ( JSONObject * props );
+
+        // "kty" = "RSA"
+        RSAPublic_JWKey ( JSONObject * props );
+
+        friend class JWK;
+    };
+
+
+    class EllipticCurvePrivate_JWKey : public JWK
+    {
+    public:
+
+        // make a new asymmetric EC private key with randomly generated value
+        //  "key_bits" size of the key in bits - must be multiple of 8
+        //  "use" - "sig" for signing, "enc" for encryption
+        //  "alg" - algorithm id in { "ES256", "ES384", "ES512" }
+        static const EllipticCurvePrivate_JWKey * make ( const std :: string & curve,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
+
+        // JWK overrides
+        virtual bool isEllipticCurve () const;
+        virtual bool isPrivate () const;
+        virtual const EllipticCurvePrivate_JWKey * toEllipticCurvePrivate () const;
+        virtual const EllipticCurvePublic_JWKey * toEllipticCurvePublic () const;
+
+        // curve "crv"
+        std :: string getCurve () const;
+
+        // X coordinate "x"
+        std :: string getXCoordinate () const;
+
+        // Y coordinate "y"
+        std :: string getYCoordinate () const;
+
+        // ECC private key "d"
+        std :: string getECCPrivateKey () const;
+
+    private:
+
+        static EllipticCurvePrivate_JWKey * make ( JSONObject * props );
+
+        // "kty" = "EC"
+        EllipticCurvePrivate_JWKey ( JSONObject * props );
+
+        friend class JWK;
+    };
+
+    class EllipticCurvePublic_JWKey : public JWK
+    {
+    public:
+
+        // derive a public key from private
+        static const EllipticCurvePublic_JWKey * derive ( const EllipticCurvePrivate_JWKey * priv );
+
+        // JWK overrides
+        virtual bool isEllipticCurve () const;
+        virtual const EllipticCurvePublic_JWKey * toEllipticCurvePublic () const;
+
+        // curve "crv"
+        std :: string getCurve () const;
+
+        // X coordinate "x"
+        std :: string getXCoordinate () const;
+
+        // Y coordinate "y"
+        std :: string getYCoordinate () const;
+
+    private:
+
+        static EllipticCurvePublic_JWKey * make ( JSONObject * props );
+
+        // "kty" = "EC"
+        EllipticCurvePublic_JWKey ( JSONObject * props );
+
+        friend class JWK;
+    };
+
 
     class JWKSet
     {
@@ -97,11 +302,8 @@ namespace ncbi
 
         std :: vector < std :: string > getKeyIDs () const;
 
-        void addKey ( JWK * jwk );
-
-        JWK & getKey ( const std :: string & kid );
-        const JWK & getKey ( const std :: string & kid ) const;
-
+        void addKey ( const JWK * jwk );
+        const JWK * getKey ( const std :: string & kid ) const;
         void removeKey ( const std :: string & kid );
 
         JWKSet ( const JWKSet & ks );
@@ -113,175 +315,8 @@ namespace ncbi
     private:
 
         JSONObject * kset;
-        std :: map < std :: string, JWK * > map;
+        std :: map < std :: string, const JWK * > map;
     };
-
-    class HMAC_JWKey : public JWK
-    {
-    public:
-
-        static HMAC_JWKey * make ( const std :: string & kid );
-
-        // get/set symmetric key "k"
-        std :: string getValue () const;
-        void setValue ( const std :: string & k );
-
-    private:
-
-        static HMAC_JWKey * make ( JSONObject * props );
-
-        // "kty" = "oct"
-        HMAC_JWKey ( const std :: string & kid );
-        HMAC_JWKey ( JSONObject * props );
-
-        friend class JWK;
-    };
-
-    class RSAPublic_JWKey : public JWK
-    {
-    public:
-
-        static RSAPublic_JWKey * make ( const std :: string & kid, const std :: string & use );
-
-        // modulus "n"
-        std :: string getModulus () const;
-        void setModulus ( const std :: string & n );
-
-        // exponent "e"
-        std :: string getExponent () const;
-        void setExponent ( const std :: string & e );
-
-    private:
-
-        static RSAPublic_JWKey * make ( JSONObject * props );
-
-        // "kty" = "RSA"
-        RSAPublic_JWKey ( const std :: string & kid );
-        RSAPublic_JWKey ( JSONObject * props );
-
-        friend class JWK;
-    };
-
-    class RSAPrivate_JWKey : public JWK
-    {
-    public:
-
-        static RSAPrivate_JWKey * make ( const std :: string & kid );
-
-        // modulus "n"
-        std :: string getModulus () const;
-        void setModulus ( const std :: string & n );
-
-        // exponent "e"
-        std :: string getExponent () const;
-        void setExponent ( const std :: string & e );
-
-        // private exponent "d"
-        std :: string getPrivateExponent () const;
-        void setPrivateExponent ( const std :: string & d );
-
-        // first prime factor "p"
-        std :: string getFirstPrimeFactor () const;
-        void setFirstPrimeFactor ( const std :: string & p );
-
-        // second prime factor "q"
-        std :: string getSecondPrimeFactor () const;
-        void setSecondPrimeFactor ( const std :: string & q );
-
-        // first factor CRT exponent "dp"
-        std :: string getFirstFactorCRTExponent () const;
-        void setFirstFactorCRTExponent ( const std :: string & dp );
-
-        // second factor CRT exponent "dq"
-        std :: string getSecondFactorCRTExponent () const;
-        void setSecondFactorCRTExponent ( const std :: string & dq );
-
-        // first CRT coefficient "qi"
-        std :: string getFirstCRTCoefficient () const;
-        void setFirstCRTCoefficient ( const std :: string & qi );
-
-        // other primes "oth"
-        //  prime factor "r"
-        //  factor CRT exponent "d"
-        //  factor CRT coefficient "t"
-        JSONObject & getOtherPrime ( unsigned int idx ) const;
-        void addOtherPrime ( JSONObject * prime );
-
-    private:
-
-        static RSAPrivate_JWKey * make ( JSONObject * props );
-
-        // "kty" = "RSA"
-        RSAPrivate_JWKey ( const std :: string & kid );
-        RSAPrivate_JWKey ( JSONObject * props );
-
-        friend class JWK;
-    };
-
-
-    class EllipticCurvePublic_JWKey : public JWK
-    {
-    public:
-
-        static EllipticCurvePublic_JWKey * make ( const std :: string & kid, const std :: string & use );
-
-        // curve "crv"
-        std :: string getCurve () const;
-        void setCurve ( const std :: string & crv );
-
-        // X coordinate "x"
-        std :: string getXCoordinate () const;
-        void setXCoordinate ( const std :: string & x );
-
-        // Y coordinate "y"
-        std :: string getYCoordinate () const;
-        void setYCoordinate ( const std :: string & y );
-
-    private:
-
-        static EllipticCurvePublic_JWKey * make ( JSONObject * props );
-
-        // "kty" = "EC"
-        EllipticCurvePublic_JWKey ( const std :: string & kid );
-        EllipticCurvePublic_JWKey ( JSONObject * props );
-
-        friend class JWK;
-    };
-
-
-    class EllipticCurvePrivate_JWKey : public JWK
-    {
-    public:
-
-        static EllipticCurvePrivate_JWKey * make ( const std :: string & kid );
-
-        // curve "crv"
-        std :: string getCurve () const;
-        void setCurve ( const std :: string & crv );
-
-        // X coordinate "x"
-        std :: string getXCoordinate () const;
-        void setXCoordinate ( const std :: string & x );
-
-        // Y coordinate "y"
-        std :: string getYCoordinate () const;
-        void setYCoordinate ( const std :: string & y );
-
-        // ECC private key "d"
-        std :: string getECCPrivateKey () const;
-        void setECCPrivateKey ( const std :: string & d );
-
-    private:
-
-        static EllipticCurvePrivate_JWKey * make ( JSONObject * props );
-
-        // "kty" = "EC"
-        EllipticCurvePrivate_JWKey ( const std :: string & kid );
-        EllipticCurvePrivate_JWKey ( JSONObject * props );
-
-        friend class JWK;
-    };
-
 }
 
 #endif /* _hpp_ncbi_oauth_jwk_ */

@@ -34,61 +34,48 @@
 
 namespace ncbi
 {
-    RSAPublic_JWKey * RSAPublic_JWKey :: make ( const std :: string & kid, const std :: string & use )
+
+    const RSAPrivate_JWKey * RSAPrivate_JWKey :: make ( unsigned int key_bits,
+        const std :: string & use, const std :: string & alg, const std :: string & kid )
     {
-        RSAPublic_JWKey * key = new RSAPublic_JWKey ( kid );
+        JSONObject * props = JSONObject :: make ();
         try
         {
-            key -> setUse ( use );
+            props -> setValueOrDelete ( "kty", JSONValue :: makeString ( "RSA" ) );
+            props -> setValueOrDelete ( "kid", JSONValue :: makeString ( kid ) );
+            props -> setValueOrDelete ( "alg", JSONValue :: makeString ( alg ) );
+            props -> setValueOrDelete ( "use", JSONValue :: makeString ( use ) );
+
+            // TBD - create key and get properties
+
+            return make ( props );
         }
         catch ( ... )
         {
-            key -> release ();
+            props -> invalidate ();
+            delete props;
             throw;
         }
-        return key;
     }
 
-    // modulus "n"
-    std :: string RSAPublic_JWKey :: getModulus () const
+    bool RSAPrivate_JWKey :: isRSA () const
     {
-        return props -> getValue ( "n" ) . toString ();
+        return true;
     }
 
-    void RSAPublic_JWKey :: setModulus ( const std :: string & n )
+    bool RSAPrivate_JWKey :: isPrivate () const
     {
-        props -> setValueOrDelete ( "n", JSONValue :: makeString ( n ) );
+        return true;
     }
 
-    // exponent "e"
-    std :: string RSAPublic_JWKey :: getExponent () const
+    const RSAPrivate_JWKey * RSAPrivate_JWKey :: toRSAPrivate () const
     {
-        return props -> getValue ( "e" ) . toString ();
+        return reinterpret_cast < const RSAPrivate_JWKey * > ( duplicate () );
     }
 
-    void RSAPublic_JWKey :: setExponent ( const std :: string & e )
+    const RSAPublic_JWKey * RSAPrivate_JWKey :: toRSAPublic () const
     {
-        props -> setValueOrDelete ( "e", JSONValue :: makeString ( e ) );
-    }
-
-    RSAPublic_JWKey * RSAPublic_JWKey :: make ( JSONObject * props )
-    {
-        return new RSAPublic_JWKey ( props );
-    }
-
-    // "kty" = "RSA"
-    RSAPublic_JWKey :: RSAPublic_JWKey ( const std :: string & kid )
-        : JWK ( kid, "RSA" )
-    {
-    }
-
-    RSAPublic_JWKey :: RSAPublic_JWKey ( JSONObject * props )
-        : JWK ( props )
-    {
-    }
-
-    RSAPrivate_JWKey * RSAPrivate_JWKey :: make ( const std :: string & kid )
-    {
+        return RSAPublic_JWKey :: derive ( this );
     }
 
     // modulus "n"
@@ -97,20 +84,10 @@ namespace ncbi
         return props -> getValue ( "n" ) . toString ();
     }
 
-    void RSAPrivate_JWKey :: setModulus ( const std :: string & n )
-    {
-        props -> setValueOrDelete ( "n", JSONValue :: makeString ( n ) );
-    }
-
     // exponent "e"
     std :: string RSAPrivate_JWKey :: getExponent () const
     {
         return props -> getValue ( "e" ) . toString ();
-    }
-
-    void RSAPrivate_JWKey :: setExponent ( const std :: string & e )
-    {
-        props -> setValueOrDelete ( "e", JSONValue :: makeString ( e ) );
     }
 
     // private exponent "d"
@@ -119,20 +96,10 @@ namespace ncbi
         return props -> getValue ( "d" ) . toString ();
     }
 
-    void RSAPrivate_JWKey :: setPrivateExponent ( const std :: string & d )
-    {
-        props -> setValueOrDelete ( "d", JSONValue :: makeString ( d ) );
-    }
-
     // first prime factor "p"
     std :: string RSAPrivate_JWKey :: getFirstPrimeFactor () const
     {
         return props -> getValue ( "p" ) . toString ();
-    }
-
-    void RSAPrivate_JWKey :: setFirstPrimeFactor ( const std :: string & p )
-    {
-        props -> setValueOrDelete ( "p", JSONValue :: makeString ( p ) );
     }
 
     // second prime factor "q"
@@ -141,20 +108,10 @@ namespace ncbi
         return props -> getValue ( "q" ) . toString ();
     }
 
-    void RSAPrivate_JWKey :: setSecondPrimeFactor ( const std :: string & q )
-    {
-        props -> setValueOrDelete ( "q", JSONValue :: makeString ( q ) );
-    }
-
     // first factor CRT exponent "dp"
     std :: string RSAPrivate_JWKey :: getFirstFactorCRTExponent () const
     {
         return props -> getValue ( "dp" ) . toString ();
-    }
-
-    void RSAPrivate_JWKey :: setFirstFactorCRTExponent ( const std :: string & dp )
-    {
-        props -> setValueOrDelete ( "dp", JSONValue :: makeString ( dp ) );
     }
 
     // second factor CRT exponent "dq"
@@ -163,47 +120,100 @@ namespace ncbi
         return props -> getValue ( "dq" ) . toString ();
     }
 
-    void RSAPrivate_JWKey :: setSecondFactorCRTExponent ( const std :: string & dq )
-    {
-        props -> setValueOrDelete ( "dq", JSONValue :: makeString ( dq ) );
-    }
-
     // first CRT coefficient "qi"
     std :: string RSAPrivate_JWKey :: getFirstCRTCoefficient () const
     {
         return props -> getValue ( "qi" ) . toString ();
     }
 
-    void RSAPrivate_JWKey :: setFirstCRTCoefficient ( const std :: string & qi )
-    {
-        props -> setValueOrDelete ( "qi", JSONValue :: makeString ( qi ) );
-    }
-
     // other primes "oth"
     //  prime factor "r"
     //  factor CRT exponent "d"
     //  factor CRT coefficient "t"
-    JSONObject & RSAPrivate_JWKey :: getOtherPrime ( unsigned int idx ) const
+    size_t RSAPrivate_JWKey :: numOtherPrimes () const
     {
-        throw "aaah";
+        if ( props -> exists ( "oth" ) )
+        {
+            try
+            {
+                return props -> getValue ( "oth" ) . toArray () . count ();
+            }
+            catch ( ... )
+            {
+            }
+        }
+        return 0;
     }
 
-    void RSAPrivate_JWKey :: addOtherPrime ( JSONObject * prime )
+    const JSONObject & RSAPrivate_JWKey :: getOtherPrime ( unsigned int idx ) const
     {
+        return props -> getValue ( "oth" ) . toArray () . getValue ( idx ) . toObject ();
     }
 
     RSAPrivate_JWKey * RSAPrivate_JWKey :: make ( JSONObject * props )
     {
+        // TBD - check kty, alg, n, e
+        //  d, p, q, dp, dq, qi, oth[].r, oth[].d, oth[].t
         return new RSAPrivate_JWKey ( props );
     }
 
     // "kty" = "RSA"
-    RSAPrivate_JWKey :: RSAPrivate_JWKey ( const std :: string & kid )
-        : JWK ( kid, "RSA" )
+    RSAPrivate_JWKey :: RSAPrivate_JWKey ( JSONObject * props )
+        : JWK ( props )
     {
     }
 
-    RSAPrivate_JWKey :: RSAPrivate_JWKey ( JSONObject * props )
+
+    const RSAPublic_JWKey * RSAPublic_JWKey :: derive ( const RSAPrivate_JWKey * priv )
+    {
+        JSONObject * props = JSONObject :: make ();
+        try
+        {
+            props -> setValueOrDelete ( "kty", JSONValue :: makeString ( priv -> getType () ) );
+            props -> setValueOrDelete ( "kid", JSONValue :: makeString ( priv -> getID () ) );
+            props -> setValueOrDelete ( "alg", JSONValue :: makeString ( priv -> getAlg () ) );
+            props -> setValueOrDelete ( "n", JSONValue :: makeString ( priv -> getModulus () ) );
+            props -> setValueOrDelete ( "e", JSONValue :: makeString ( priv -> getExponent () ) );
+            return make ( props );
+        }
+        catch ( ... )
+        {
+            props -> invalidate ();
+            delete props;
+            throw;
+        }
+    }
+
+    bool RSAPublic_JWKey :: isRSA () const
+    {
+        return true;
+    }
+
+    const RSAPublic_JWKey * RSAPublic_JWKey :: toRSAPublic () const
+    {
+        return reinterpret_cast < const RSAPublic_JWKey * > ( duplicate () );
+    }
+
+    // modulus "n"
+    std :: string RSAPublic_JWKey :: getModulus () const
+    {
+        return props -> getValue ( "n" ) . toString ();
+    }
+
+    // exponent "e"
+    std :: string RSAPublic_JWKey :: getExponent () const
+    {
+        return props -> getValue ( "e" ) . toString ();
+    }
+
+    RSAPublic_JWKey * RSAPublic_JWKey :: make ( JSONObject * props )
+    {
+        // TBD - check kty, alg, n, e
+        return new RSAPublic_JWKey ( props );
+    }
+
+    // "kty" = "RSA"
+    RSAPublic_JWKey :: RSAPublic_JWKey ( JSONObject * props )
         : JWK ( props )
     {
     }

@@ -34,7 +34,7 @@
 
 namespace ncbi
 {
-    JWK * JWK :: parse ( const std :: string & json_text )
+    const JWK * JWK :: parse ( const std :: string & json_text )
     {
         JWK * jwk = nullptr;
 
@@ -48,17 +48,17 @@ namespace ncbi
                 jwk = HMAC_JWKey :: make ( props );
             else if ( kty . compare ( "RSA" ) == 0 )
             {
-                if ( props -> exists ( "use" ) )
-                    jwk = RSAPublic_JWKey :: make ( props );
-                else
+                if ( props -> exists ( "d" ) )
                     jwk = RSAPrivate_JWKey :: make ( props );
+                else
+                    jwk = RSAPublic_JWKey :: make ( props );
             }
             else if ( kty . compare ( "ES" ) == 0 )
             {
-                if ( props -> exists ( "use" ) )
-                    jwk = EllipticCurvePublic_JWKey :: make ( props );
-                else
+                if ( props -> exists ( "d" ) )
                     jwk = EllipticCurvePrivate_JWKey :: make ( props );
+                else
+                    jwk = EllipticCurvePublic_JWKey :: make ( props );
             }
             else
             {
@@ -76,6 +76,76 @@ namespace ncbi
 
         return jwk;
     }
+
+    bool JWK :: forSigning () const
+    {
+        try
+        {
+            return props -> getValue ( "use" ) . toString () . compare ( "sig" ) == 0;
+        }
+        catch ( ... )
+        {
+        }
+        return false;
+    }
+
+    bool JWK :: forEncryption () const
+    {
+        try
+        {
+            return props -> getValue ( "use" ) . toString () . compare ( "enc" ) == 0;
+        }
+        catch ( ... )
+        {
+        }
+        return false;
+    }
+
+    bool JWK :: isSymmetric () const
+    {
+        return false;
+    }
+
+    bool JWK :: isPrivate () const
+    {
+        return false;
+    }
+
+    bool JWK :: isRSA () const
+    {
+        return false;
+    }
+
+    bool JWK :: isEllipticCurve () const
+    {
+        return false;
+    }
+
+    const HMAC_JWKey * JWK :: toHMAC () const
+    {
+        throw JWTException ( __func__, __LINE__, "invalid cast of JWK" );
+    }
+
+    const RSAPrivate_JWKey * JWK :: toRSAPrivate () const
+    {
+        throw JWTException ( __func__, __LINE__, "invalid cast of JWK" );
+    }
+
+    const RSAPublic_JWKey * JWK :: toRSAPublic () const
+    {
+        throw JWTException ( __func__, __LINE__, "invalid cast of JWK" );
+    }
+
+    const EllipticCurvePrivate_JWKey * JWK :: toEllipticCurvePrivate () const
+    {
+        throw JWTException ( __func__, __LINE__, "invalid cast of JWK" );
+    }
+
+    const EllipticCurvePublic_JWKey * JWK :: toEllipticCurvePublic () const
+    {
+        throw JWTException ( __func__, __LINE__, "invalid cast of JWK" );
+    }
+
 
     // "kty"
     //  MANDATORY in a JWK (section 4.1)
@@ -100,12 +170,6 @@ namespace ncbi
         return props -> getValue ( "alg" ) . toString ();
     }
 
-    void JWK :: setAlg ( const std :: string & alg )
-    {
-        // TBD - check "alg" against known algorithms
-        props -> setValueOrDelete ( "alg", JSONValue :: makeString ( alg ) );
-    }
-
     // "use"
     //  only for public keys (section 4.2)
     //  legal values are "sig" (signature) and "enc" (encryption)
@@ -114,32 +178,17 @@ namespace ncbi
         return props -> getValue ( "use" ) . toString ();
     }
 
-    void JWK :: setUse ( const std :: string & use )
-    {
-        if ( use . compare ( "sig" ) != 0 &&
-             use . compare ( "enc" ) != 0 )
-        {
-            std :: string what ( "illegal usa value for JWK: '" );
-            what += use;
-            what += "'";
-            throw JWTException ( __func__, __LINE__, what . c_str () );
-        }
-
-        props -> setValueOrDelete ( "use", JSONValue :: makeString ( use ) );
-    }
-
     std :: string JWK :: toJSON () const
     {
         return props -> toJSON ();
     }
 
-    // primitive memory management
-    JWK * JWK :: duplicate ()
+    std :: string JWK :: readableJSON ( unsigned int indent ) const
     {
-        ++ refcount;
-        return this;
+        return props -> readableJSON ( indent );
     }
 
+    // primitive memory management
     const JWK * JWK :: duplicate () const
     {
         ++ refcount;
@@ -156,15 +205,6 @@ namespace ncbi
     {
         props -> invalidate ();
         delete props;
-    }
-
-    JWK :: JWK ( const std :: string & kid, const std :: string & kty )
-        : props ( nullptr )
-        , refcount ( 1 )
-    {
-        props = JSONObject :: make ();
-        props -> setFinalValueOrDelete ( "kty", JSONValue :: makeString ( kty ) );
-        props -> setFinalValueOrDelete ( "kid", JSONValue :: makeString ( kid ) );
     }
 
     JWK :: JWK ( JSONObject * _props )
@@ -204,7 +244,7 @@ namespace ncbi
         return ids;
     }
 
-    void JWKSet :: addKey ( JWK * jwk )
+    void JWKSet :: addKey ( const JWK * jwk )
     {
         if ( jwk != nullptr )
         {
@@ -232,7 +272,7 @@ namespace ncbi
         }
     }
 
-    JWK & JWKSet :: getKey ( const std :: string & kid )
+    const JWK * JWKSet :: getKey ( const std :: string & kid ) const
     {
         auto it = map . find ( kid );
         if ( it == map . end () )
@@ -243,21 +283,7 @@ namespace ncbi
             throw JWTException ( __func__, __LINE__, what . c_str () );
         }
 
-        return * it -> second;
-    }
-
-    const JWK & JWKSet :: getKey ( const std :: string & kid ) const
-    {
-        auto it = map . find ( kid );
-        if ( it == map . end () )
-        {
-            std :: string what ( "key not found: id = '" );
-            what += kid;
-            what += "'";
-            throw JWTException ( __func__, __LINE__, what . c_str () );
-        }
-
-        return * it -> second;
+        return it -> second;
     }
 
     void JWKSet :: removeKey ( const std :: string & kid )
@@ -273,7 +299,7 @@ namespace ncbi
         {
             for ( auto it = ks . map . begin (); it != ks . map . end (); )
             {
-                JWK * jwk = it -> second -> duplicate ();
+                const JWK * jwk = it -> second -> duplicate ();
                 try
                 {
                     map . emplace ( it -> first, jwk );
@@ -305,7 +331,7 @@ namespace ncbi
         {
             for ( auto it = ks . map . begin (); it != ks . map . end (); )
             {
-                JWK * jwk = it -> second -> duplicate ();
+                const JWK * jwk = it -> second -> duplicate ();
                 try
                 {
                     map . emplace ( it -> first, jwk );
@@ -344,4 +370,3 @@ namespace ncbi
     }
 
 }
-

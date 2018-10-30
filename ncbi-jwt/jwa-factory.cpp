@@ -74,7 +74,7 @@ namespace ncbi
     }
     
     JWAKeyHolder :: JWAKeyHolder ( const std :: string & _nam,
-            const std :: string & _alg, JWK * _key )
+            const std :: string & _alg, const JWK * _key )
         : nam ( _nam )
         , alg ( _alg )
         , key ( nullptr )
@@ -95,7 +95,7 @@ namespace ncbi
      */
 
     JWASigner :: JWASigner ( const std :: string & name,
-            const std :: string & alg, JWK * key )
+            const std :: string & alg, const JWK * key )
         : JWAKeyHolder ( name, alg, key )
     {
     }
@@ -107,7 +107,7 @@ namespace ncbi
      */
 
     JWAVerifier :: JWAVerifier ( const std :: string & name,
-            const std :: string & alg, JWK * key )
+            const std :: string & alg, const JWK * key )
         : JWAKeyHolder ( name, alg, key )
     {
     }
@@ -137,10 +137,18 @@ namespace ncbi
      */
 
     JWASigner * JWAFactory :: makeSigner ( const std :: string & name,
-            const std :: string & alg, JWK * key ) const
+            const std :: string & alg, const JWK * key ) const
     {
         // NB - expect this to be called after static constructors run
         assert ( maps != nullptr );
+
+        // check the key
+        if ( key == nullptr )
+            throw JWTException ( __func__, __LINE__, "NULL key reference" );
+        if ( ! key -> forSigning () )
+            throw JWTException ( __func__, __LINE__, "invalid key for signing" );
+        if ( ! key -> isSymmetric () && ! key -> isPrivate () )
+            throw JWTException ( __func__, __LINE__, "invalid key for signing" );
 
         // find factory factory
         auto it = const_cast < const Maps * > ( maps ) -> signer_facts . find ( alg );
@@ -161,10 +169,16 @@ namespace ncbi
     }
     
     JWAVerifier * JWAFactory :: makeVerifier ( const std :: string & name,
-            const std :: string & alg, JWK * key ) const
+            const std :: string & alg, const JWK * key ) const
     {
         // NB - expect this to be called after static constructors run
         assert ( maps != nullptr );
+
+        // check the key
+        if ( key == nullptr )
+            throw JWTException ( __func__, __LINE__, "NULL key reference" );
+        if ( ! key -> forSigning () )
+            throw JWTException ( __func__, __LINE__, "invalid key for signature verification" );
 
         // find factory factory
         auto it = const_cast < const Maps * > ( maps ) -> verifier_facts . find ( alg );

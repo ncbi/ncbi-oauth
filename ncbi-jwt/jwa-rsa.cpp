@@ -124,7 +124,7 @@ namespace ncbi
             return new RSA_Signer ( nam, alg, key, md_type );
         }
 
-        void readKey ( RSAPrivate_JWKey * key )
+        void readKey ( const RSAPrivate_JWKey * key )
         {
             mbedtls_mpi N, P, Q, D, E;
             mbedtls_mpi_init ( & N );
@@ -171,7 +171,7 @@ namespace ncbi
         }
         
         RSA_Signer ( const std :: string & name, const std :: string & alg,
-                     JWK * key, mbedtls_md_type_t type )
+                     const JWK * key, mbedtls_md_type_t type )
             : JWASigner ( name, alg, key )
             , rsa_ctx ( rsa_cctx )
             , sha_ctx ( sha_cctx )
@@ -193,7 +193,17 @@ namespace ncbi
                 throw MBEDTLSException ( __func__, __LINE__, status, "failed to setup RSA/SHA context" );
 
             // we are supposed to have validated this as an RSA key
-            readKey ( reinterpret_cast < RSAPrivate_JWKey * > ( key ) );
+            const RSAPrivate_JWKey * priv = key -> toRSAPrivate ();
+            try
+            {
+                readKey ( priv );
+            }
+            catch ( ... )
+            {
+                priv -> release ();
+                throw;
+            }
+            priv -> release ();
         }
         
         ~ RSA_Signer ()
@@ -251,7 +261,7 @@ namespace ncbi
             return new RSA_Verifier ( nam, alg, key, md_type );
         }
 
-        void readKey ( RSAPublic_JWKey * key )
+        void readKey ( const RSAPublic_JWKey * key )
         {
             mbedtls_mpi N, E;
             mbedtls_mpi_init ( & N );
@@ -286,7 +296,7 @@ namespace ncbi
         }
         
         RSA_Verifier ( const std :: string & name, const std :: string & alg,
-                       JWK * key, mbedtls_md_type_t type )
+                       const JWK * key, mbedtls_md_type_t type )
             : JWAVerifier ( name, alg, key )
             , rsa_ctx ( rsa_cctx )
             , sha_ctx ( sha_cctx )
@@ -308,7 +318,17 @@ namespace ncbi
                 throw MBEDTLSException ( __func__, __LINE__, status, "failed to setup RSA/SHA context" );
 
             // we are supposed to have validated this as an RSA key
-            readKey ( reinterpret_cast < RSAPublic_JWKey * > ( key ) );
+            const RSAPublic_JWKey * pub = key -> toRSAPublic ();
+            try
+            {
+                readKey ( pub );
+            }
+            catch ( ... )
+            {
+                pub -> release ();
+                throw;
+            }
+            pub -> release ();
         }
         
         ~ RSA_Verifier ()
@@ -326,7 +346,7 @@ namespace ncbi
     struct RSA_SignerFact : JWASignerFact
     {
         virtual JWASigner * make ( const std :: string & name,
-            const std :: string & alg, JWK * key ) const
+            const std :: string & alg, const JWK * key ) const
         {
             if ( key -> getType () . compare ( "RS" ) != 0 )
                 throw JWTException ( __func__, __LINE__, "bad key type" );
@@ -346,7 +366,7 @@ namespace ncbi
     struct RSA_VerifierFact : JWAVerifierFact
     {
         virtual JWAVerifier * make ( const std :: string & name,
-            const std :: string & alg, JWK * key ) const
+            const std :: string & alg, const JWK * key ) const
         {
             if ( key -> getType () . compare ( "RS" ) != 0 )
                 throw JWTException ( __func__, __LINE__, "bad key type" );
