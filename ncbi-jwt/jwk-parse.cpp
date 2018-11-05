@@ -184,7 +184,7 @@ namespace ncbi
 
             // this should be an "-----END " ... line
             size_t end_label = pem_text . find ( "END ", key_end + 5 );
-            if ( end_label == std :: string :: npos )
+            if ( end_label != key_end + 5 )
                 throw JWTException ( __func__, __LINE__, "invalid PEM text" );
 
             // the start of the ending label
@@ -217,7 +217,7 @@ namespace ncbi
                 // learn whether the key claims to be public or private
                 bool key_is_public = false;
 
-                int status;
+                int status = 0;
                 mbedtls_pk_context pk;
                 mbedtls_pk_init ( & pk );
                 try
@@ -229,8 +229,9 @@ namespace ncbi
                         // NB - mbedtls states
                         //  "Avoid calling mbedtls_pem_read_buffer() on non-null-terminated string"
                         //  so always pass "c_str()" rather than "data()"
+                        // NB - incredibly, the key size they want passed in must include the NUL!!!
                         status = mbedtls_pk_parse_key ( & pk,
-                            ( const unsigned char * ) key_text . c_str (), key_text . size (),
+                            ( const unsigned char * ) key_text . c_str (), key_text . size () + 1,
                             ( const unsigned char * ) pwd . c_str (), pwd . size () );
                     }
                     else if ( label . compare ( "RSA PUBLIC" ) == 0 ||
@@ -242,8 +243,9 @@ namespace ncbi
                         // NB - mbedtls states
                         //  "Avoid calling mbedtls_pem_read_buffer() on non-null-terminated string"
                         //  so always pass "c_str()" rather than "data()"
+                        // NB - incredibly, the key size they want passed in must include the NUL!!!
                         status = mbedtls_pk_parse_public_key ( & pk,
-                            ( const unsigned char * ) key_text . c_str (), key_text . size () );
+                            ( const unsigned char * ) key_text . c_str (), key_text . size () + 1 );
                     }
                     else
                     {
@@ -291,7 +293,7 @@ namespace ncbi
                                     if ( status != 0 )
                                     {
                                         throw MBEDTLSException ( __func__, __LINE__, status,
-                                                                 "mbedtls_rsa_export failed to obtain key parameters" );
+                                            "mbedtls_rsa_export failed to obtain key parameters" );
                                     }
 
                                     // write the key parameters into JSON
@@ -309,13 +311,13 @@ namespace ncbi
                                     if ( status != 0 )
                                     {
                                         throw MBEDTLSException ( __func__, __LINE__, status,
-                                                                 "mbedtls_rsa_export failed to obtain key parameters" );
+                                            "mbedtls_rsa_export failed to obtain key parameters" );
                                     }
                                     status = mbedtls_rsa_export_crt ( rsa, & DP, & DQ, & QP );
                                     if ( status != 0 )
                                     {
                                         throw MBEDTLSException ( __func__, __LINE__, status,
-                                                                 "mbedtls_rsa_export_crt failed to obtain key parameters" );
+                                            "mbedtls_rsa_export_crt failed to obtain key parameters" );
                                     }
 
                                     // write the key parameters into JSON
