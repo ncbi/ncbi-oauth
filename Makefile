@@ -122,7 +122,7 @@ $(LIBDIR)/libmbedcrypto.a: mbedtls/libmbedcrypto.a
 	cp $< $@
 
 mbedtls/libmbedcrypto.a:
-	$(MAKE) -C mbedtls CFLAGS=-I../inc libmbedcrypto.a
+	$(MAKE) -C mbedtls DEBUG=1 CFLAGS=-I../inc libmbedcrypto.a
 
 $(LIBDIR)/libmbedx509.a: mbedtls/libmbedx509.a
 	cp $< $@
