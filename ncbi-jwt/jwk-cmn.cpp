@@ -34,49 +34,6 @@
 
 namespace ncbi
 {
-    const JWK * JWK :: parse ( const std :: string & json_text )
-    {
-        JWK * jwk = nullptr;
-
-        // TBD - add limits : keys have known depths
-        JSONObject * props = JSONObject :: parse ( json_text );
-        try
-        {
-            // examine the type
-            std :: string kty = props -> getValue ( "kty" ) . toString ();
-            if ( kty . compare ( "oct" ) == 0 )
-                jwk = HMAC_JWKey :: make ( props );
-            else if ( kty . compare ( "RSA" ) == 0 )
-            {
-                if ( props -> exists ( "d" ) )
-                    jwk = RSAPrivate_JWKey :: make ( props );
-                else
-                    jwk = RSAPublic_JWKey :: make ( props );
-            }
-            else if ( kty . compare ( "ES" ) == 0 )
-            {
-                if ( props -> exists ( "d" ) )
-                    jwk = EllipticCurvePrivate_JWKey :: make ( props );
-                else
-                    jwk = EllipticCurvePublic_JWKey :: make ( props );
-            }
-            else
-            {
-                std :: string what ( "bad kty value for JWK: '" );
-                what += kty;
-                what += "'";
-                throw JWTException ( __func__, __LINE__, what . c_str () );
-            }
-        }
-        catch ( ... )
-        {
-            delete props;
-            throw;
-        }
-
-        return jwk;
-    }
-
     bool JWK :: forSigning () const
     {
         try

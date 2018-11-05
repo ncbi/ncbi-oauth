@@ -27,6 +27,7 @@
 #ifndef _hpp_ncbi_oauth_jwk_
 #define _hpp_ncbi_oauth_jwk_
 
+#include <atomic>
 #include <string>
 #include <vector>
 #include <map>
@@ -50,6 +51,24 @@ namespace ncbi
 
         // inflate a JWK from JSON text
         static const JWK * parse ( const std :: string & json_text );
+
+        // inflate from PEM text format
+        static const JWK * parsePEM ( const std :: string & pem_text,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
+        static const JWK * parsePEM ( const std :: string & pem_text, const std :: string & pwd,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
+
+        // inflate from DER format
+        static const JWK * parseDER ( const void * key, size_t key_size,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
+        static const JWK * parseDER ( const void * key, size_t key_size, const std :: string & pwd,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
+
+        // inflate from PEM or DER format
+        static const JWK * parsePEMorDER ( const void * key, size_t key_size,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
+        static const JWK * parsePEMorDER ( const void * key, size_t key_size, const std :: string & pwd,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
 
         // questions about key that don't involve looking at values
         virtual bool forSigning () const;

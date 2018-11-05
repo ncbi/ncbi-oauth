@@ -110,7 +110,6 @@ namespace ncbi
     EllipticCurvePrivate_JWKey :: EllipticCurvePrivate_JWKey ( JSONObject * props )
         : JWK ( props )
     {
-        return nullptr;
     }
 
 

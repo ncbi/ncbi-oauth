@@ -72,12 +72,27 @@ namespace ncbi
         margin += "    ";
 
         const char* sep = "\n";
+
+        // detect the apparent longest member size
+        // note that this will fail with non-ASCII
+        size_t longest_mbr_len = 0;
+        for ( auto it = members . begin (); it != members . end (); ++ it )
+        {
+            JSONValue * value = it -> second . second;
+            if ( ! value -> isArray () && ! value -> isObject () )
+            {
+                std :: string key =  it -> first;
+                // TBD - count the length in characters, not size in bytes
+                if ( key . size () > longest_mbr_len )
+                    longest_mbr_len = key . size ();
+            }
+        }
         
         for ( auto it = members . begin (); it != members . end (); ++ it )
         {
             std :: string key =  it -> first;
             
-            JSONValue* value = it -> second . second;
+            JSONValue * value = it -> second . second;
             
             to_string += sep;
             to_string += margin;
@@ -94,6 +109,9 @@ namespace ncbi
             }
             else
             {
+                for ( size_t s = key . size (); s < longest_mbr_len; ++ s )
+                    to_string += ' ';
+                
                 to_string += " : " + value -> toJSON ();
             }
             

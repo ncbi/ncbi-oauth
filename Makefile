@@ -68,6 +68,7 @@ LIBJWTSRC =            \
 	jwk-hmac           \
 	jwk-rsa            \
 	jwk-ec             \
+	jwk-parse          \
 	jwk-cmn            \
 	jwa-none           \
 	jwa-hmac           \
@@ -93,6 +94,7 @@ LIBTSTJWTSRC =         \
 	jwk-hmac           \
 	jwk-rsa            \
 	jwk-ec             \
+	jwk-parse          \
 	jwk-cmn            \
 	jwa-none           \
 	jwa-hmac           \

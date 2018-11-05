@@ -56,27 +56,12 @@ namespace ncbi
             
         // assume that the header has been filled out to the payload's content
         // set the "alg" property in header
-        JSONValue * alg = JSONValue :: makeString ( signer -> algorithm () );
-        try
-        {
-            hdr . setValue ( "alg", alg );
-            std :: string signing_kid = signer -> keyID ();
-            JSONValue * kid = JSONValue :: makeString ( signing_kid );
-            try
-            {
-                hdr . setValue ( "kid", kid );
-            }
-            catch ( ... )
-            {
-                delete kid;
-                throw;
-            }
-        }
-        catch ( ... )
-        {
-            delete alg;
-            throw;
-        }
+        hdr . setValueOrDelete ( "alg", JSONValue :: makeString ( signer -> algorithm () ) );
+
+        // set the "kid" property
+        std :: string signing_kid = signer -> keyID ();
+        if ( ! signing_kid . empty () )
+            hdr . setValueOrDelete ( "kid", JSONValue :: makeString ( signing_kid ) );
 
         // scope trickery
         JWS jws;
@@ -84,19 +69,6 @@ namespace ncbi
             {
                 // convert the header to text
                 std :: string hdr_json = hdr . toJSON ();
-
-#if JWT_TESTING
-        std :: cout
-            << "  JOSE Header:\n"
-            << "    "
-            << hdr_json
-            << '\n'
-            << "  JWT Payload:\n"
-            << "    "
-            << std :: string ( ( const char * ) payload, bytes )
-            << '\n'
-            ;
-#endif
 
                 // encode the header with base64url
                 jws = encodeBase64URL ( hdr_json . data (), hdr_json . size () );

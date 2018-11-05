@@ -57,13 +57,14 @@ namespace ncbi
         return JWTException ( func, line, what . c_str () );
     }
 
-    static void mpiRead ( mbedtls_mpi & x, const std :: string & val )
+    static
+    void mpiRead ( mbedtls_mpi & mpi, const std :: string & val )
     {
         // the string is in base64url encoding
         Base64Payload raw = decodeBase64URL ( val );
 
         // presumably, it can just be read into the multi-precision number
-        int status = mbedtls_mpi_read_binary ( & x, raw . data (), raw . size () );
+        int status = mbedtls_mpi_read_binary ( & mpi, ( const unsigned char * ) raw . data (), raw . size () );
         if ( status != 0 )
             throw MBEDTLSException ( __func__, __LINE__, status, "failed to read RSA key data" );
     }
@@ -348,7 +349,7 @@ namespace ncbi
         virtual JWASigner * make ( const std :: string & name,
             const std :: string & alg, const JWK * key ) const
         {
-            if ( key -> getType () . compare ( "RS" ) != 0 )
+            if ( key -> getType () . compare ( "RSA" ) != 0 )
                 throw JWTException ( __func__, __LINE__, "bad key type" );
 
             return new RSA_Signer ( name, alg, key, md_type );
@@ -368,7 +369,7 @@ namespace ncbi
         virtual JWAVerifier * make ( const std :: string & name,
             const std :: string & alg, const JWK * key ) const
         {
-            if ( key -> getType () . compare ( "RS" ) != 0 )
+            if ( key -> getType () . compare ( "RSA" ) != 0 )
                 throw JWTException ( __func__, __LINE__, "bad key type" );
 
             return new RSA_Verifier ( name, alg, key, md_type );
