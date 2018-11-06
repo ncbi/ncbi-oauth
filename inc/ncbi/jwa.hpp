@@ -109,6 +109,8 @@ namespace ncbi
         void registerSignerFact ( const std :: string & alg, JWASignerFact * fact );
         void registerVerifierFact ( const std :: string & alg, JWAVerifierFact * fact );
 
+        bool acceptJWKAlgorithm ( const std :: string & alg ) const;
+
         JWAFactory ();
         ~ JWAFactory ();
         

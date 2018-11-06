@@ -116,6 +116,9 @@ namespace ncbi
 
     protected:
 
+        // check common JWK properties before making object
+        static void checkProperties ( const JSONObject * props );
+
         virtual ~ JWK ();
 
         JWK ( JSONObject * props );

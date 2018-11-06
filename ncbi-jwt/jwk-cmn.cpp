@@ -158,6 +158,29 @@ namespace ncbi
             delete this;
     }
 
+    void JWK :: checkProperties ( const JSONObject * props )
+    {
+        if ( props == nullptr )
+            throw JWTException ( __func__, __LINE__, "null properties object" );
+
+        if ( props -> exists ( "use" ) )
+        {
+            std :: string use = props -> getValue ( "use" ) . toString ();
+            if ( use . compare ( "sig" ) != 0 &&
+                 use . compare ( "enc" ) != 0 )
+            {
+                throw JWTException ( __func__, __LINE__, "illegal 'use' property value" );
+            }
+        }
+
+        if ( props -> exists ( "alg" ) )
+        {
+            std :: string alg = props -> getValue ( "alg" ) . toString ();
+            if ( ! gJWAFactory . acceptJWKAlgorithm ( alg ) )
+                throw JWTException ( __func__, __LINE__, "unknown 'alg' property value" );
+        }
+    }
+
     JWK :: ~ JWK ()
     {
         props -> invalidate ();

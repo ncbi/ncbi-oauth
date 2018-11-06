@@ -152,8 +152,20 @@ namespace ncbi
 
     RSAPrivate_JWKey * RSAPrivate_JWKey :: make ( JSONObject * props )
     {
-        // TBD - check kty, alg, n, e
-        //  d, p, q, dp, dq, qi, oth[].r, oth[].d, oth[].t
+        checkProperties ( props );
+
+        if ( props -> getValue ( "kty" ) . toString () . compare ( "RSA" ) != 0 )
+            throw JWTException ( __func__, __LINE__, "not RSA key properties" );
+
+        if ( ! props -> exists ( "n" ) ||
+             ! props -> exists ( "e" ) ||
+             ! props -> exists ( "d" ) ||
+             ! props -> exists ( "p" ) ||
+             ! props -> exists ( "q" ) )
+        {
+            throw JWTException ( __func__, __LINE__, "missing RSA private key parameter(s)" );
+        }
+
         return new RSAPrivate_JWKey ( props );
     }
 

@@ -225,6 +225,21 @@ namespace ncbi
             }
         }
     }
+
+    bool JWAFactory :: acceptJWKAlgorithm ( const std :: string & alg ) const
+    {
+        {
+            auto found = maps -> verifier_facts . find ( alg );
+            if ( found != maps -> verifier_facts . end () )
+                return true;
+        }
+        {
+            auto found = maps -> signer_facts . find ( alg );
+            if ( found != maps -> signer_facts . end () )
+                return true;
+        }
+        return false;
+    }
     
     void JWAFactory :: registerVerifierFact ( const std :: string & alg, JWAVerifierFact * fact )
     {
