@@ -109,7 +109,7 @@ namespace ncbi
                                               nullptr, nullptr, // TBD - RNG needed?
                                               MBEDTLS_RSA_PRIVATE,
                                               md_type,
-                                              dsize,
+                                              ( unsigned int ) dsize,
                                               digest,
                                               sig
                 );
@@ -247,7 +247,7 @@ namespace ncbi
                                                 nullptr, nullptr, // TBD - RNG needed?
                                                 MBEDTLS_RSA_PUBLIC,
                                                 md_type,
-                                                dsize,
+                                                ( unsigned int ) dsize,
                                                 digest,
                                                 signature . data ()
                 );
