@@ -73,8 +73,7 @@ namespace ncbi
 
         const char* sep = "\n";
 
-        // detect the apparent longest member size
-        // note that this will fail with non-ASCII
+        // detect the apparent longest member length
         size_t longest_mbr_len = 0;
         for ( auto it = members . begin (); it != members . end (); ++ it )
         {
