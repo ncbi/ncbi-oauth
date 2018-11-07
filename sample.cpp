@@ -10,8 +10,40 @@ using namespace ncbi;
 static void do_other_stuff ( JWTFactory & jwt_fact );
 static void do_even_more_stuff ( const JWTFactory & jwt_fact );
 
-static const char sample_pem [] = "";
-static const char sample_pem_pwd [] = "";
+static const char sample_pem [] =
+    "-----BEGIN RSA PRIVATE KEY-----\n"
+    "Proc-Type: 4,ENCRYPTED\n"
+    "DEK-Info: DES-EDE3-CBC,006F4DCD6A3C03AF\n"
+    "\n"
+    "74SGPcymU/vlrJYm3HqjF3urp8SixTAjgjCSAG4NFtRQxcv6mL1+QPJDJc6RVRxy\n"
+    "b/zMPAZUxTyHXM78o/VVTWI2/kxSH1KPBdLSqjo/ohN0pXmpLNY7jyr+WghljQ27\n"
+    "nCifTemiv1DtyIz9FCCSO496g31Q6utVOytq9DjidSfMd/DKhPKGM35Qbp2sQ8aw\n"
+    "Yby309hD3PrTsnxgS7XYDiFLMFVuLBs5avcG8sAULzjZYRoOvXWXmv94agWUDAXT\n"
+    "dTIAYWM5u+2kcLzG9Hiu/Q7FaBjDLLCKw78MnKIOrYcmIhhJDao9cbIvMnNnC2dN\n"
+    "1OSgI+uQUlyCX/VWcQDxfIR7ROBv1eeYaqqQsBLMzskdlrWjkI6pj/UxESb2Di/K\n"
+    "CpRaAwElDmxCdxbnTAVgyUI3prCiQ5t6X7dvRsZt7OgVLB+YZqYgIQnqxUFYcEa7\n"
+    "TJhMbDGSVUWhqLbn5pAFpsRaBuY8emBQxgMLZ9mb3B1vw2iBQFuOJMnQO4XUr5zr\n"
+    "Lj6WFZlM3GGqGeuPKMVNmlYEklUIMUPfGBDxWyUvNMrlyvxPESH2+eD761l5sFn2\n"
+    "IXLe3jZgWbe1jNNq7OwRHAYe+ua+MelTo7iFBSjOOY/iR7UjsSLNiCmPRNW5BiFA\n"
+    "F25C8je8fRDe0FykSWwqler+YL+JNacq/o47ZIyaSYseWXwmkQhvNtA98VQ9OtgL\n"
+    "xIRBgEC3umvUV4NW45BopgdXLfz01iBvkq7QKMpU8W/96ZR4ZxVu9N3NDxRtdJTV\n"
+    "UOsBeaVUdM+d9GUFilwwHh16XJaaseaK42DUsHnbztHUJZKB7qgYc6IyJzb+0u1e\n"
+    "alGGVPKuA/eL40IUk2vk51KjTlLdnGAW2afD7P+hm6qDKdZRsdP6EgKt2ch3xESx\n"
+    "GcGqLHWt5+LLlKZXsjNb4ulexIUnRlNKsPqXuPks4ljxbcosZn1eZTlIPDua71ZT\n"
+    "Toc5JnFDx2YGYCmcn7gNgnCgZ3pdIlCdSOuCmFssQzgnSvdaWGLUbdFrtJrT4SPb\n"
+    "G/9NzP38iNoO/GZ3ht1ZXRPROHTuqbmoGR+nqxipHXWa+mXx+7wweDJioDvVpGHX\n"
+    "sfU5cMKDUsZrLESJAlOhd7el251zhb/cqdTVkzrnVCECa/5RH+m46ta4dcXxp+ll\n"
+    "CLmb1K9sEG2SjqhvyugZMD9IlIaki/AriQhzT+YTWMcMrKC0zv0OK9M5nFbeNwl2\n"
+    "kdWJey7y1fwzOvoJPkGrcN7ZoMBg9KHA++K0uGPcrzHEYJ0l9vESVgwlYlsA3DWE\n"
+    "9Joj2JaEtH+KU4arMHiK5WYL+hw0/5ZuBoDS1esu7I+sLvQwtlZTpwlXqObcZy3E\n"
+    "C0Aic5QHswrmuInpVFnFDRaw4rBR8wsEOLjtirmLI4zrW4kBh/+0RJV2H/SoMTo7\n"
+    "HG/TO9uMRsa+cvm1Puz1PM1egDVmZzdclMLcRVSz9iCAc5x8YxDvshgc1U1crYJS\n"
+    "AxlsI5uEko8uwkGkXbClTxy+PbPa4LRQauDY+5G6KuGNGtmS3Gzo8wIfnOaCSoPn\n"
+    "0rNyp1YhQyNHlmvfAkbuK38kyfOqdl0ovm+9meuPU2s/hNgncOoQkg==\n"
+    "-----END RSA PRIVATE KEY-----\n"
+    ;
+
+static const char sample_pem_pwd [] = "blarky";
 
 int main ( int argc, char * argv [], char * envp [] )
 {
