@@ -82,9 +82,23 @@ namespace ncbi
             if ( ! value -> isArray () && ! value -> isObject () )
             {
                 std :: string key =  it -> first;
-                // TBD - count the length in characters, not size in bytes
-                if ( key . size () > longest_mbr_len )
-                    longest_mbr_len = key . size ();
+                
+                // count the length in bytes
+                size_t mbr_size = key . size ();
+
+                // calculate the length in characters
+                size_t mbr_len = mbr_size;
+
+                // remove multi-byte-character additional bytes
+                const char * cp = key . data ();
+                for ( size_t i = 0; i < mbr_size; ++ i )
+                {
+                    if ( ( cp [ i ] & 0xC0 ) == 0x80 )
+                        -- mbr_len;
+                }
+                
+                if ( mbr_len > longest_mbr_len )
+                    longest_mbr_len = mbr_len;
             }
         }
         
