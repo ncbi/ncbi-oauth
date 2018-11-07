@@ -45,6 +45,20 @@ static const char sample_pem [] =
 
 static const char sample_pem_pwd [] = "blarky";
 
+static
+std :: string lineWrap ( const std :: string & text, unsigned int size, const char * indent )
+{
+    std :: string wrapped ( text . substr ( 0, size ) );
+    size_t end = text . size ();
+    for ( size_t i = size; i < end; i += size )
+    {
+        wrapped += '\n';
+        wrapped += indent;
+        wrapped += text . substr ( i, size );
+    }
+    return wrapped;
+}
+
 int main ( int argc, char * argv [], char * envp [] )
 {
     try
@@ -259,7 +273,7 @@ static void do_even_more_stuff ( const JWTFactory & jwt_fact )
         << "Look at my shiny new JWT:\n"
         << "  "
         << jwt
-        << '\n'
+        << "\n\n"
         ;
 
     /* This JWT is a compact serialization using JWS.
@@ -276,9 +290,9 @@ static void do_even_more_stuff ( const JWTFactory & jwt_fact )
     parts . push_back ( jwt . substr ( start ) );
 
     std :: cout
-        << "Break it up into sections:\n"
+        << "Break it up into sections and line wrap:\n"
         << "  "
-        << parts [ 0 ]
+        << lineWrap ( parts [ 0 ], 78, "  " )
         << '\n'
         ;
     for ( size_t part = 1; part < parts . size (); ++ part )
@@ -286,10 +300,11 @@ static void do_even_more_stuff ( const JWTFactory & jwt_fact )
         std :: cout
             << "  .\n"
             << "  "
-            << parts [ part ]
+            << lineWrap ( parts [ part ], 78, "  " )
             << '\n'
             ;
     }
+    std :: cout << '\n';
 
     /* You should now be able to paste the JWT into the little
        page at https://jwt.io to show its contents and validate
@@ -308,6 +323,6 @@ static void do_even_more_stuff ( const JWTFactory & jwt_fact )
     std :: cout
         << "And here's what was recovered from JWT:\n"
         << claims2 . readableJSON ( 1 )
-        << '\n'
+        << "\n\n"
         ;
 }
