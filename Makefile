@@ -118,6 +118,8 @@ MBEDLIBS =                    \
 	$(LIBDIR)/libmbedx509.a   \
 	$(LIBDIR)/libmbedtls.a
 
+mbedtls: $(MBEDLIBS)
+
 $(LIBDIR)/libmbedcrypto.a: mbedtls/libmbedcrypto.a
 	cp $< $@
 
@@ -185,4 +187,4 @@ clean:
 	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR)
 	$(MAKE) -C mbedtls clean
 
-.PHONY: default
+.PHONY: default mbedtls
