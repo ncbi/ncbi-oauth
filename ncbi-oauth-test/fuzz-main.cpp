@@ -29,10 +29,11 @@
 extern "C" int
 LLVMFuzzerTestOneInput ( const uint8_t * const data, size_t const size )
 {
-    std :: string input ( (const char*) data, size );
-    try 
+    std :: string input ( (const char*)data, size );
+    // call Json parser on 'input'
+    try
     {
-        delete ncbi :: JSONObject :: make ( input );
+        delete ncbi :: JSONObject :: parse ( input );
     }
     catch ( ... )
     {

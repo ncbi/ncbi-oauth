@@ -2,9 +2,9 @@ default: ncbi-json ncbi-jwt ncbi-oauth-test
 
 fuzz: ncbi-oauth-fuzz
 
-BINDIR = $(CURDIR)/bin
-LIBDIR = $(CURDIR)/lib
-OBJDIR = $(CURDIR)/obj
+BINDIR ?= $(CURDIR)/bin
+LIBDIR ?= $(CURDIR)/lib
+OBJDIR ?= $(CURDIR)/obj
 
 $(BINDIR) $(LIBDIR) $(OBJDIR):
 	mkdir -p $@
@@ -121,27 +121,48 @@ OAUTHTESTLIB =   \
 	-lpthread
 
 ncbi-oauth-test: $(BINDIR) $(BINDIR)/ncbi-oauth-test
+	$(BINDIR)/ncbi-oauth-test
 
 $(BINDIR)/ncbi-oauth-test: $(OBJDIR) $(OAUTHTESTOBJ) $(OAUTHLIBS) $(MBEDLIBS) $(MAKEFILE)
 	$(GPP) $(CFLAGS) -g -o $@ $(OAUTHTESTOBJ) $(OAUTHTESTLIB)
 
 ## ncbi-oauth-fuzz
+#
+# requires clang 7
+#
+
+FUZZ_GPP = clang-7
+FUZZ_FLAGS = -fsanitize=fuzzer,address,signed-integer-overflow
+# with coverage/profile:
+#FUZZ_FLAGS = -fsanitize=fuzzer,address,signed-integer-overflow -fprofile-instr-generate -fcoverage-mapping
+
+# if there is a dictionary file, mention it here as -dict=$(path-to-file)
+# FUZZ_DICT = -dict=fuzz-dict
+FUZZ_DICT =
+
+FUZZ_RUNS ?= -1
+
 OAUTHFUZZSRC =    \
 	fuzz-main
 
 OAUTHFUZZOBJ = \
-	$(addprefix $(OBJDIR)/,$(addsuffix .$(OBJX),$(OAUTHFUZZSRC)))
+	$(addprefix $(OBJDIR)/,$(addsuffix .$(OBJX),$(OAUTHFUZZSRC))) \
+	$(LIBJSONOBJ)
 
 OAUTHFUZZLIB =   \
 	-L$(LIBDIR)  \
 	-lncbi-jwt   \
-	-lncbi-json  \
 	-lmbedcrypto \
 	-lmbedx509   \
 	-lmbedtls    \
 	-lpthread
 
-ncbi-oauth-fuzz: $(BINDIR) $(BINDIR)/ncbi-oauth-fuzz
+has-clang:
+	clang-7 -v >/dev/null 2>/dev/null || ( echo "fuzzing requires clang version 7 (clang-7) to be in the PATH" && exit 1 )
+
+ncbi-oauth-fuzz: has-clang
+	$(MAKE) OBJDIR=$(CURDIR)/obj/fuzz GPP=$(FUZZ_GPP) CFLAGS="$(FUZZ_FLAGS)" $(BINDIR)/ncbi-oauth-fuzz
+	mkdir -p fuzz-corpus fuzz-seeds; $(BINDIR)/ncbi-oauth-fuzz -runs=$(FUZZ_RUNS) $(FUZZ_DICT) fuzz-corpus fuzz-seeds
 
 $(BINDIR)/ncbi-oauth-fuzz: $(OBJDIR) $(OAUTHFUZZOBJ) $(MAKEFILE)
 	$(GPP) $(CFLAGS) -g -o $@ $(OAUTHFUZZOBJ) $(OAUTHFUZZLIB)

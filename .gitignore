@@ -8,5 +8,10 @@ lib
 obj
 *.o
 *.a
-
+.gdb_history
+.vscode
+crash-*
+leak-*
+*.profraw
+fuzz-corpus
 
