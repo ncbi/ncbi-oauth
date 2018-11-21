@@ -27,6 +27,8 @@
 #ifndef _hpp_ncbi_json_priv_
 #define _hpp_ncbi_json_priv_
 
+#define __STDC_WANT_LIB_EXT1__ 1
+
 #ifndef _hpp_ncbi_json_
 #include <ncbi/json.hpp>
 #endif
@@ -112,7 +114,8 @@ namespace ncbi
 
         virtual void invalidate ()
         {
-            memset ( ( void * ) value . data (), ' ', value . size () );
+            size_t vsize = value . size ();
+            memset_s ( ( void * ) value . data (), vsize, ' ', vsize );
         }
         
         JSONNumber ( const std :: string & val )
@@ -141,7 +144,8 @@ namespace ncbi
 
         virtual void invalidate ()
         {
-            memset ( ( void * ) value . data (), ' ', value . size () );
+            size_t vsize = value . size ();
+            memset_s ( ( void * ) value . data (), vsize, ' ', vsize );
         }
         
         JSONString ( const std :: string & val )
