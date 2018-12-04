@@ -50,7 +50,8 @@ LIBJSONSRC =       \
 	json-wrapper   \
 	json-primitive \
 	json-value     \
-	json-exception
+	json-exception \
+	memset_s
 
 LIBJSONOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .$(LOBX),$(LIBJSONSRC)))
