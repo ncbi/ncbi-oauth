@@ -27,10 +27,18 @@
 #ifndef _hpp_ncbi_json_priv_
 #define _hpp_ncbi_json_priv_
 
+// an attempt at getting memset_s() declared
 #define __STDC_WANT_LIB_EXT1__ 1
+#include <string.h>
 
 #ifndef _hpp_ncbi_json_
 #include <ncbi/json.hpp>
+#endif
+
+// here at least temporarily
+// to work around the problems with memset() and memset_s()
+#ifndef _hpp_ncbi_json_memset_priv_
+#include "memset-priv.hpp"
 #endif
 
 #include <cstring>
@@ -115,7 +123,7 @@ namespace ncbi
         virtual void invalidate ()
         {
             size_t vsize = value . size ();
-            memset_s ( ( void * ) value . data (), vsize, ' ', vsize );
+            memset_while_respecting_language_semantics ( ( void * ) value . data (), vsize, ' ', vsize, value . c_str () );
         }
         
         JSONNumber ( const std :: string & val )
@@ -145,7 +153,7 @@ namespace ncbi
         virtual void invalidate ()
         {
             size_t vsize = value . size ();
-            memset_s ( ( void * ) value . data (), vsize, ' ', vsize );
+            memset_while_respecting_language_semantics ( ( void * ) value . data (), vsize, ' ', vsize, value . c_str () );
         }
         
         JSONString ( const std :: string & val )
