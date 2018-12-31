@@ -25,6 +25,7 @@
  */
 
 #include <ncbi/jwa.hpp>
+#include <ncbi/jwk.hpp>
 #include <ncbi/jwt.hpp>
 #include "base64-priv.hpp"
 
@@ -79,7 +80,7 @@ namespace ncbi
         }
 
         HMAC_Signer ( const std :: string & name, const std :: string & alg,
-                const std :: string & key, mbedtls_md_type_t type )
+                const JWK * key, mbedtls_md_type_t type )
             : JWASigner ( name, alg, key )
             , ctx ( cctx )
             , md_type ( type )
@@ -91,13 +92,16 @@ namespace ncbi
             const mbedtls_md_info_t * info = mbedtls_md_info_from_type ( md_type );
             dsize = mbedtls_md_get_size ( info );
 
-            // selects the digest algorithm and allocates internal structures
+            // TBD - verify key size against digest size
+
+            // allocates internal structures and binds to "info"
             int status = mbedtls_md_setup ( & ctx, info, 1 );
             if ( status != 0 )
                 throw MBEDTLSException ( __func__, __LINE__, status, "failed to setup HMAC context" );
 
             // bind the key to the context
-            status = mbedtls_md_hmac_starts ( & ctx, ( const unsigned char * ) key . data (), key . size () );
+            std :: string kval = static_cast < const HMAC_JWKey * > ( key ) -> getValue ();
+            status = mbedtls_md_hmac_starts ( & ctx, ( const unsigned char * ) kval . data (), kval . size () );
             if ( status != 0 )
                 throw MBEDTLSException ( __func__, __LINE__, status, "failed to bind key to HMAC context" );
         }
@@ -148,7 +152,7 @@ namespace ncbi
         }
 
         HMAC_Verifier ( const std :: string & name, const std :: string & alg,
-                const std :: string & key, mbedtls_md_type_t type )
+                const JWK * key, mbedtls_md_type_t type )
             : JWAVerifier ( name, alg, key )
             , ctx ( cctx )
             , md_type ( type )
@@ -166,7 +170,8 @@ namespace ncbi
                 throw MBEDTLSException ( __func__, __LINE__, status, "failed to setup HMAC context" );
 
             // bind the key to the context
-            status = mbedtls_md_hmac_starts ( & ctx, ( const unsigned char * ) key . data (), key . size () );
+            std :: string kval = static_cast < const HMAC_JWKey * > ( key ) -> getValue ();
+            status = mbedtls_md_hmac_starts ( & ctx, ( const unsigned char * ) kval . data (), kval . size () );
             if ( status != 0 )
                 throw MBEDTLSException ( __func__, __LINE__, status, "failed to bind key to HMAC context" );
         }
@@ -184,8 +189,11 @@ namespace ncbi
     struct HMAC_SignerFact : JWASignerFact
     {
         virtual JWASigner * make ( const std :: string & name,
-            const std :: string & alg, const std :: string & key ) const
+            const std :: string & alg, const JWK * key ) const
         {
+            if ( key -> getType () . compare ( "oct" ) != 0 )
+                throw JWTException ( __func__, __LINE__, "bad key type" );
+
             return new HMAC_Signer ( name, alg, key, md_type );
         }
 
@@ -201,8 +209,11 @@ namespace ncbi
     struct HMAC_VerifierFact : JWAVerifierFact
     {
         virtual JWAVerifier * make ( const std :: string & name,
-            const std :: string & alg, const std :: string & key ) const
+            const std :: string & alg, const JWK * key ) const
         {
+            if ( key -> getType () . compare ( "oct" ) != 0 )
+                throw JWTException ( __func__, __LINE__, "bad key type" );
+
             return new HMAC_Verifier ( name, alg, key, md_type );
         }
 
@@ -235,9 +246,9 @@ namespace ncbi
         if ( always_false )
         {
             std :: string empty;
-            hs256 . signer_fact . make ( empty, empty, empty );
-            hs384 . signer_fact . make ( empty, empty, empty );
-            hs512 . signer_fact . make ( empty, empty, empty );
+            hs256 . signer_fact . make ( empty, empty, nullptr );
+            hs384 . signer_fact . make ( empty, empty, nullptr );
+            hs512 . signer_fact . make ( empty, empty, nullptr );
         }
     }
 }

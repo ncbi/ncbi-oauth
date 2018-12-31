@@ -25,6 +25,7 @@
  */
 
 #include <ncbi/jws.hpp>
+#include <ncbi/jwk.hpp>
 #include <ncbi/jwt.hpp>
 #include "base64-priv.hpp"
 
@@ -33,6 +34,15 @@
 
 namespace ncbi
 {
+#if JWT_TESTING
+    static bool ignore_signature_mismatch;
+    static std :: string unrecognized_string ( "unrecognized" );
+
+    void setIgnoreSignatureMismatch ( bool ignore )
+    {
+        ignore_signature_mismatch = ignore;
+    }
+#endif
 
     JWS JWSFactory :: signCompact ( JSONObject & hdr, const void * payload, size_t bytes ) const
     {
@@ -46,26 +56,12 @@ namespace ncbi
             
         // assume that the header has been filled out to the payload's content
         // set the "alg" property in header
-        JSONValue * alg = JSONValue :: makeString ( signer -> algorithm () );
-        try
-        {
-            hdr . setValue ( "alg", alg );
-            JSONValue * kid = JSONValue :: makeString ( signing_kid );
-            try
-            {
-                hdr . setValue ( "kid", kid );
-            }
-            catch ( ... )
-            {
-                delete kid;
-                throw;
-            }
-        }
-        catch ( ... )
-        {
-            delete alg;
-            throw;
-        }
+        hdr . setValueOrDelete ( "alg", JSONValue :: makeString ( signer -> algorithm () ) );
+
+        // set the "kid" property
+        std :: string signing_kid = signer -> keyID ();
+        if ( ! signing_kid . empty () )
+            hdr . setValueOrDelete ( "kid", JSONValue :: makeString ( signing_kid ) );
 
         // scope trickery
         JWS jws;
@@ -74,18 +70,6 @@ namespace ncbi
                 // convert the header to text
                 std :: string hdr_json = hdr . toJSON ();
 
-/*
-        std :: cout
-            << "  JOSE Header:\n"
-            << "    "
-            << hdr_json
-            << '\n'
-            << "  JWT Payload:\n"
-            << "    "
-            << std :: string ( ( const char * ) payload, bytes )
-            << '\n'
-            ;
-*/
                 // encode the header with base64url
                 jws = encodeBase64URL ( hdr_json . data (), hdr_json . size () );
             }
@@ -134,20 +118,53 @@ namespace ncbi
             }
 
             if ( v == nullptr )
+            {
+#if JWT_TESTING
+                if ( ignore_signature_mismatch )
+                {
+                    std :: cerr
+                        << __func__
+                        << ':'
+                        << __LINE__
+                        << " - signature not recognized"
+                        << '\n'
+                        ;
+                    return unrecognized_string;
+                }
+#endif
                 throw JWTException ( __func__, __LINE__, "signature not recognized" );
+            }
         }
 
         if ( hdr . exists ( "alg" ) )
         {
             std :: string alg = hdr . getValue ( "alg" ) . toString ();
             if ( alg . compare ( v -> algorithm () ) != 0 )
+            {
+#if JWT_TESTING
+                if ( ignore_signature_mismatch )
+                {
+                    std :: cerr
+                        << __func__
+                        << ':'
+                        << __LINE__
+                        << " - algorithm does not match: "
+                        << alg
+                        << " vs. "
+                        << v -> algorithm ()
+                        << '\n'
+                        ;
+                }
+                else
+#endif
                 throw JWTException ( __func__, __LINE__, "algorithm does not match" );
+            }
         }
 
         return v -> authority_name ();
     }
 
-    void JWSFactory :: addVerifier ( const std :: string & name, const std :: string & alg, const std :: string & key )
+    void JWSFactory :: addVerifier ( const std :: string & name, const std :: string & alg, const JWK * key )
     {
         JWAVerifier * verifier = gJWAFactory . makeVerifier ( name, alg, key );
         addl_verifiers . push_back ( verifier );
@@ -195,14 +212,13 @@ namespace ncbi
         }
     }
 
-    JWSFactory :: JWSFactory ( const std :: string & name, const std :: string & alg,
-            const std :: string & signing_key, const std :: string & _signing_kid, const std :: string & verify_key )
+    JWSFactory :: JWSFactory ( const std :: string & name,
+             const std :: string & alg, const JWK * key )
         : signer ( nullptr )
         , verifier ( nullptr )
-        , signing_kid ( _signing_kid )
     {
-        signer = gJWAFactory . makeSigner ( name, alg, signing_key );
-        verifier = gJWAFactory . makeVerifier ( name, alg, verify_key );
+        signer = gJWAFactory . makeSigner ( name, alg, key );
+        verifier = gJWAFactory . makeVerifier ( name, alg, key );
     }
 
     JWSFactory :: ~ JWSFactory ()

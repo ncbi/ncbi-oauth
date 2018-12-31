@@ -27,9 +27,21 @@
 #ifndef _hpp_ncbi_json_priv_
 #define _hpp_ncbi_json_priv_
 
+// an attempt at getting memset_s() declared
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <string.h>
+
 #ifndef _hpp_ncbi_json_
 #include <ncbi/json.hpp>
 #endif
+
+// here at least temporarily
+// to work around the problems with memset() and memset_s()
+#ifndef _hpp_ncbi_json_memset_priv_
+#include "memset-priv.hpp"
+#endif
+
+#include <cstring>
 
 namespace ncbi
 {
@@ -50,6 +62,7 @@ namespace ncbi
         virtual std :: string toString () const = 0;
         virtual std :: string toJSON () const;
         virtual JSONPrimitive * clone () const = 0;
+        virtual void invalidate () = 0;
         virtual ~ JSONPrimitive () {}
     };
     
@@ -64,6 +77,9 @@ namespace ncbi
 
         virtual JSONPrimitive * clone () const
         { return new JSONBoolean ( value ); }
+
+        virtual void invalidate ()
+        { value = false; }
         
         JSONBoolean ( bool val )
             : value ( val )
@@ -82,6 +98,9 @@ namespace ncbi
 
         virtual JSONPrimitive * clone () const
         { return new JSONInteger ( value ); }
+
+        virtual void invalidate ()
+        { value = 0; }
         
         JSONInteger ( long long int val )
             : value ( val )
@@ -100,6 +119,12 @@ namespace ncbi
 
         virtual JSONPrimitive * clone () const
         { return new JSONNumber ( value ); }
+
+        virtual void invalidate ()
+        {
+            size_t vsize = value . size ();
+            memset_while_respecting_language_semantics ( ( void * ) value . data (), vsize, ' ', vsize, value . c_str () );
+        }
         
         JSONNumber ( const std :: string & val )
             : value ( val )
@@ -124,6 +149,12 @@ namespace ncbi
 
         virtual JSONPrimitive * clone () const
         { return new JSONString ( value ); }
+
+        virtual void invalidate ()
+        {
+            size_t vsize = value . size ();
+            memset_while_respecting_language_semantics ( ( void * ) value . data (), vsize, ' ', vsize, value . c_str () );
+        }
         
         JSONString ( const std :: string & val )
             : value ( val )
@@ -159,6 +190,8 @@ namespace ncbi
         virtual std :: string toJSON () const;
 
         virtual JSONValue * clone () const;
+
+        virtual void invalidate ();
         
         // parses "null"
         static JSONValue * parse ( const std :: string & json, size_t & pos );

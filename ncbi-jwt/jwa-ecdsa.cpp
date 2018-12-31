@@ -24,6 +24,8 @@
  *
  */
 
+#if 0
+
 #include <ncbi/jwa.hpp>
 #include <ncbi/jwt.hpp>
 #include "base64-priv.hpp"
@@ -220,3 +222,4 @@ namespace ncbi
         }
     }
 }
+#endif

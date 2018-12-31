@@ -37,6 +37,8 @@ namespace ncbi
     class JSON;
     class JSONArray;
     class JSONObject;
+    struct JSONString;
+    struct JSONNumber;
     
     /* JSONException
      **********************************************************************************/
@@ -117,10 +119,16 @@ namespace ncbi
 
         // create a copy
         virtual JSONValue * clone () const;
+
+        // invalidate and overwrite contents
+        virtual void invalidate () = 0;
         
         virtual ~JSONValue ();
 
     protected:
+
+        static JSONValue * makeParsedNumber ( const std :: string & val );
+        static JSONValue * makeParsedString ( const std :: string & val );
         
         static JSONValue * parse ( const Limits & lim, const std :: string & json, size_t & pos, unsigned int depth );
         static Limits default_limits;
@@ -128,6 +136,8 @@ namespace ncbi
         JSONValue ();
 
         friend class JSON;
+        friend struct JSONNumber;
+        friend struct JSONString;
         
         // for testing
         static JSONValue * test_parse ( const std :: string & json, bool consume_all );
@@ -154,6 +164,9 @@ namespace ncbi
         virtual const JSONArray & toArray () const
         { return * this; }
         virtual JSONValue * clone () const;
+
+        // for creating a "readable" JSON text
+        std :: string readableJSON ( unsigned int indent = 0 ) const;
 
         // asks whether array is empty
         bool isEmpty () const;
@@ -185,6 +198,9 @@ namespace ncbi
         
         // lock the array against change
         void lock ();
+
+        // invalidate and overwrite contents
+        void invalidate ();
 
         // C++ assignment
         JSONArray & operator = ( const JSONArray & array );
@@ -236,6 +252,9 @@ namespace ncbi
         { return * this; }
         virtual JSONValue * clone () const;
 
+        // for creating a "readable" JSON text
+        std :: string readableJSON ( unsigned int indent = 0 ) const;
+
         // asks whether object is empty
         bool isEmpty () const;
 
@@ -247,14 +266,21 @@ namespace ncbi
         
         // return names/keys
         std :: vector < std :: string > getNames () const;
+
+        // add a new ( name, value ) pair
+        // "name" must be unique or an exception will be thrown
+        void addNameValuePair ( const std :: string & name, JSONValue * val );
+        void addFinalNameValuePair ( const std :: string & name, JSONValue * val );
         
         // set entry to a new value
         // throws exception if entry exists and is final
         void setValue ( const std :: string & name, JSONValue * val );
+        void setValueOrDelete ( const std :: string & name, JSONValue * val );
 
         // set entry to a final value
         // throws exception if entry exists and is final
         void setFinalValue ( const std :: string & name, JSONValue * val );
+        void setFinalValueOrDelete ( const std :: string & name, JSONValue * val );
 
         // get named value
         JSONValue & getValue ( const std :: string & name );
@@ -265,6 +291,9 @@ namespace ncbi
         
         // lock the object against change
         void lock ();
+
+        // invalidate and overwrite contents
+        void invalidate ();
 
         // C++ assignment
         JSONObject & operator = ( const JSONObject & obj );

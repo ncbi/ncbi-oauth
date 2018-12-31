@@ -61,6 +61,47 @@ namespace ncbi
         return to_string;
     }
     
+    std :: string JSONArray :: readableJSON ( unsigned int indent ) const
+    {
+        std :: string margin;
+        for ( unsigned int i = 0; i < indent; ++ i )
+            margin += "    ";
+
+        std :: string to_string = margin + '[';
+        margin += "    ";
+
+        const char* sep = "\n";
+
+        auto size = array . size ();
+        
+        for ( size_t i = 0; i < size; ++ i )
+        {
+            const JSONValue* value = array [ i ];
+            
+            to_string += sep;
+            if ( value -> isArray () )
+            {
+                to_string += value -> toArray () . readableJSON ( indent + 1 );
+            }
+            else if ( value -> isObject () )
+            {
+                to_string += value -> toObject () . readableJSON ( indent + 1 );
+            }
+            else
+            {
+                to_string += margin + value -> toJSON ();
+            }
+            
+            sep = ",\n";
+        }
+        
+        to_string += "\n";
+        to_string += margin . substr ( 4 );
+        to_string += "]";
+        
+        return to_string;
+    }
+    
     JSONValue * JSONArray :: clone () const
     {
         JSONArray * copy = new JSONArray ();
@@ -68,6 +109,15 @@ namespace ncbi
         *copy = *this;
 
         return copy;
+    }
+    
+    void JSONArray :: invalidate ()
+    {
+        size_t i, count = array . size ();
+        for ( i = 0; i < count; ++ i )
+        {
+            array [ i ] -> invalidate ();
+        }
     }
 
     // asks whether array is empty

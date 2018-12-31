@@ -25,6 +25,7 @@
  */
 
 #include <ncbi/jwa.hpp>
+#include <ncbi/jwk.hpp>
 #include <ncbi/jwt.hpp>
 
 #include <iostream>
@@ -66,19 +67,25 @@ namespace ncbi
     {
         return alg;
     }
+
+    std :: string JWAKeyHolder :: keyID () const
+    {
+        return key -> getID ();
+    }
     
     JWAKeyHolder :: JWAKeyHolder ( const std :: string & _nam,
-            const std :: string & _alg, const std :: string & _key )
+            const std :: string & _alg, const JWK * _key )
         : nam ( _nam )
         , alg ( _alg )
-        , key ( _key )
+        , key ( nullptr )
     {
+        key = _key -> duplicate ();
     }
 
     JWAKeyHolder :: ~ JWAKeyHolder ()
     {
-        // brute force, but reliable
-        memset ( const_cast < char * > ( key . data () ), ' ', key . size () );
+        key -> release ();
+        key = nullptr;
     }
 
     /* JWASigner
@@ -88,7 +95,7 @@ namespace ncbi
      */
 
     JWASigner :: JWASigner ( const std :: string & name,
-            const std :: string & alg, const std :: string & key )
+            const std :: string & alg, const JWK * key )
         : JWAKeyHolder ( name, alg, key )
     {
     }
@@ -100,7 +107,7 @@ namespace ncbi
      */
 
     JWAVerifier :: JWAVerifier ( const std :: string & name,
-            const std :: string & alg, const std :: string & key )
+            const std :: string & alg, const JWK * key )
         : JWAKeyHolder ( name, alg, key )
     {
     }
@@ -130,10 +137,18 @@ namespace ncbi
      */
 
     JWASigner * JWAFactory :: makeSigner ( const std :: string & name,
-            const std :: string & alg, const std :: string & key ) const
+            const std :: string & alg, const JWK * key ) const
     {
         // NB - expect this to be called after static constructors run
         assert ( maps != nullptr );
+
+        // check the key
+        if ( key == nullptr )
+            throw JWTException ( __func__, __LINE__, "NULL key reference" );
+        if ( ! key -> forSigning () )
+            throw JWTException ( __func__, __LINE__, "invalid key for signing" );
+        if ( ! key -> isSymmetric () && ! key -> isPrivate () )
+            throw JWTException ( __func__, __LINE__, "invalid key for signing" );
 
         // find factory factory
         auto it = const_cast < const Maps * > ( maps ) -> signer_facts . find ( alg );
@@ -154,10 +169,16 @@ namespace ncbi
     }
     
     JWAVerifier * JWAFactory :: makeVerifier ( const std :: string & name,
-            const std :: string & alg, const std :: string & key ) const
+            const std :: string & alg, const JWK * key ) const
     {
         // NB - expect this to be called after static constructors run
         assert ( maps != nullptr );
+
+        // check the key
+        if ( key == nullptr )
+            throw JWTException ( __func__, __LINE__, "NULL key reference" );
+        if ( ! key -> forSigning () )
+            throw JWTException ( __func__, __LINE__, "invalid key for signature verification" );
 
         // find factory factory
         auto it = const_cast < const Maps * > ( maps ) -> verifier_facts . find ( alg );
@@ -203,6 +224,21 @@ namespace ncbi
                 }
             }
         }
+    }
+
+    bool JWAFactory :: acceptJWKAlgorithm ( const std :: string & alg ) const
+    {
+        {
+            auto found = maps -> verifier_facts . find ( alg );
+            if ( found != maps -> verifier_facts . end () )
+                return true;
+        }
+        {
+            auto found = maps -> signer_facts . find ( alg );
+            if ( found != maps -> signer_facts . end () )
+                return true;
+        }
+        return false;
     }
     
     void JWAFactory :: registerVerifierFact ( const std :: string & alg, JWAVerifierFact * fact )

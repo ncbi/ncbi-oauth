@@ -26,6 +26,9 @@ $(OBJDIR)/%.$(LOBX): ncbi-json/%.cpp
 $(OBJDIR)/%.$(LOBX): ncbi-jwt/%.cpp
 	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-jwt -Iinc -fPIC -MD -Wall
 
+$(OBJDIR)/%.tst.$(LOBX): ncbi-jwt/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -DJWT_TESTING -o $@ -Incbi-jwt -Iinc -fPIC -MD -Wall
+
 $(OBJDIR)/%.$(OBJX): ncbi-oauth-test/%.cpp
 	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-oauth-test -Iinc -Igoogletest/googletest/include -MD -Wall
 $(OBJDIR)/%.$(OBJX): googletest/googletest/src/%.cc
@@ -34,9 +37,10 @@ $(OBJDIR)/%.$(OBJX): googletest/googletest/src/%.cc
 # include dependencies
 include $(wildcard $(OBJDIR)/*.d)
 
-OAUTHLIBS =                  \
-	$(LIBDIR)/libncbi-json.a \
-	$(LIBDIR)/libncbi-jwt.a
+OAUTHLIBS =                     \
+	$(LIBDIR)/libncbi-json.a    \
+	$(LIBDIR)/libncbi-jwt.a     \
+	$(LIBDIR)/libncbi-tst-jwt.a
 
 ## ncbi-json
 LIBJSONSRC =       \
@@ -46,7 +50,8 @@ LIBJSONSRC =       \
 	json-wrapper   \
 	json-primitive \
 	json-value     \
-	json-exception
+	json-exception \
+	memset_s
 
 LIBJSONOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .$(LOBX),$(LIBJSONSRC)))
@@ -61,6 +66,11 @@ LIBJWTSRC =            \
 	jwt-factory        \
 	jwt-claims         \
 	jws-factory        \
+	jwk-hmac           \
+	jwk-rsa            \
+	jwk-ec             \
+	jwk-parse          \
+	jwk-cmn            \
 	jwa-none           \
 	jwa-hmac           \
 	jwa-rsa            \
@@ -77,17 +87,45 @@ ncbi-jwt: $(LIBDIR) $(LIBDIR)/libncbi-jwt.a
 $(LIBDIR)/libncbi-jwt.a: $(OBJDIR) $(LIBJWTOBJ) $(MAKEFILE)
 	ar -rc $@ $(LIBJWTOBJ)
 
+## ncbi-test-jwt
+LIBTSTJWTSRC =         \
+	jwt-factory.tst    \
+	jwt-claims         \
+	jws-factory.tst    \
+	jwk-hmac           \
+	jwk-rsa            \
+	jwk-ec             \
+	jwk-parse          \
+	jwk-cmn            \
+	jwa-none           \
+	jwa-hmac           \
+	jwa-rsa            \
+	jwa-factory        \
+	jwt-lock           \
+	jwt-exception      \
+	base64
+
+LIBTSTJWTOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .$(LOBX),$(LIBTSTJWTSRC)))
+
+ncbi-tst-jwt: $(LIBDIR) $(LIBDIR)/libncbi-tst-jwt.a
+
+$(LIBDIR)/libncbi-tst-jwt.a: $(OBJDIR) $(LIBTSTJWTOBJ) $(MAKEFILE)
+	ar -rc $@ $(LIBTSTJWTOBJ)
+
 ## mbedtls
 MBEDLIBS =                    \
 	$(LIBDIR)/libmbedcrypto.a \
 	$(LIBDIR)/libmbedx509.a   \
 	$(LIBDIR)/libmbedtls.a
 
+mbedtls: $(MBEDLIBS)
+
 $(LIBDIR)/libmbedcrypto.a: mbedtls/libmbedcrypto.a
 	cp $< $@
 
 mbedtls/libmbedcrypto.a:
-	$(MAKE) -C mbedtls CFLAGS=-I../inc libmbedcrypto.a
+	$(MAKE) -C mbedtls DEBUG=1 CFLAGS=-I../inc libmbedcrypto.a
 
 $(LIBDIR)/libmbedx509.a: mbedtls/libmbedx509.a
 	cp $< $@
@@ -111,13 +149,13 @@ OAUTHTESTSRC =    \
 OAUTHTESTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .$(OBJX),$(OAUTHTESTSRC)))
 
-OAUTHTESTLIB =   \
-	-L$(LIBDIR)  \
-	-lncbi-jwt   \
-	-lncbi-json  \
-	-lmbedcrypto \
-	-lmbedx509   \
-	-lmbedtls    \
+OAUTHTESTLIB =     \
+	-L$(LIBDIR)    \
+	-lncbi-tst-jwt \
+	-lncbi-json    \
+	-lmbedcrypto   \
+	-lmbedx509     \
+	-lmbedtls      \
 	-lpthread
 
 ncbi-oauth-test: $(BINDIR) $(BINDIR)/ncbi-oauth-test
@@ -171,4 +209,4 @@ clean:
 	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR)
 	$(MAKE) -C mbedtls clean
 
-.PHONY: default
+.PHONY: default mbedtls

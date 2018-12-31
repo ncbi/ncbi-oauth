@@ -84,6 +84,98 @@ namespace ncbi
     }
 
     static
+    void test_wellformed_utf8 ( const std :: string & text )
+    {
+        const char * cp = text . data ();
+        size_t i, count = text . size ();
+        for ( i = 0; i < count; )
+        {
+            /*
+
+              all bytes where the MSB is 0 are ASCII,
+              i.e. single-byte characters. The value '\0'
+              is not accepted.
+
+              it is convenient to use signed bytes to examine
+              the string and detect MSB as negative values.
+
+             */
+            while ( cp [ i ] > 0 )
+            {
+                if ( ++ i == count )
+                    return;
+            }
+
+            /*
+
+              an extended UTF-8 formatted multi-byte Unicode character
+              has a start byte with the high 2..6 bits set, which indicates
+              the overall length of the character.
+
+              for UTF-8, the follow are legal start bytes:
+                0b110xxxxx = 2 byte character
+                0b1110xxxx = 3 byte character
+                0b11110xxx = 4 byte character
+                0b111110xx = 5 byte character
+                0b1111110x = 6 byte character
+
+              it is convenient in C to invert the bits as follows:
+                0b110xxxxx => 0b001xxxxx
+                0b1110xxxx => 0b0001xxxx
+                0b11110xxx => 0b00001xxx
+                0b111110xx => 0b000001xx
+                0b1111110x => 0b0000001x
+              since this allows use of a builtin function to count
+              the leading 0's, which tells us immediately the length
+              of the character.
+
+            */
+
+
+            // get complement of signed start byte
+            unsigned int leading = ~ cp [ i ];
+
+            // disallow 0, which comes from 0b11111111
+            // since UTF-8 start bytes require at least one 0,
+            // and the builtin function cannot operate on it.
+            if ( leading == 0 )
+                throw JSONException ( __func__, __LINE__, "malformed UTF-8" );
+
+            // the bit calculations rely upon knowing the word size
+            assert ( sizeof leading == 4 );
+
+            // determine the character length by the number of leading zeros
+            // only interested in the lower byte, so disregard upper 24 bits
+            int char_len = ( int ) __builtin_clz ( leading ) - 24;
+
+            // legal extended UTF-8 characters are 2..6 bytes long
+            if ( char_len < 2 || char_len > 6 )
+                throw JSONException ( __func__, __LINE__, "malformed UTF-8" );
+
+            // the string must actually be large enough to contain these
+            if ( i + char_len > count )
+                throw JSONException ( __func__, __LINE__, "malformed UTF-8" );
+
+            // the remaining bytes of the character all MUST begin
+            // with the pattern 0b10xxxxxx. we can examine these
+            // while building the Unicode value into UTF-32 format
+            unsigned int utf32 = ~ leading & ( 0x7FU >> char_len );
+            for ( int j = 1; j < char_len; ++ j )
+            {
+                unsigned int ch = ( ( const unsigned char * ) cp ) [ i + j ];
+                if ( ( ch & 0xC0 ) != 0x80 )
+                    throw JSONException ( __func__, __LINE__, "malformed UTF-8" );
+                utf32 = ( utf32 << 6 ) | ( ch & 0x3F );
+            }
+
+            // TBD - examine code for validity in Unicode
+
+            // account for multi-byte character
+            i += char_len;
+        }
+    }
+    
+    static
     void test_depth ( const JSONValue :: Limits & lim, unsigned int & depth )
     {
         if ( ++ depth > lim . recursion_depth )
@@ -93,12 +185,12 @@ namespace ncbi
     /* JSONValue :: Limits
      **********************************************************************************/
     JSONValue :: Limits :: Limits ()
-    : json_string_size ( 4 * 1024 * 1024 )
-    , recursion_depth ( 32 )
-    , numeral_length ( 256 )
-    , string_size ( 64 * 1024 )
-    , array_elem_count ( 4 * 1024 )
-    , object_mbr_count ( 256 )
+        : json_string_size ( 4 * 1024 * 1024 )
+        , recursion_depth ( 32 )
+        , numeral_length ( 256 )
+        , string_size ( 64 * 1024 )
+        , array_elem_count ( 4 * 1024 )
+        , object_mbr_count ( 256 )
     {
     }
 
@@ -226,6 +318,10 @@ namespace ncbi
             }
         }
 
+        // check the number of total characters
+        if ( pos - start > lim . numeral_length )
+            throw JSONException ( __func__, __LINE__, "numeral length exceeds allowed limit" );
+        
         // "pos" could potentially be a little beyond the end of
         // a legitimate number - let the conversion routines tell us
         std :: string num_str = json . substr ( start, pos - start );
@@ -252,8 +348,8 @@ namespace ncbi
 
         if ( num_len > lim . numeral_length )
             throw JSONException ( __func__, __LINE__, "numeral size exceeds allowed limit" );
-
-        JSONValue *val = JSONValue :: makeNumber ( num_str . substr ( 0, num_len ) );
+        
+        JSONValue *val = JSONValue :: makeParsedNumber ( num_str . substr ( 0, num_len ) );
         if ( val == nullptr )
             throw JSONException ( __func__, __LINE__, "Failed to make JSONValue" );
 
@@ -349,7 +445,10 @@ namespace ncbi
         if ( str . size () > lim . string_size )
             throw JSONException ( __func__, __LINE__, "string size exceeds allowed limit" );
 
-        JSONValue *val = JSONValue :: makeString ( str );
+        // examine all characters for legal and well-formed UTF-8
+        test_wellformed_utf8 ( str );
+        
+        JSONValue *val = JSONValue :: makeParsedString ( str );
         if ( val == nullptr )
             throw JSONException ( __func__, __LINE__, "Failed to make JSONValue" );
 
@@ -409,6 +508,28 @@ namespace ncbi
         return nullptr;
     }
 
+    JSONValue * JSONValue :: makeNumber ( const std :: string & val )
+    {
+        size_t pos = 0;
+        return JSONNumber :: parse ( default_limits, val, pos );
+    }
+
+    JSONValue * JSONValue :: makeString ( const std :: string & str )
+    {
+        if ( str . size () > default_limits . string_size )
+            throw JSONException ( __func__, __LINE__, "string size exceeds allowed limit" );
+
+        // examine all characters for legal and well-formed UTF-8
+        test_wellformed_utf8 ( str );
+        
+        JSONValue *val = JSONValue :: makeParsedString ( str );
+        if ( val == nullptr )
+            throw JSONException ( __func__, __LINE__, "Failed to make JSONValue" );
+        
+        return val;
+    }
+
+   
     /* JSONArray
      **********************************************************************************/
     JSONArray * JSONArray :: parse ( const Limits & lim, const std :: string & json, size_t & pos, unsigned int depth )
@@ -525,26 +646,30 @@ namespace ncbi
 
                 // skip to ':'
                 if ( ! skip_whitespace ( json, pos ) || json [ pos ] != ':' )
-                {
                     throw JSONException ( __func__, __LINE__, "Expected: ':'" ); // test hit
-                }
-
+                
                 // skip over ':'
                 ++ pos;
-
+                
                 // get JSON value;
-                JSONValue *value = JSONValue :: parse ( lim, json, pos, depth );
-                if ( value == nullptr )
                 {
-                    throw JSONException ( __func__, __LINE__, "Failed to create JSON object" );
+                    JSONValue *value = JSONValue :: parse ( lim, json, pos, depth );
+                    try
+                    {
+                        if ( value == nullptr )
+                            throw JSONException ( __func__, __LINE__, "Failed to create JSON object" );
+                            
+                        obj -> addNameValuePair ( name -> toString(), value );
+                    }
+                    catch ( ... )
+                    {
+                        delete value;
+                        throw;
+                    }
                 }
-
-                obj -> setValue ( name -> toString(), value );
-
+                
                 if ( obj -> count () > default_limits . object_mbr_count )
-                {
                     throw JSONException ( __func__, __LINE__, "Array element count exceeds limit" );
-                }
 
                 // find and skip over ',' and skip any whitespace
                 // exit loop if no ',' found

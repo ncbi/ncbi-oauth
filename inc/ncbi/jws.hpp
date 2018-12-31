@@ -40,6 +40,13 @@
 
 namespace ncbi
 {
+    // forwards
+    class HMAC_JWKey;
+    class RSAPublic_JWKey;
+    class RSAPrivate_JWKey;
+    class EllipticCurvePublic_JWKey;
+    class EllipticCurvePrivate_JWKey;
+
     // JSON Web Signature - RFC 7515: Line 350
     // A data structure representing a digitally signed or MACed message
     typedef std :: string JWS;
@@ -62,17 +69,18 @@ namespace ncbi
         const std :: string & validate ( const JSONObject & hdr, const JWS & jws, size_t last_period ) const;
         
         // additional verifiers
+        // duplicates reference when successful
         void addVerifier ( const std :: string & authority_name,
-            const std :: string & alg, const std :: string & key );
+            const std :: string & alg, const JWK * key );
         
         // copy construction
         JWSFactory & operator = ( const JWSFactory & fact );
         JWSFactory ( const JWSFactory & fact );
         
         // create a standard factory
-        JWSFactory ( const std :: string & authority_name, const std :: string & alg,
-            const std :: string & signing_key, const std :: string & signing_kid,
-            const std :: string & verify_key );
+        // duplicates key reference when successful
+        JWSFactory ( const std :: string & authority_name,
+            const std :: string & alg, const JWK * key );
         ~ JWSFactory ();
         
     private:
@@ -80,7 +88,6 @@ namespace ncbi
         const JWASigner * signer;
         const JWAVerifier * verifier;
         std :: vector < const JWAVerifier * > addl_verifiers;
-        std :: string signing_kid;
     };
 }
 

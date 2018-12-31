@@ -1,6 +1,7 @@
 #include <ncbi/json.hpp>
 #include <ncbi/jwt.hpp>
 #include <ncbi/jws.hpp>
+#include <ncbi/jwk.hpp>
 
 #include <iostream>
 
@@ -9,66 +10,127 @@ using namespace ncbi;
 static void do_other_stuff ( JWTFactory & jwt_fact );
 static void do_even_more_stuff ( const JWTFactory & jwt_fact );
 
+static const char sample_pem [] =
+    "-----BEGIN RSA PRIVATE KEY-----\n"
+    "Proc-Type: 4,ENCRYPTED\n"
+    "DEK-Info: DES-EDE3-CBC,006F4DCD6A3C03AF\n"
+    "\n"
+    "74SGPcymU/vlrJYm3HqjF3urp8SixTAjgjCSAG4NFtRQxcv6mL1+QPJDJc6RVRxy\n"
+    "b/zMPAZUxTyHXM78o/VVTWI2/kxSH1KPBdLSqjo/ohN0pXmpLNY7jyr+WghljQ27\n"
+    "nCifTemiv1DtyIz9FCCSO496g31Q6utVOytq9DjidSfMd/DKhPKGM35Qbp2sQ8aw\n"
+    "Yby309hD3PrTsnxgS7XYDiFLMFVuLBs5avcG8sAULzjZYRoOvXWXmv94agWUDAXT\n"
+    "dTIAYWM5u+2kcLzG9Hiu/Q7FaBjDLLCKw78MnKIOrYcmIhhJDao9cbIvMnNnC2dN\n"
+    "1OSgI+uQUlyCX/VWcQDxfIR7ROBv1eeYaqqQsBLMzskdlrWjkI6pj/UxESb2Di/K\n"
+    "CpRaAwElDmxCdxbnTAVgyUI3prCiQ5t6X7dvRsZt7OgVLB+YZqYgIQnqxUFYcEa7\n"
+    "TJhMbDGSVUWhqLbn5pAFpsRaBuY8emBQxgMLZ9mb3B1vw2iBQFuOJMnQO4XUr5zr\n"
+    "Lj6WFZlM3GGqGeuPKMVNmlYEklUIMUPfGBDxWyUvNMrlyvxPESH2+eD761l5sFn2\n"
+    "IXLe3jZgWbe1jNNq7OwRHAYe+ua+MelTo7iFBSjOOY/iR7UjsSLNiCmPRNW5BiFA\n"
+    "F25C8je8fRDe0FykSWwqler+YL+JNacq/o47ZIyaSYseWXwmkQhvNtA98VQ9OtgL\n"
+    "xIRBgEC3umvUV4NW45BopgdXLfz01iBvkq7QKMpU8W/96ZR4ZxVu9N3NDxRtdJTV\n"
+    "UOsBeaVUdM+d9GUFilwwHh16XJaaseaK42DUsHnbztHUJZKB7qgYc6IyJzb+0u1e\n"
+    "alGGVPKuA/eL40IUk2vk51KjTlLdnGAW2afD7P+hm6qDKdZRsdP6EgKt2ch3xESx\n"
+    "GcGqLHWt5+LLlKZXsjNb4ulexIUnRlNKsPqXuPks4ljxbcosZn1eZTlIPDua71ZT\n"
+    "Toc5JnFDx2YGYCmcn7gNgnCgZ3pdIlCdSOuCmFssQzgnSvdaWGLUbdFrtJrT4SPb\n"
+    "G/9NzP38iNoO/GZ3ht1ZXRPROHTuqbmoGR+nqxipHXWa+mXx+7wweDJioDvVpGHX\n"
+    "sfU5cMKDUsZrLESJAlOhd7el251zhb/cqdTVkzrnVCECa/5RH+m46ta4dcXxp+ll\n"
+    "CLmb1K9sEG2SjqhvyugZMD9IlIaki/AriQhzT+YTWMcMrKC0zv0OK9M5nFbeNwl2\n"
+    "kdWJey7y1fwzOvoJPkGrcN7ZoMBg9KHA++K0uGPcrzHEYJ0l9vESVgwlYlsA3DWE\n"
+    "9Joj2JaEtH+KU4arMHiK5WYL+hw0/5ZuBoDS1esu7I+sLvQwtlZTpwlXqObcZy3E\n"
+    "C0Aic5QHswrmuInpVFnFDRaw4rBR8wsEOLjtirmLI4zrW4kBh/+0RJV2H/SoMTo7\n"
+    "HG/TO9uMRsa+cvm1Puz1PM1egDVmZzdclMLcRVSz9iCAc5x8YxDvshgc1U1crYJS\n"
+    "AxlsI5uEko8uwkGkXbClTxy+PbPa4LRQauDY+5G6KuGNGtmS3Gzo8wIfnOaCSoPn\n"
+    "0rNyp1YhQyNHlmvfAkbuK38kyfOqdl0ovm+9meuPU2s/hNgncOoQkg==\n"
+    "-----END RSA PRIVATE KEY-----\n"
+    ;
+
+static const char sample_pem_pwd [] = "blarky";
+
+static
+std :: string lineWrap ( const std :: string & text, unsigned int size, const char * indent )
+{
+    std :: string wrapped ( text . substr ( 0, size ) );
+    size_t end = text . size ();
+    for ( size_t i = size; i < end; i += size )
+    {
+        wrapped += '\n';
+        wrapped += indent;
+        wrapped += text . substr ( i, size );
+    }
+    return wrapped;
+}
+
 int main ( int argc, char * argv [], char * envp [] )
 {
     try
     {
-        // start with the name of the signing authority
-        // in this example, it's just "NCBI", but it should be specific
-        std :: string signing_authority ( "NCBI" );
+        /* STARTING POINT
 
-        // determine the algorithm used for signing
-        // NCBI will REQUIRE use of one of the RSA asymmetric algorithms,
-        // but as of today ( October 18th, 2018 ) these are still under development.
-        // instead, we will use HMAC.
-        std :: string algorithm ( "HS256" );
+           For this example, the starting point is the signing key.
+           A key is either randomly created, or is pre-existing.
+           A server will have pre-existing keys and will need to
+           obtain a JWK representing its signing authority.
 
-        // read in the key material from configuration
-        // here, we are just hard-coding them for simplicity
-        // in the near future, private keys will only be available
-        // via a service for storing/retrieving secrets
-        std :: string signing_key ( "secret-hmac-key" );
-        std :: string signing_kid ( "key-id-1234" );
-        // NB - since we're using a symmetric algorithm for today,
-        // the keys must be identical. Once we switch to RSA keys,
-        // they will necessarily be different.
-        std :: string verification_key ( signing_key );
+           Here we will use a string of PEM text representing a
+           private RSA key. Of course, this is an absurd way to manage
+           keys, as there is no protection of the key contents.
 
-        /*
-          now that we have keys and basically the configuration information,
-          create our JWS factory. This is an object that is used for the
-          actual signing and signature verification process.
-          
-          NB - since all of these parameters are strings, we may change
-          them to be strictly typed for their purpose, to avoid potential
-          for mis-configuration in future versions.
-          
-          NB - the intention of this object is that it will live for as long
-          as it is needed. It is intended to be declared in "main()" or high
-          up in the call chain and to live for the duration of the process.
+           As soon as possible, we'll provide a service for
+           storing/retrieving keys, both public and private. The
+           native format will be JWK, NOT PEM or DER. Notice that
+           JWK stores "use", "alg" and importantly "kid". In this
+           example, since we're creating a key manually from PEM,
+           we will have to manually provide these properties.
+
         */
-        JWSFactory jws_fact ( signing_authority, algorithm, signing_key, signing_kid, verification_key );
+        const char signing_key_use [] = "sig";
+        const char signing_key_alg [] = "RS256";
+        const char signing_key_kid [] = "key-id-1234";
+        const JWK * signing_key = JWK :: parsePEM ( sample_pem, sample_pem_pwd,
+            signing_key_use, signing_key_alg, signing_key_kid );
+
+        /* NEXT STEP
+
+           When creating simple JWTs that only bear a signature
+           (i.e. not encrypted), first prepare a signature factory
+           object. This is an object that is used for the
+           actual signing and signature verification process.
+
+           A JWSFactory is created with the signing key, and a name
+           representing the authority for logging purposes. Since a
+           JWK is not (yet) required to carry the algorithm, so we
+           are supplying it again. This is likely to change.
+          
+           NB - the intention of this object is that it will live for as long
+           as it is needed. It is intended to be declared in "main()" or high
+           up in the call chain and to live for the duration of the process.
+
+         */
+        const char signing_authority [] = "NCBI";
+        JWSFactory jws_fact ( signing_authority, signing_key_alg, signing_key );
+
+        // can (and should) dump our key reference now
+        signing_key -> release ();
         
-        /*
-          now that we have JWS, which is the ability to sign and verify signatures,
-          we need the factory object for JWT. It is created with the JWS factory
-          so that it acquires the ability to sign/verify JWTs.
+        /* CREATE JWT FACTORY
+
+           now that we have JWS, which is the ability to sign and verify signatures,
+           we need the factory object for JWT. It is created with the JWS factory
+           so that it acquires the ability to sign/verify JWTs.
           
-          NB - the "jws_fact" is only captured as a REFERENCE within the "jwt_fact"
-          so the jws_fact must outlive the jwt_fact. Don't let it go away first!
+           NB - the "jws_fact" is only captured as a REFERENCE within the "jwt_fact"
+           so the jws_fact must outlive the jwt_fact. Don't let it go away first!
           
-          NB - in the future, we will add another constructor that allows association
-          of a JWE factory for encryption.
+           NB - in the future, we will add another constructor that allows association
+           of a JWE factory for encryption.
           
-          NB - the lifetime of "jwt_fact" is intended to be for the entire process,
-          just as with the "jws_fact".
+           NB - the lifetime of "jwt_fact" is intended to be for the entire process,
+           just as with the "jws_fact".
+
         */
         JWTFactory jwt_fact ( jws_fact );
         
-        /*
-          the "jwt_fact" is now essentially standalone and can be passed to
-          other functions.
-        */
+        // the "jwt_fact" is now essentially standalone
+        // and can be passed to other functions.
         do_other_stuff ( jwt_fact );
     }
     catch ( JSONException & x )
@@ -123,9 +185,7 @@ static void do_other_stuff ( JWTFactory & jwt_fact )
     // to update it again, you can lock the factory against change
     jwt_fact . lock ();
 
-    /*
-      so now, the JWT factory should be set from configuration
-    */
+    // so now, the JWT factory should be set from configuration
     do_even_more_stuff ( jwt_fact );
 }
 
@@ -213,8 +273,38 @@ static void do_even_more_stuff ( const JWTFactory & jwt_fact )
         << "Look at my shiny new JWT:\n"
         << "  "
         << jwt
+        << "\n\n"
+        ;
+
+    /* This JWT is a compact serialization using JWS.
+       We can look at the parts that are separated by '.'
+     */
+    std :: vector < std :: string > parts;
+    size_t start = 0;
+    for ( size_t dot = jwt . find ( ".", 0 );
+          dot != std :: string :: npos;
+          dot = jwt . find ( ".", start = dot + 1 ) )
+    {
+        parts . push_back ( jwt . substr ( start, dot - start ) );
+    }
+    parts . push_back ( jwt . substr ( start ) );
+
+    std :: cout
+        << "Break it up into sections and line wrap:\n"
+        << "  "
+        << lineWrap ( parts [ 0 ], 78, "  " )
         << '\n'
         ;
+    for ( size_t part = 1; part < parts . size (); ++ part )
+    {
+        std :: cout
+            << "  .\n"
+            << "  "
+            << lineWrap ( parts [ part ], 78, "  " )
+            << '\n'
+            ;
+    }
+    std :: cout << '\n';
 
     /* You should now be able to paste the JWT into the little
        page at https://jwt.io to show its contents and validate
@@ -232,8 +322,7 @@ static void do_even_more_stuff ( const JWTFactory & jwt_fact )
     /* If you arrived HERE, then the "jwt" passed validation */
     std :: cout
         << "And here's what was recovered from JWT:\n"
-        << "  "
-        << claims2 . toJSON ()
-        << '\n'
+        << claims2 . readableJSON ( 1 )
+        << "\n\n"
         ;
 }
