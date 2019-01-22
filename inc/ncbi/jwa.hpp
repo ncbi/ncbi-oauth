@@ -33,112 +33,33 @@
 
 namespace ncbi
 {
-    class JWK;
+    /**
+     * \file ncbi/jwa.hpp
+     * \brief JSON Web Algorithm Management - RFC 7518
+     *
+     *  API to the JWA component, exposing only elements needed
+     *  by a client application.
+     */
 
-    // JSON Web Algorithms - RFC 7518
-
-    class JWAKeyHolder
-    {
-    public:
-        
-        const std :: string & authority_name () const;
-        const std :: string & algorithm () const;
-        std :: string keyID () const;
-
-        virtual ~ JWAKeyHolder ();
-        
-    protected:
-
-        JWAKeyHolder ( const std :: string & authority_name,
-            const std :: string & alg, const JWK * key );
-
-        std :: string nam;
-        std :: string alg;
-        const JWK * key;
-    };
-
-    class JWASigner : public JWAKeyHolder
+    /**
+     * \class JWAMgr
+     * \brief globally accessible static access to JWA component
+     *
+     *  Not properly a class, but a namespace for access functions.
+     */
+    class JWAMgr
     {
     public:
 
-        virtual std :: string sign ( const void * data, size_t bytes ) const = 0;
-        virtual JWASigner * clone () const = 0;
-        
-    protected:
-
-        JWASigner ( const std :: string & authority_name,
-            const std :: string & alg, const JWK * key );
+        /**
+         * \fn acceptJWKAlgorithm
+         * \brief a predicate function on whether a named algorithm is accepted
+         * \param alg an algorithm name
+         * \return Boolean true if the algorithm name is recognized and accepted
+         */
+        static bool acceptJWKAlgorithm ( const std :: string & alg );
     };
-
-    class JWAVerifier : public JWAKeyHolder
-    {
-    public:
-
-        virtual bool verify ( const void * data, size_t bytes, const std :: string & signature ) const = 0;
-        virtual JWAVerifier * clone () const = 0;
-
-    protected:
-
-        JWAVerifier ( const std :: string & authority_name,
-            const std :: string & alg, const JWK * key );
-    };
-
-    struct JWASignerFact
-    {
-        virtual JWASigner * make ( const std :: string & authority_name,
-            const std :: string & alg, const JWK * key ) const = 0;
-        virtual ~ JWASignerFact ();
-    };
-
-    struct JWAVerifierFact
-    {
-        virtual JWAVerifier * make ( const std :: string & authority_name,
-            const std :: string & alg, const JWK * key ) const = 0;
-        virtual ~ JWAVerifierFact ();
-    };
-    
-    class JWAFactory
-    {
-    public:
-
-        JWASigner * makeSigner ( const std :: string & authority_name,
-            const std :: string & alg, const JWK * key ) const;
-        JWAVerifier * makeVerifier ( const std :: string & authority_name,
-            const std :: string & alg, const JWK * key ) const;
-
-        void registerSignerFact ( const std :: string & alg, JWASignerFact * fact );
-        void registerVerifierFact ( const std :: string & alg, JWAVerifierFact * fact );
-
-        bool acceptJWKAlgorithm ( const std :: string & alg ) const;
-
-        JWAFactory ();
-        ~ JWAFactory ();
-        
-    private:
-
-        void makeMaps ();
-
-        struct Maps
-        {
-            Maps ();
-            ~ Maps ();
-            
-            std :: set < std :: string > sign_accept;
-            std :: map < std :: string, JWASignerFact * > signer_facts;
-            std :: map < std :: string, JWAVerifierFact * > verifier_facts;
-
-        } * maps;
-
-    };
-
-    extern JWAFactory gJWAFactory;
-
-    // functions that can be used to cause inclusion of an algorithm
-    // i.e. to keep it from being dead-stripped by the linker
-    void includeJWA_none ( bool always_false );
-    void includeJWA_hmac ( bool always_false );
-    void includeJWA_rsa  ( bool always_false );
 
 }
 
-#endif /* _hpp_ncbi_oauth_jws_ */
+#endif // _hpp_ncbi_oauth_jwa_

@@ -28,51 +28,6 @@
 
 namespace ncbi
 {
-    std :: string double_to_string ( long double val, unsigned int precision )
-    {
-        // TBD - come up with a more precise cutoff
-        if ( precision > 40 )
-            precision = 40;
-        
-        char buffer [ 1024 ];
-        int len = std :: snprintf ( buffer, sizeof buffer, "%.*Lg", precision, val );
-        if ( len < 0 || ( size_t ) len >= sizeof buffer )
-            throw JSONException ( __func__, __LINE__, "failed to convert long double to string" );
-        
-        return std :: string ( buffer, len );
-    }
-    
-    // factory functions
-    // they make private implementations
-    JSONValue * JSONValue :: makeNull ()
-    {
-        return new JSONWrapper ( jvt_null );
-    }
-    
-    JSONValue * JSONValue :: makeBool ( bool val )
-    {
-        return new JSONWrapper ( jvt_bool, new JSONBoolean ( val ) );
-    }
-    
-    JSONValue * JSONValue :: makeInteger ( long long int val )
-    {
-        return new JSONWrapper ( jvt_int, new JSONInteger ( val ) );
-    }
-    
-    JSONValue * JSONValue :: makeDouble ( long double val, unsigned int precision )
-    {
-        return makeParsedNumber ( double_to_string ( val, precision ) );
-    }
-    
-    JSONValue * JSONValue :: makeParsedNumber ( const std :: string & val )
-    {
-        return new JSONWrapper ( jvt_num, new JSONNumber ( val ) );
-    }
-    
-    JSONValue * JSONValue :: makeParsedString ( const std :: string & val )
-    {
-        return new JSONWrapper ( jvt_str, new JSONString ( val ) );
-    }
 
     // These are all false because it's a base class and can't know what it is
     bool JSONValue :: isNull () const
@@ -80,7 +35,7 @@ namespace ncbi
         return false;
     }
     
-    bool JSONValue :: isBool () const
+    bool JSONValue :: isBoolean () const
     {
         return false;
     }
@@ -118,7 +73,7 @@ namespace ncbi
         throw JSONException ( __func__, __LINE__, "INTERNAL ERROR" ); // test hit
     }
     
-    JSONValue & JSONValue :: setBool ( bool val )
+    JSONValue & JSONValue :: setBoolean ( bool val )
     {
         throw JSONException ( __func__, __LINE__, "INTERNAL ERROR" ); // test hit
     }
@@ -144,7 +99,7 @@ namespace ncbi
     }
 
     // these are accessors
-    bool JSONValue :: toBool () const
+    bool JSONValue :: toBoolean () const
     {
         // this is a logic-error
         // same for other casts

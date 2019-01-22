@@ -68,9 +68,9 @@ namespace ncbi
     
     struct JSONBoolean : JSONPrimitive
     {
-        static JSONValue * parse ( const std::string &json, size_t & pos );
+        //static JSONValue * parse ( const std::string &json, size_t & pos );
         
-        bool toBool () const
+        bool toBoolean () const
         { return value; }
 
         virtual std :: string toString () const;
@@ -112,7 +112,7 @@ namespace ncbi
 
     struct JSONNumber : JSONPrimitive
     {
-        static JSONValue * parse ( const JSONValue :: Limits & lim, const std::string &json, size_t & pos );
+        //static JSONValue * parse ( const JSON :: Limits & lim, const std::string &json, size_t & pos );
         
         virtual std :: string toString () const
         { return value; }
@@ -123,7 +123,8 @@ namespace ncbi
         virtual void invalidate ()
         {
             size_t vsize = value . size ();
-            memset_while_respecting_language_semantics ( ( void * ) value . data (), vsize, ' ', vsize, value . c_str () );
+            memset_while_respecting_language_semantics
+                ( ( void * ) value . data (), vsize, ' ', vsize, value . c_str () );
         }
         
         JSONNumber ( const std :: string & val )
@@ -140,7 +141,7 @@ namespace ncbi
 
     struct JSONString : JSONPrimitive
     {
-        static JSONValue * parse ( const JSONValue :: Limits & lim, const std::string &json, size_t & pos );
+        //static JSONValue * parse ( const JSON :: Limits & lim, const std::string &json, size_t & pos );
         
         virtual std :: string toString () const
         { return value; }
@@ -153,7 +154,8 @@ namespace ncbi
         virtual void invalidate ()
         {
             size_t vsize = value . size ();
-            memset_while_respecting_language_semantics ( ( void * ) value . data (), vsize, ' ', vsize, value . c_str () );
+            memset_while_respecting_language_semantics
+                ( ( void * ) value . data (), vsize, ' ', vsize, value . c_str () );
         }
         
         JSONString ( const std :: string & val )
@@ -170,31 +172,28 @@ namespace ncbi
     
     struct JSONWrapper : JSONValue
     {
-        virtual bool isNull () const;
-        virtual bool isBool () const;
-        virtual bool isInteger () const;        // a number that is an integer
-        virtual bool isNumber () const;         // is any type of number
-        virtual bool isString () const;         // is specifically a string
+        virtual bool isNull () const override;
+        virtual bool isBoolean () const override;
+        virtual bool isNumber () const override;         // is any type of number
+        virtual bool isInteger () const override;        // a number that is an integer
+        virtual bool isString () const override;         // is specifically a string
 
-        virtual JSONValue & setNull ();
-        virtual JSONValue & setBool ( bool val );
-        virtual JSONValue & setInteger ( long long int val );
-        virtual JSONValue & setDouble ( long double val, unsigned int precision );
-        virtual JSONValue & setNumber ( const std :: string & val );
-        virtual JSONValue & setString ( const std :: string & val );
+        virtual JSONValue & setNull () override;
+        virtual JSONValue & setBoolean ( bool val ) override;
+        virtual JSONValue & setNumber ( const std :: string & val ) override;
+        virtual JSONValue & setInteger ( long long int val ) override;
+        virtual JSONValue & setDouble ( long double val, unsigned int precision ) override;
+        virtual JSONValue & setString ( const std :: string & val ) override;
         
-        virtual bool toBool () const;
-        virtual long long toInteger () const;
-        virtual std :: string toNumber () const;
-        virtual std :: string toString () const;
-        virtual std :: string toJSON () const;
+        virtual bool toBoolean () const override;
+        virtual std :: string toNumber () const override;
+        virtual long long toInteger () const override;
+        virtual std :: string toString () const override;
+        virtual std :: string toJSON () const override;
 
-        virtual JSONValue * clone () const;
+        virtual JSONValue * clone () const override;
 
-        virtual void invalidate ();
-        
-        // parses "null"
-        static JSONValue * parse ( const std :: string & json, size_t & pos );
+        virtual void invalidate () override;
 
         // C++ assignment
         JSONWrapper & operator = ( const JSONWrapper & val );

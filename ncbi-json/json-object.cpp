@@ -28,11 +28,6 @@
 
 namespace ncbi
 {
-    // make an empty object
-    JSONObject * JSONObject :: make ()
-    {
-        return new JSONObject ();
-    }
 
     std :: string JSONObject :: toString () const
     {

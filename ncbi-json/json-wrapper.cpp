@@ -37,7 +37,7 @@ namespace ncbi
         return type == jvt_null;
     }
     
-    bool JSONWrapper :: isBool () const
+    bool JSONWrapper :: isBoolean () const
     {
         return type == jvt_bool;
     }
@@ -66,7 +66,7 @@ namespace ncbi
         return * this;
     }
     
-    JSONValue & JSONWrapper :: setBool ( bool val )
+    JSONValue & JSONWrapper :: setBoolean ( bool val )
     {
         delete value;
         value = new JSONBoolean ( val );
@@ -107,15 +107,15 @@ namespace ncbi
         return * this;
     }
 
-    bool JSONWrapper :: toBool () const
+    bool JSONWrapper :: toBoolean () const
     {
         if ( type == jvt_bool )
         {
             assert ( value != nullptr );
-            return ( ( const JSONBoolean * ) value ) -> toBool ();
+            return ( ( const JSONBoolean * ) value ) -> toBoolean ();
         }
 
-        return JSONValue :: toBool ();
+        return JSONValue :: toBoolean ();
     }
     
     long long JSONWrapper :: toInteger () const

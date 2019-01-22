@@ -43,7 +43,7 @@ OAUTHLIBS =                     \
 	$(LIBDIR)/libncbi-tst-jwt.a
 
 ## ncbi-json
-LIBJSONSRC =       \
+#LIBJSONSRC =       \
 	parser         \
 	json-object    \
 	json-array     \
@@ -51,6 +51,16 @@ LIBJSONSRC =       \
 	json-primitive \
 	json-value     \
 	json-exception \
+	memset_s
+
+LIBJSONSRC =       \
+	json           \
+	json-object    \
+	json-array     \
+	json-value     \
+	json-wrapper   \
+	json-primitive \
+	jwx            \
 	memset_s
 
 LIBJSONOBJ = \

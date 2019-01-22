@@ -43,60 +43,81 @@ namespace ncbi
     class EllipticCurvePublic_JWKey;
     class EllipticCurvePrivate_JWKey;
 
-    // JSON Web Key - RFC 7517
+    /**
+     * \file ncbi/jwk.hpp
+     * \brief JSON Web Key Management - RFC 7517
+     *
+     *  API to the JWK component, exposing only elements needed
+     *  by a client application.
+     */
 
+    /**
+     * \class JWK
+     * \brief an opaque representation of a key
+     */
     class JWK
     {
     public:
 
-        // inflate a JWK from JSON text
-        static const JWK * parse ( const std :: string & json_text );
-
-        // inflate from PEM text format
-        static const JWK * parsePEM ( const std :: string & pem_text,
-            const std :: string & use, const std :: string & alg, const std :: string & kid );
-        static const JWK * parsePEM ( const std :: string & pem_text, const std :: string & pwd,
-            const std :: string & use, const std :: string & alg, const std :: string & kid );
-
-        // inflate from DER format
-        static const JWK * parseDER ( const void * key, size_t key_size,
-            const std :: string & use, const std :: string & alg, const std :: string & kid );
-        static const JWK * parseDER ( const void * key, size_t key_size, const std :: string & pwd,
-            const std :: string & use, const std :: string & alg, const std :: string & kid );
-
-        // inflate from PEM or DER format
-        static const JWK * parsePEMorDER ( const void * key, size_t key_size,
-            const std :: string & use, const std :: string & alg, const std :: string & kid );
-        static const JWK * parsePEMorDER ( const void * key, size_t key_size, const std :: string & pwd,
-            const std :: string & use, const std :: string & alg, const std :: string & kid );
-
-        // questions about key that don't involve looking at values
+        /**
+         * \fn forSigning
+         * \return Boolean true if this key is intended for signatures
+         */
         virtual bool forSigning () const;
+
+        /**
+         * \fn forEncryption
+         * \return Boolean true if this key is intended for encryption
+         */
         virtual bool forEncryption () const;
-        virtual bool isSymmetric () const;
+
+        /**
+         * \fn isPrivate
+         * \return Boolean true if the key contains private material
+         * a private key is required for signing or decryption
+         */
         virtual bool isPrivate () const;
+
+        /**
+         * \fn isSymmetric
+         * \return Boolean true if the key is symmetric
+         */
+        virtual bool isSymmetric () const;
+
+        /**
+         * \fn isRSA
+         * \return Boolean true if the key is for use in RSA algorithms
+         */
         virtual bool isRSA () const;
+
+        /**
+         * \fn isEllipticCurve
+         * \return Boolean true if the key is for use in elliptical curve algorithms
+         */
         virtual bool isEllipticCurve () const;
 
-        // safe casts
-        virtual const HMAC_JWKey * toHMAC () const;
-        virtual const RSAPrivate_JWKey * toRSAPrivate () const;
-        virtual const RSAPublic_JWKey * toRSAPublic () const;
-        virtual const EllipticCurvePrivate_JWKey * toEllipticCurvePrivate () const;
-        virtual const EllipticCurvePublic_JWKey * toEllipticCurvePublic () const;
-
-        // "kty"
-        //  MANDATORY in a JWK (section 4.1)
-        //  legal values "oct", "RSA", "EC"
+        /**
+         * \fn getType
+         * \return std::string with value of "kty" property
+         * this property is MANDATORY in a JWK (section 4.1)
+         * legal values are { "oct", "RSA", "EC" }
+         */
         std :: string getType () const;
 
-        // "kid"
-        //  optional (section 4.5), but
-        //  our library currently makes it MANDATORY
+        /**
+         * \fn getId
+         * \return std::string with value of "kid" property
+         * \exception PropertyNotFound if the property is not present
+         * this property is considered OPTIONAL under RFC (section 4.5)
+         * but may be configured to be MANDATORY in this implementation.
+         */
         std :: string getID () const;
 
-        // "alg"
-        //  identifies the algorithm (section 4.4)
+        /**
+         * \fn getAlg
+         * \return std:: string with value of "alg" property
+         * this property is OPTIONAL (section 4.4)
+         */
         std :: string getAlg () const;
 
         // "use"
@@ -341,4 +362,26 @@ namespace ncbi
     };
 }
 
-#endif /* _hpp_ncbi_oauth_jwk_ */
+
+        // inflate a JWK from JSON text
+        static const JWK * parse ( const std :: string & json_text );
+
+        // inflate from PEM text format
+        static const JWK * parsePEM ( const std :: string & pem_text,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
+        static const JWK * parsePEM ( const std :: string & pem_text, const std :: string & pwd,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
+
+        // inflate from DER format
+        static const JWK * parseDER ( const void * key, size_t key_size,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
+        static const JWK * parseDER ( const void * key, size_t key_size, const std :: string & pwd,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
+
+        // inflate from PEM or DER format
+        static const JWK * parsePEMorDER ( const void * key, size_t key_size,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
+        static const JWK * parsePEMorDER ( const void * key, size_t key_size, const std :: string & pwd,
+            const std :: string & use, const std :: string & alg, const std :: string & kid );
+
+#endif // _hpp_ncbi_oauth_jwk_

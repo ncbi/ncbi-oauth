@@ -31,14 +31,27 @@
 
 namespace ncbi
 {
-    /** memset
+    /**
+     * @fn memset_while_respecting_language_semantics
+     * @brief what is supposed to be memset_s but isn't always available
+     * @param dest pointer to destination block of memory
+     * @param dsize the number of bytes pointed to by dest
+     * @param ch the byte value to give dest memory
+     * @param count the number of bytes to actually set
+     * @param str a const char version of dest
+     *
      * hopefully this is a memset that doesn't get easily optimized out
      * our wonderful C/C++ stewards have seen proper the introduction of
      * very clever optimizations that unfortunately change the semantics
      * of the language in ways that can be danced around due to the language
      * not having defined behavior with regard to de-allocated memory.
+     *
+     * the extra parameter "str" should have the same address as "dest"
+     * but is passed in so that the compiler can't perform aliasing tricks.
+     * it is there for potential examination for proper operation.
      */
-    void memset_while_respecting_language_semantics ( void * dest, size_t dsize, int ch, size_t count, const char * str );
+    void memset_while_respecting_language_semantics ( void * dest, size_t dsize,
+        int ch, size_t count, const char * str );
 }
 
 #endif // _hpp_ncbi_memset_priv_

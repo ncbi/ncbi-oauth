@@ -28,11 +28,6 @@
 
 namespace ncbi
 {
-    // make an empty array
-    JSONArray * JSONArray :: make ()
-    {
-        return new JSONArray ();
-    }
 
     std :: string JSONArray :: toString () const
     {
@@ -148,7 +143,7 @@ namespace ncbi
         if ( locked )
             throw JSONException ( __func__, __LINE__, "array object cannot be modified" );
         if ( elem == nullptr )
-            elem = JSONValue :: makeNull ();
+            elem = JSON :: makeNull ();
 
         array . push_back ( elem );
     }
@@ -172,7 +167,7 @@ namespace ncbi
         {
             // fill whatever is in-between
             while ( ( size_t ) idx > array . size () )
-                appendValue ( JSONValue :: makeNull () );
+                appendValue ( JSON :: makeNull () );
 
             // append...
             if ( ( size_t ) idx == array . size () )
@@ -228,7 +223,7 @@ namespace ncbi
         // if it was not the last element in the array
         // just replace it with a null value
         if ( ( size_t ) idx + 1 < array . size () )
-            array [ idx ] = JSONValue :: makeNull ();
+            array [ idx ] = JSON :: makeNull ();
         else
         {
             // otherwise, forget the last element in the array
