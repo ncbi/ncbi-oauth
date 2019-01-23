@@ -43,16 +43,6 @@ OAUTHLIBS =                     \
 	$(LIBDIR)/libncbi-tst-jwt.a
 
 ## ncbi-json
-#LIBJSONSRC =       \
-	parser         \
-	json-object    \
-	json-array     \
-	json-wrapper   \
-	json-primitive \
-	json-value     \
-	json-exception \
-	memset_s
-
 LIBJSONSRC =       \
 	json           \
 	json-object    \
@@ -72,7 +62,7 @@ $(LIBDIR)/libncbi-json.a: $(OBJDIR) $(LIBJSONOBJ) $(MAKEFILE)
 	ar -rc $@ $(LIBJSONOBJ)
 
 ## ncbi-jwt
-LIBJWTSRC =            \
+#LIBJWTSRC =            \
 	jwt-factory        \
 	jwt-claims         \
 	jws-factory        \
@@ -87,6 +77,9 @@ LIBJWTSRC =            \
 	jwa-factory        \
 	jwt-lock           \
 	jwt-exception      \
+	base64
+
+LIBJWTSRC =            \
 	base64
 
 LIBJWTOBJ = \

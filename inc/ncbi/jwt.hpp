@@ -24,50 +24,141 @@
  *
  */
 
-#ifndef _hpp_ncbi_oauth_jwt_
-#define _hpp_ncbi_oauth_jwt_
+#ifndef _hpp_ncbi_jwt_
+#define _hpp_ncbi_jwt_
 
-#ifndef _hpp_ncbi_oauth_json_
+#ifndef _hpp_ncbi_jwx_
+#include <ncbi/jwx.hpp>
+#endif
+
+#ifndef _hpp_ncbi_json_
 #include <ncbi/json.hpp>
 #endif
 
 #include <atomic>
 #include <string>
 
+/**
+ * @file ncbi/jwt.hpp
+ * @brief JSON Web Tokens - RFC 7519
+ */
+
 namespace ncbi
 {
-    class JWSFactory;
-    class JWTFactory;
-    class JWTFixture_BasicConstruction;
-    
-    // a JSON Web Token - RFC 7519: Line 233
-    // A string representing a set of claims as a JSON object
+    class JWK;
+    class JWKSet;
+    class JWTClaimSet;
+    class InvalidJWTClaimSet;
+
+    /**
+     * @typedef JWT
+     * @brief a JSON Web Token - RFC 7519: Line 233
+     * A string representing a set of claims as a JSON object
+     */
     typedef std :: string JWT;
-    
-    // RFC 7519: Line 273
-    // if the string contains a ':', then it MUST be a URI [RFC3986]
+
+    /**
+     * @typedef StringOrURI
+     * @brief a string that may be a URI - RFC 7519: Line 273
+     * if the string contains a ':', then it MUST be a URI [RFC3986]
+     */
     typedef std :: string StringOrURI;
     
-    /* JWTException
-     **********************************************************************************/
-    class JWTException : public std :: logic_error
+    /**
+     * @class JWTMgr
+     * @brief JWT Management
+     * globally accessible factory functions
+     */
+    class JWTMgr
     {
     public:
-        
-        virtual const char * what () const
-        throw ();
-        
-        explicit JWTException ( const char * function, unsigned int line, const char * message );
-        virtual ~JWTException ()
-        throw ();
-        
-    private:
-        
-        std :: string msg;
-        const char * fl_msg;
+
+        /**
+         * @fn makeClaimSet
+         * @brief create an empty JWTClaimSet object
+         * @return JWTClaimSet object
+         */
+        static JWTClaimSet makeClaimSet ();
+
+        /**
+         * @fn sign
+         * @brief sign a JWTClaimSet object
+         * @param claims C++ reference to a JWTClaimSet object
+         * @param key C++ reference to the JWK signing key
+         * @return JWT string
+         */
+        static JWT sign ( const JWTClaimSet & claims, const JWK & key );
+
+        /**
+         * @fn decode
+         * @overload decode a JWT into a JWTClaimSet object
+         * @param jwt the JWT to decode
+         * @param keys set of keys to validate signature and potentially decrypt
+         * @exception JWSInvalidSignature
+         * @exception JWTExpired
+         * @return JWTClaimSet object
+         * there are many possible errors that can occur when decoding.
+         * the method will only return if all validations pass.
+         */
+        static JWTClaimSet decode ( const JWT & jwt, const JWKSet & keys );
+
+        /**
+         * @fn decode
+         * @overload decode a JWT into a JWTClaimSet object with timestamp and skew
+         * @param jwt the JWT to decode
+         * @param keys set of keys to validate signature and potentially decrypt
+         * @param cur_time an externally supplied timestamp for evaluating exiration
+         * @param skew_secs an allowed margin of error between clock at origin and cur_time
+         * @exception JWSInvalidSignature
+         * @exception JWTExpired
+         * @return JWTClaimSet object
+         * there are many possible errors that can occur when decoding.
+         * the method will only return if all validations pass.
+         */
+        static JWTClaimSet decode ( const JWT & jwt, const JWKSet & val_keys,
+            long long cur_time, long long skew_secs = 0 );
+
+        /**
+         * @fn inspect
+         * @brief decode a JWT into an InvalidJWTClaimSet object without most validity checks
+         * @param jwt the JWT to decode
+         * @param keys set of keys to validate signature and potentially decrypt
+         * @param override_signature_check if true, inspect even after signature failure
+         * @exception JWSInvalidSignature
+         * @return InvalidJWTClaimSet object
+         * there are many possible errors that can occur when decoding.
+         * the method will only return if all validations pass.
+         */
+        static InvalidJWTClaimSet inspect ( const JWT & jwt, const JWKSet & keys,
+            bool override_signature_check = false );
+
+        /**
+         * @fn validateStringOrURI
+         * @overload checks a std::string for conformance
+         * @param str a std::string to validate
+         * @exception JWTInvalidStringOrURI
+         */
+        static void validateStringOrURI ( const std :: string & str );
+
+        /**
+         * @fn validateStringOrURI
+         * @overload checks a const JSONValue pointer for conformance
+         * @param str a std::string to validate
+         * @exception JWTInvalidStringOrURI
+         */
+        static void validateStringOrURI ( const JSONValue * value );
+
+        /**
+         * @fn now
+         * @return long long int timestamp in seconds since epoch
+         */
+        static long long int now ();
     };
 
-    // JWTLock
+    /**
+     * @struct JWTLock
+     * @brief an embedded object that allows busy-wait locking against modification
+     */
     struct JWTLock
     {
 
@@ -77,157 +168,314 @@ namespace ncbi
         mutable std :: atomic_flag flag;
     };
 
+    /**
+     * @class JWTLocker
+     * @brief a C++ utility class to lock and guarantee unlock of a JWTLock
+     */
     class JWTLocker
     {
     public:
 
+        /**
+         * @fn JWTLocker
+         * @brief attempt to lock a JWTLock object
+         * @param lock the JWTLock
+         * @exception JWTLockBusy
+         */
         JWTLocker ( const JWTLock & lock );
+
+        /**
+         * @fn ~JWTLocker
+         * @brief releases lock on JWTLock
+         */
         ~ JWTLocker ();
         
     private:
 
-        const JWTLock & lock;
+        const JWTLock & lock;             //!< hold on object being locked
     };
-    
-    // A JSON object that contains the claims conveyed by the JWT
-    class JWTClaims
+
+    /**
+     * @class JWTClaimSet
+     * @brief an object for holding a set of valid claims
+     * claims may be registered or application specific
+     */
+    class JWTClaimSet
     {
     public:
-        
-        // registered claims
+
+        /*=================================================*
+         *            REGISTERED CLAIM SETTERS             *
+         *=================================================*/
+
+        /**
+         * @fn setIssuer
+         * @brief set "iss" claim value
+         * @param iss a StringOrURI representing the issuer
+         */
         void setIssuer ( const StringOrURI & iss );
+
+        /**
+         * @fn setSubject
+         * @brief set "sub" claim value
+         * @param sub a StringOrURI representing the subject
+         */
         void setSubject ( const StringOrURI & sub );
+
+        /**
+         * @fn addAudience
+         * @brief set or add to "aud" claim array
+         * @param aud a StringOrURI representing an audience
+         */
         void addAudience ( const StringOrURI & aud );
-        void setDuration ( long long int dur_seconds );
+
+        /**
+         * @fn setNotBefore
+         * @brief set "nbf" claim value
+         * @param nbf_seconds the absolute time at which token becomes valid
+         * if this value is not set, the token will become valid immediately
+         */
         void setNotBefore ( long long int nbf_seconds );
 
-        // claims can be any valid JSONValue
-        void addClaim ( const std :: string & name, JSONValue * value, bool isFinal = false );
-        void addClaimOrDeleteValue ( const std :: string & name, JSONValue * value, bool isFinal = false );
-        JSONValue & getClaim ( const std :: string & name ) const;
-        
-        // validate claims read from JWT payload
-        // mark protected claims as final
-        // test validity based on time +/- skew amount
-        void validate ( long long cur_time, long long skew = 0 );
+        /**
+         * @fn setDuration
+         * @brief set token duration affecting "exp" claim value
+         * @param dur_seconds the token duration in seconds
+         * the "exp" claim will only be set upon signing,
+         * at which time the absolute time at which the token
+         * becomes valid ( "nbf" ) will be added to the duration
+         * to produce "exp" in absolute time.
+         */
+        void setDuration ( long long int dur_seconds );
 
-        // serialization
+
+        /*=================================================*
+         *            REGISTERED CLAIM GETTERS             *
+         *=================================================*/
+
+        /**
+         * @fn getIssuer
+         * @brief get "iss" claim value
+         * @return StringOrURI representing the issuer
+         */
+        StringOrURI getIssuer () const;
+
+        /**
+         * @fn getSubject
+         * @brief get "sub" claim value
+         * @return StringOrURI representing the subject
+         */
+        StringOrURI getSubject () const;
+
+        /**
+         * @fn getAudience
+         * @brief get "aud" claim array
+         * @return std :: vector < StringOrURI > representing all audiences
+         */
+        std :: vector < StringOrURI > getAudience () const;
+
+        /**
+         * @fn getNotBefore
+         * @brief get "nbf" claim value or current time if not set
+         * @return long long int representing the absolute time of token validity
+         */
+        long long int getNotBefore () const;
+
+        /**
+         * @fn getExpiration
+         * @brief get "exp" claim value if set
+         * @return long long int representing the absolute time of token expiration
+         */
+        long long int getExpiration () const;
+
+        /**
+         * @fn getDuration
+         * @brief get token duration affecting "exp" claim value
+         * @return long long int representing seconds between "exp" and token validity
+         */
+        long long int getDuration () const;
+
+
+        /*=================================================*
+         *               APPLICATION CLAIMS                *
+         *=================================================*/
+
+        /**
+         * @fn addClaim
+         * @brief adds an unregistered claim
+         * @param name std::string with unique claim name
+         * @param value a non-null JSONValue pointer
+         * @exception JSONUniqueConstraintViolation if name exists
+         * @exception JSONNullValue if val == nullptr
+         */
+        void addClaim ( const std :: string & name, JSONValue * value );
+
+        /**
+         * @fn addClaimOrDeleteValue
+         * @brief calls addClaim() and deletes value upon exceptions
+         * @param name std::string with unique claim name
+         * @param value a non-null JSONValue pointer
+         * @exception JSONUniqueConstraintViolation if name exists
+         * @exception JSONNullValue if val == nullptr
+         * In C++, the temptation is to create JSONValue objects inline
+         * to the addClaim expression. When using addClaim() directly,
+         * this can lead to orphaned objects. Use this method instead to
+         * indicate that the value object should be deleted upon error.
+         */
+        void addClaimOrDeleteValue ( const std :: string & name, JSONValue * value );
+
+        /**
+         * @fn getNames
+         * @return std::vector < std::string > of claim names
+         */
+        std :: vector < std :: string > getNames () const;
+
+        /**
+         * @fn getClaim
+         * @brief attempts to find a claim by name and return its value
+         * @param name std::string with the claim name
+         * @exception JSONNoSuchName if name is not a member of claims set
+         * @return const JSONValue reference to existing value
+         */
+        const JSONValue & getClaim ( const std :: string & name ) const;
+
+
+        /*=================================================*
+         *                  SERIALIZATION                  *
+         *=================================================*/
+
+        /**
+         * @fn toJSON
+         * @return C++ std::string with JSON representation of claims set
+         */
         std :: string toJSON () const;
+
+        /**
+         * @fn readableJSON
+         * @return C++ std::string with human-formatted JSON representation of claims set.
+         * differs from toJSON() in that spacing, indentation and line endings are inserted.
+         */
         std :: string readableJSON ( unsigned int indent = 0 ) const;
-        
-        // C++ assignment
-        JWTClaims & operator = ( const JWTClaims & jwt );
-        JWTClaims ( const JWTClaims & jwt );
-        ~ JWTClaims ();
-        
+
+
+        /*=================================================*
+         *                   C++ SUPPORT                   *
+         *=================================================*/
+
+        /**
+         * @fn operator =
+         * @brief assignment operator
+         * @param claims source of contents to clone
+         * @return C++ self-reference for use in idiomatic C++ expressions
+         * will delete any current contents
+         * clones contents of source object.
+         */
+        JWTClaimSet & operator = ( const JWTClaimSet & claims );
+
+        /**
+         * @fn JWTClaimSet
+         * @overload copy constructor
+         * @param claims source of contents to clone
+         * clones contents of source object.
+         */
+        JWTClaimSet ( const JWTClaimSet & claims );
+
+        /**
+         * @fn ~JWTClaimSet
+         * @brief deletes any contents and destroys internal structures
+         */        
+        virtual ~ JWTClaimSet ();
+
+    protected:
+
     private:
-        
-        // any std :: string parameter typed as StringOrURI MUST be validated
-        // throws an exception for an invalid string
-        static void validateStringOrURI ( const std :: string & str );
-        static void validateStringOrURI ( JSONValue * value );
 
-        // store a newly allocated value under claim name
-        // delete the value if there are any problems
-        void setValueOrDelete ( const std :: string & name, JSONValue * value ) const;
-        void setFinalValueOrDelete ( const std :: string & name, JSONValue * value ) const;
-        
-        JWTClaims ();
-        JWTClaims ( JSONObject * claims, bool require_iat_on_validate, bool require_exp_on_validate );
+        JSONObject * claims;              //!< claims are stored in a JSON object
+        long long duration;               //!< offset to produce "exp" from start
+        long long not_before;             //!< absolute time of "nbf"
+        JWTLock obj_lock;                 //!< busy lock to prevent modification
+     };
 
-        JSONObject * claims;
-        long long duration;
-        long long not_before;
-        JWTLock obj_lock;
-        bool have_duration;
-        bool have_not_before;
-        bool require_iat_on_validate;
-        bool require_exp_on_validate;
-
-        friend class JWTFactory;
-        friend class JWTClaimsLock;
-        friend class JWTFixture_BasicConstruction;
-    };
-
-    class JWTFactory
+    /**
+     * @class InvalidJWTClaims
+     * @brief an object with unvalidated claims
+     * in order to inspect a JWT even when invalid,
+     * this class exists to hold the contents.
+     */
+    class InvalidJWTClaims
     {
     public:
 
-        // make a new, more or less empty JWT object
-        JWTClaims make () const;
-        
-        // create a signed JWT as a compact JWS from the claims set
-        JWT sign ( const JWTClaims & claims ) const;
-        
-        // decode a JWT against current time with default skew
-        JWTClaims decode ( const JWT & jwt ) const;
-        // decode a JWT against provided time with optional explicit skew
-        JWTClaims decode ( const JWT & jwt, long long cur_time, long long skew = 0 ) const;
+        /*=================================================*
+         *            REGISTERED CLAIM GETTERS             *
+         *=================================================*/
 
-        // registered claim factory parameters
-        void setIssuer ( const StringOrURI & iss );
-        void setSubject ( const StringOrURI & sub );
-        void addAudience ( const StringOrURI & aud );
-        void setDuration ( long long int dur_seconds );
-        void setNotBefore ( long long int nbf_seconds );
+        /**
+         * @fn getIssuer
+         * @brief get "iss" claim value
+         * @return StringOrURI representing the issuer
+         */
+        StringOrURI getIssuer () const;
 
-        // skew access
-        long long getDefaultSkew () const
-        { return dflt_skew; }
-        void setDefaultSkew ( long long dflt );
+        /**
+         * @fn getSubject
+         * @brief get "sub" claim value
+         * @return StringOrURI representing the subject
+         */
+        StringOrURI getSubject () const;
 
-        // behavior of "exp" claim
-        void requireGenerateExp ( bool required );
-        void requireValidateExp ( bool required );
+        /**
+         * @fn getAudience
+         * @brief get "aud" claim array
+         * @return std :: vector < StringOrURI > representing all audiences
+         */
+        std :: vector < StringOrURI > getAudience () const;
 
-        // prevent further modifications
-        void lock ();
+        /**
+         * @fn getNotBefore
+         * @brief get "nbf" claim value or current time if not set
+         * @return long long int representing the absolute time of token validity
+         */
+        long long int getNotBefore () const;
 
-        // copy construction
-        JWTFactory & operator = ( const JWTFactory & jwt_fact );
-        JWTFactory ( const JWTFactory & jwt_fact );
-        
-        // create a factory without signing or encrypting capability
-        JWTFactory ();
+        /**
+         * @fn getExpiration
+         * @brief get "exp" claim value if set
+         * @return long long int representing the absolute time of token expiration
+         */
+        long long int getExpiration () const;
 
-        // create a standard factory with signing capability
-        JWTFactory ( const JWSFactory & jws_fact );
-        
-        ~ JWTFactory ();
+
+        /*=================================================*
+         *               APPLICATION CLAIMS                *
+         *=================================================*/
+
+        /**
+         * @fn getNames
+         * @return std::vector < std::string > of claim names
+         */
+        std :: vector < std :: string > getNames () const;
+
+        /**
+         * @fn getClaim
+         * @brief attempts to find a claim by name and return its value
+         * @param name std::string with the claim name
+         * @exception JSONNoSuchName if name is not a member of claims set
+         * @return const JSONValue reference to existing value
+         */
+        const JSONValue & getClaim ( const std :: string & name ) const;
 
     private:
 
-        // make a new identifier
-        std :: string newJTI () const;
-
-        // convert claims to JSON text
-        std :: string claimsToPayload ( const JWTClaims & claims ) const;
-        
-        // return timestamp in seconds since epoch
-        static long long int now ();
-
-        // we obtain this as a reference
-        // but hold it as a pointer to allow for
-        // copies and NULL
-        const JWSFactory * jws_fact;
-
-        // factory claims
-        std :: string iss;
-        std :: string sub;
-        std :: vector < std :: string > aud;
-        long long duration;
-        long long not_before;
-
-        // properties for validation
-        long long dflt_skew;
-        JWTLock obj_lock;
-        bool require_iat_on_generate;
-        bool require_exp_on_generate;
-        bool require_iat_on_validate;
-        bool require_exp_on_validate;
-        
-        static std :: atomic < unsigned long long > id_seq;
+        const JSONObject * claims;        //!< claims are stored in a JSON object
     };
+
+
+    /*=================================================*
+     *                   EXCEPTIONS                    *
+     *=================================================*/
+    DECLARE_JWX_MSG_EXCEPTION ( JWTException, JWX );
+
 }
 
-#endif /* _hpp_ncbi_oauth_jwt_ */
+#endif // _hpp_ncbi_jwt_

@@ -88,7 +88,7 @@ namespace ncbi
         
         /**
          * @fn parse
-         * @override parse JSON string using default Limits
+         * @overload parse JSON string using default Limits
          * @param json JSON text as described in RFC-7159
          * @exception MalformedJSON if text does not conform to standard
          * @exception JSONLimitViolation if source text exceeds established limits
@@ -98,7 +98,7 @@ namespace ncbi
 
         /**
          * @fn parse
-         * @override parse JSON string using provided Limits
+         * @overload parse JSON string using provided Limits
          * @param json JSON text as described in RFC-7159
          * @exception MalformedJSON if text does not conform to standard
          * @exception JSONLimitViolation if source text exceeds established limits
@@ -108,7 +108,7 @@ namespace ncbi
 
         /**
          * @fn parseObject
-         * @override parse JSON string using default Limits
+         * @overload parse JSON string using default Limits
          * @param json JSON text as described in RFC-7159
          * @exception MalformedJSON if text does not conform to standard
          * @exception NotJSONObject if text does not represent a JSON object
@@ -119,7 +119,7 @@ namespace ncbi
 
         /**
          * @fn parseObject
-         * @override parse JSON string using provided Limits
+         * @overload parse JSON string using provided Limits
          * @param json JSON text as described in RFC-7159
          * @exception MalformedJSON if text does not conform to standard
          * @exception NotJSONObject if text does not represent a JSON object
@@ -586,7 +586,7 @@ namespace ncbi
 
         /**
          * @fn JSONArray
-         * @override copy constructor
+         * @overload copy constructor
          * @param array source of contents to clone
          * clones contents of source array.
          */
@@ -746,7 +746,7 @@ namespace ncbi
 
         /**
          * @fn getValue
-         * @override non-const accessor
+         * @overload non-const accessor
          * @param name std::string with the member name
          * @exception JSONNoSuchName if name is not a member of object
          * @return JSONValue reference to existing value
@@ -758,7 +758,7 @@ namespace ncbi
 
         /**
          * @fn getValue
-         * @override const accessor
+         * @overload const accessor
          * @param name std::string with the member name
          * @exception JSONNoSuchName if name is not a member of object
          * @return const JSONValue reference to existing value
@@ -795,7 +795,7 @@ namespace ncbi
 
         /**
          * @fn JSONObject
-         * @override copy constructor
+         * @overload copy constructor
          * @param obj source of contents to clone
          * clones contents of source object.
          */

@@ -125,6 +125,10 @@ namespace ncbi
     };
 
 
+    /**
+     * @def DECLARE_JWX_MSG_EXCEPTION
+     * @brief macro for easy declaration of exception classes
+     */
 #define DECLARE_JWX_MSG_EXCEPTION( class_name, super_class )                          \
     class class_name : public super_class                                             \
     {                                                                                 \

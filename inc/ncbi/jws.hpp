@@ -24,32 +24,61 @@
  *
  */
 
-#ifndef _hpp_ncbi_oauth_jws_
-#define _hpp_ncbi_oauth_jws_
+#ifndef _hpp_ncbi_jws_
+#define _hpp_ncbi_jws_
 
-#ifndef _hpp_ncbi_oauth_json_
+#ifndef _hpp_ncbi_json_
 #include <ncbi/json.hpp>
-#endif
-
-#ifndef _hpp_ncbi_oauth_jwa_
-#include <ncbi/jwa.hpp>
 #endif
 
 #include <vector>
 #include <string>
 
+/**
+ * @file ncbi/jwa.hpp
+ * @brief JSON Web Algorithms - RFC 7515
+ */
+
 namespace ncbi
 {
+
+    /**
+     * @typedef JWS
+     * @brief JSON Web Signature - RFC 7515: Line 350
+     * A data structure representing a digitally signed message
+     */
+    typedef std :: string JWS;
+
+    /**
+     * @class JWSMgr
+     * @brief JWS Management
+     * globally accessible factory functions
+     */
+    class JWSMgr
+    {
+    public:
+
+        /**
+         * @fn signCompact
+         * @brief sign using compact serialization - RFC 7515: Line 376
+         * @param hdr a const JSONObject reference representing user JOSE header values
+         * @param key C++ reference to the JWK signing key
+         * @param payload a pointer to bytes to be signed
+         * @param bytes the size in bytes of payload
+         * @return JWS encoded string
+         * sign using compact serialization method
+         */
+        static JWS signCompact ( const JSONObject & hdr, const JWK & key,
+            const void * payload, size_t bytes );
+    };
+
+
     // forwards
     class HMAC_JWKey;
     class RSAPublic_JWKey;
     class RSAPrivate_JWKey;
     class EllipticCurvePublic_JWKey;
     class EllipticCurvePrivate_JWKey;
-
-    // JSON Web Signature - RFC 7515: Line 350
-    // A data structure representing a digitally signed or MACed message
-    typedef std :: string JWS;
     
     class JWSFactory
     {
@@ -91,4 +120,4 @@ namespace ncbi
     };
 }
 
-#endif /* _hpp_ncbi_oauth_jws_ */
+#endif // _hpp_ncbi_jws_
