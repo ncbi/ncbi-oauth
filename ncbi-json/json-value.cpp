@@ -122,6 +122,12 @@ namespace ncbi
         return toJSON ();
     }
     
+    std :: string JSONValue :: readableJSON ( unsigned int indent ) const
+    {
+       // default behavior is to return JSON text
+        return toJSON ();
+    }
+    
     JSONArray & JSONValue :: toArray ()
     {
         throw JSONException ( __func__, __LINE__, "this value cannot be converted to an array" ); // test hit
@@ -142,7 +148,7 @@ namespace ncbi
         throw JSONException ( __func__, __LINE__, "this value cannot be converted to an object" );
     }
     
-    JSONValue * JSONValue :: clone () const
+    JSONValueRef JSONValue :: clone () const
     {
         // this is an internal
         throw JSONException ( __func__, __LINE__, "this value cannot be cloned" );

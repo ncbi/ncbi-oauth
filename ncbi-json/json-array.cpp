@@ -97,11 +97,11 @@ namespace ncbi
         return to_string;
     }
     
-    JSONValue * JSONArray :: clone () const
+    JSONValueRef JSONArray :: clone () const
     {
-        JSONArray * copy = new JSONArray ();
+        JSONArrayRef copy ( new JSONArray () );
 
-        *copy = *this;
+        * copy = * this;
 
         return copy;
     }
@@ -138,23 +138,25 @@ namespace ncbi
     }
 
     // add a new element to end of array
-    void JSONArray :: appendValue ( JSONValue * elem )
+    void JSONArray :: appendValue ( JSONValueRef & elem )
     {
         if ( locked )
             throw JSONException ( __func__, __LINE__, "array object cannot be modified" );
-        if ( elem == nullptr )
-            elem = JSON :: makeNull ();
 
-        array . push_back ( elem );
+        if ( elem == nullptr )
+            array . push_back ( JSON :: makeNull () . release () );
+        else
+            array . push_back ( elem . release () );
     }
 
     // set entry to a new value
     // will fill any undefined intermediate elements with null values
     // throws exception on negative index
-    void JSONArray :: setValue ( long int idx, JSONValue * elem )
+    void JSONArray :: setValue ( long int idx, JSONValueRef & elem )
     {
         if ( locked )
             throw JSONException ( __func__, __LINE__, "array object cannot be modified" );
+
         if ( idx < 0 )
             throw JSONException ( __func__, __LINE__, "illegal index value" );
 
@@ -167,17 +169,20 @@ namespace ncbi
         {
             // fill whatever is in-between
             while ( ( size_t ) idx > array . size () )
-                appendValue ( JSON :: makeNull () );
+            {
+                JSONValueRef nully = JSON :: makeNull ();
+                appendValue ( nully );
+            }
 
             // append...
             if ( ( size_t ) idx == array . size () )
-                array . push_back ( elem );
+                array . push_back ( elem . release () );
 
             // or replace
             else
             {
                 delete array [ idx ];
-                array [ idx ] = elem;
+                array [ idx ] = elem . release ();
             }
         }
         
@@ -201,29 +206,29 @@ namespace ncbi
         return * array [ idx ];
     }
 
-    // remove and return an entry if valid
-    // returns nullptr if index was negative or element undefined
+    // remove and delete an entry if valid
     // replaces valid internal entries with null element
     // deletes trailing null elements making them undefined
-    JSONValue * JSONArray :: removeValue ( long int idx )
+    void JSONArray :: removeValue ( long int idx )
     {
         if ( locked )
             throw JSONException ( __func__, __LINE__, "array object cannot be modified" );
+
        // test for illegal index
         if ( idx < 0 || ( size_t ) idx >= array . size () )
-            return nullptr;
+            return;
 
         // if the element is already null
         if ( array [ idx ] -> isNull () )
-            return nullptr;
+            return;
 
-        // grab existing element to return
-        JSONValue * prior = array [ idx ];
+        // delete existing element
+        delete array [ idx ];
 
         // if it was not the last element in the array
         // just replace it with a null value
         if ( ( size_t ) idx + 1 < array . size () )
-            array [ idx ] = JSON :: makeNull ();
+            array [ idx ] = JSON :: makeNull () . release ();
         else
         {
             // otherwise, forget the last element in the array
@@ -242,8 +247,6 @@ namespace ncbi
                 array . pop_back ();
             }
         }
-
-        return prior;
     }
 
     // C++ assignment
@@ -257,7 +260,8 @@ namespace ncbi
         for ( i = 0; i < count; ++ i )
         {
             // clone them
-            JSONValue * elem = a . array [ i ] -> clone ();
+            JSONValueRef elem = a . array [ i ] -> clone ();
+
             // append them
             appendValue ( elem );
         }
@@ -273,7 +277,7 @@ namespace ncbi
         size_t i, count = a . array . size ();
         for ( i = 0; i < count; ++ i )
         {
-            JSONValue * elem = a . array [ i ] -> clone ();
+            JSONValueRef elem = a . array [ i ] -> clone ();
             appendValue ( elem );
         }
         locked = a . locked;
@@ -296,6 +300,7 @@ namespace ncbi
     {
         if ( locked )
             throw JSONException ( __func__, __LINE__, "array object cannot be modified" );
+
         while ( ! array . empty () )
         {
             delete array . back ();
@@ -309,7 +314,7 @@ namespace ncbi
     }
 
     JSONArray :: JSONArray ()
-    : locked ( false )
+        : locked ( false )
     {
     }
     

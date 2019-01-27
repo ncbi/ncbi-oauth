@@ -160,12 +160,12 @@ namespace ncbi
         return value -> toJSON ();
     }
     
-    JSONValue * JSONWrapper :: clone () const
+    JSONValueRef JSONWrapper :: clone () const
     {
         if ( value == nullptr )
-            return new JSONWrapper ( jvt_null );
+            return JSONValueRef ( new JSONWrapper ( jvt_null ) );
 
-        return new JSONWrapper ( type, value -> clone () );
+        return JSONValueRef ( new JSONWrapper ( type, value -> clone () ) );
     }
 
     void JSONWrapper :: invalidate ()

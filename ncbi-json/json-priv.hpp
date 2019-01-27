@@ -191,7 +191,7 @@ namespace ncbi
         virtual std :: string toString () const override;
         virtual std :: string toJSON () const override;
 
-        virtual JSONValue * clone () const override;
+        virtual JSONValueRef clone () const override;
 
         virtual void invalidate () override;
 

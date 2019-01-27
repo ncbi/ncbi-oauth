@@ -31,8 +31,9 @@
 #include <ncbi/jwx.hpp>
 #endif
 
-#include <map>
+#include <memory>
 #include <vector>
+#include <map>
 
 /**
  * @file ncbi/json.hpp
@@ -56,6 +57,24 @@ namespace ncbi
     class JSONObject;
     struct JSONString;
     struct JSONNumber;
+
+    /**
+     * @typedef JSONValueRef
+     * @brief a unique reference to a JSONValue
+     */
+    typedef std :: unique_ptr < JSONValue > JSONValueRef;
+
+    /**
+     * @typedef JSONArrayRef
+     * @brief a unique reference to a JSONArray
+     */
+    typedef std :: unique_ptr < JSONArray > JSONArrayRef;
+
+    /**
+     * @typedef JSONObjectRef
+     * @brief a unique reference to a JSONObject
+     */
+    typedef std :: unique_ptr < JSONObject > JSONObjectRef;
 
     /**
      * @class JSON
@@ -92,9 +111,9 @@ namespace ncbi
          * @param json JSON text as described in RFC-7159
          * @exception MalformedJSON if text does not conform to standard
          * @exception JSONLimitViolation if source text exceeds established limits
-         * @return JSONValue representing legal JSON source
+         * @return JSONValueRef representing legal JSON source
          */
-        static JSONValue * parse ( const std :: string & json );
+        static JSONValueRef parse ( const std :: string & json );
 
         /**
          * @fn parse
@@ -102,9 +121,9 @@ namespace ncbi
          * @param json JSON text as described in RFC-7159
          * @exception MalformedJSON if text does not conform to standard
          * @exception JSONLimitViolation if source text exceeds established limits
-         * @return JSONValue representing legal JSON source
+         * @return JSONValueRef representing legal JSON source
          */
-        static JSONValue * parse ( const Limits & lim, const std :: string & json );
+        static JSONValueRef parse ( const Limits & lim, const std :: string & json );
 
         /**
          * @fn parseObject
@@ -113,9 +132,9 @@ namespace ncbi
          * @exception MalformedJSON if text does not conform to standard
          * @exception NotJSONObject if text does not represent a JSON object
          * @exception JSONLimitViolation if source text exceeds established limits
-         * @return JSONObject representing legal JSON source
+         * @return JSONObjectRef representing legal JSON source
          */
-        static JSONObject * parseObject ( const std :: string & json );
+        static JSONObjectRef parseObject ( const std :: string & json );
 
         /**
          * @fn parseObject
@@ -124,96 +143,98 @@ namespace ncbi
          * @exception MalformedJSON if text does not conform to standard
          * @exception NotJSONObject if text does not represent a JSON object
          * @exception JSONLimitViolation if source text exceeds established limits
-         * @return JSONObject representing legal JSON source
+         * @return JSONObjectRef representing legal JSON source
          */
-        static JSONObject * parseObject ( const Limits & lim, const std :: string & json );
+        static JSONObjectRef parseObject ( const Limits & lim, const std :: string & json );
 
         /**
          * @fn makeNull
-         * @return a JSONValue representing JSON value keyword "null"
+         * @return a JSONValueRef representing JSON value keyword "null"
          */
-        static JSONValue * makeNull ();
+        static JSONValueRef makeNull ();
 
         /**
          * @fn makeBoolean
          * @brief creates a value from C++ bool
          * @param val a Boolean initialization value
-         * @return a JSONValue representing a JSON value keyword "true" or "false"
+         * @return a JSONValueRef representing a JSON value keyword "true" or "false"
          */
-        static JSONValue * makeBoolean ( bool val );
+        static JSONValueRef makeBoolean ( bool val );
 
         /**
          * @fn makeNumber
          * @brief creates a value from textual numeral
          * @param val a textual numeral initialization value
-         * @return a JSONValue representing a numeric JSON value
+         * @return a JSONValueRef representing a numeric JSON value
          */
-        static JSONValue * makeNumber ( const std :: string & val );
+        static JSONValueRef makeNumber ( const std :: string & val );
 
         /**
          * @fn makeInteger
          * @this is a specialization of a JSON number
          * @param val a long integer initialization value
-         * @return a JSONValue representing an Integer JSON value
+         * @return a JSONValueRef representing an Integer JSON value
          * Use this method when starting with a C++ integer
          */
-        static JSONValue * makeInteger ( long long int val );
+        static JSONValueRef makeInteger ( long long int val );
 
         /**
          * @fn makeDouble
          * @this is a specialization of a JSON number
          * @param val an IEEE-754 long double initialization value
-         * @return a JSONValue representing a floating point JSON value
+         * @return a JSONValueRef representing a floating point JSON value
          * Use this method ONLY when starting with a C++ double
          * Its use is not recommended due to loss of information
          * when converting to textual numeral.
          */
-        static JSONValue * makeDouble ( long double val, unsigned int precision );
+        static JSONValueRef makeDouble ( long double val, unsigned int precision );
 
         /**
          * @fn makeString
          * @brief creates a value from std:: string
          * @param val a textual initialization value
-         * @return a JSONValue representing a JSON string value
+         * @return a JSONValueRef representing a JSON string value
          */
-        static JSONValue * makeString ( const std :: string & val );
+        static JSONValueRef makeString ( const std :: string & val );
 
         /**
          * @fn makeArray
-         * @return an empty JSONArray
+         * @brief make an empty array
+         * @return JSONArrayRef
          */
-        static JSONArray * makeArray ();
+        static JSONArrayRef makeArray ();
 
         /**
          * @fn makeObject
-         * @return an empty JSONObject
+         * @brief make an empty object
+         * @return JSONObjectRef
          */
-        static JSONObject * makeObject ();
+        static JSONObjectRef makeObject ();
 
     private:
 
-        static JSONValue * parse ( const Limits & lim, const std :: string & json,
+        static JSONValueRef parse ( const Limits & lim, const std :: string & json,
             size_t & pos, unsigned int depth );
 
-        static JSONValue * parseNull ( const std :: string & json, size_t & pos );
-        static JSONValue * parseBoolean ( const std :: string & json, size_t & pos );
-        static JSONValue * parseNumber ( const Limits & lim,
+        static JSONValueRef parseNull ( const std :: string & json, size_t & pos );
+        static JSONValueRef parseBoolean ( const std :: string & json, size_t & pos );
+        static JSONValueRef parseNumber ( const Limits & lim,
             const std :: string & json, size_t & pos );
-        static JSONValue * parseString ( const Limits & lim,
+        static JSONValueRef parseString ( const Limits & lim,
             const std :: string & json, size_t & pos );
-        static JSONArray * parseArray ( const Limits & lim, const std :: string & json,
+        static JSONArrayRef parseArray ( const Limits & lim, const std :: string & json,
             size_t & pos, unsigned int depth );
-        static JSONObject * parseObject ( const Limits & lim, const std :: string & json,
+        static JSONObjectRef parseObject ( const Limits & lim, const std :: string & json,
             size_t & pos, unsigned int depth );
 
-        static JSONValue * makeParsedNumber ( const std :: string & val );
-        static JSONValue * makeParsedString ( const std :: string & val );
+        static JSONValueRef makeParsedNumber ( const std :: string & val );
+        static JSONValueRef makeParsedString ( const std :: string & val );
         
 
         static Limits default_limits;
         
         // for testing
-        static JSONValue * test_parse ( const std :: string & json, bool consume_all );
+        static JSONValueRef test_parse ( const std :: string & json, bool consume_all );
         friend class JSONFixture_WhiteBox;
     };
 
@@ -436,16 +457,125 @@ namespace ncbi
          * @fn clone
          * @return creates a deep copy of value
          */
-        virtual JSONValue * clone () const;
+        virtual JSONValueRef clone () const;
 
         /**
          * @fn invalidate
          * @brief overwrite potentially sensitive contents in memory
          */
         virtual void invalidate () = 0;
+
+
+        /*=================================================*
+         *           C++ OPERATOR OVERLOADS                *
+         *=================================================*/
+
+        /**
+         * fn operator=
+         * @overload C++ only Boolean assignment operator
+         * @param val C++ bool true or false
+         * @return non-const JSONValue reference
+         */
+        inline JSONValue & operator = ( bool val )
+        {
+            return setBoolean ( val );
+        }
+
+        /**
+         * fn operator=
+         * @overload C++ only Integer assignment operator
+         * @param val C++ long long int
+         * @return non-const JSONValue reference
+         */
+        inline JSONValue & operator = ( long long int val )
+        {
+            return setInteger ( val );
+        }
+
+        /**
+         * fn operator=
+         * @overload C++ only String assignment operator
+         * @param val C++ std::string
+         * @return non-const JSONValue reference
+         */
+        inline JSONValue & operator = ( const std :: string & val )
+        {
+            return setString ( val );
+        }
+
+        /**
+         * @fn operator()
+         * @overload C++ only cast to bool operator
+         * @return bool value
+         */
+        inline operator bool () const
+        {
+            return toBoolean ();
+        }
+
+        /**
+         * @fn operator()
+         * @overload C++ only cast to integer operator
+         * @return long long int value
+         */
+        inline operator long long int () const
+        {
+            return toInteger ();
+        }
+
+        /**
+         * @fn operator()
+         * @overload C++ only cast to string operator
+         * @return std::string value
+         */
+        inline operator std :: string () const
+        {
+            return toString ();
+        }
+
+        /**
+         * @fn operator[]
+         * @overload C++ only array operator to access non-const JSONValue at idx
+         * @param idx signed array index
+         * @exception JSONBadCast if value is not an array
+         * @exception JSONIndexOutOfBounds if idx < 0 or >= count
+         * @return non-const JSONValue reference
+         */
+        inline JSONValue & operator [] ( long int idx );
+
+        /**
+         * @fn operator[]
+         * @overload C++ only array operator to access const JSONValue at idx
+         * @param idx signed array index
+         * @exception JSONBadCast if value is not an array
+         * @exception JSONIndexOutOfBounds if idx < 0 or >= count
+         * @return const JSONValue reference
+         */
+        inline const JSONValue & operator [] ( long int idx ) const;
+
+        /**
+         * @fn operator[]
+         * @overload C++ only array operator to access non-const named JSONValue
+         * @param name object member name
+         * @exception JSONBadCast if value is not an object
+         * @exception JSONNoSuchName if name is not a member of object
+         * @return non-const JSONValue reference
+         */
+        inline JSONValue & operator [] ( const std :: string & name );
+
+        /**
+         * @fn operator[]
+         * @overload C++ only array operator to access const JSONValue at idx
+         * @param name object member name
+         * @exception JSONBadCast if value is not an object
+         * @exception JSONNoSuchName if name is not a member of object
+         * @return const JSONValue reference
+         */
+        inline const JSONValue & operator [] ( const std :: string & name ) const;
+
         
         /**
-         * @fn !JSONValue
+         * @fn ~JSONValue
          * @brief disposes of dynmically allocated content in derived classes
          */
         virtual ~JSONValue ();
@@ -486,7 +616,7 @@ namespace ncbi
         { return * this; }
 
         // clone and invalidate
-        virtual JSONValue * clone () const override;
+        virtual JSONValueRef clone () const override;
         virtual void invalidate () override;
 
 
@@ -517,22 +647,23 @@ namespace ncbi
         /**
          * @fn appendValue
          * @brief add a new element to end of array
+         * @param elem a JSONValueRef to value
          * @exception JSONNullValue if elem == nullptr
          */
-        void appendValue ( JSONValue * elem );
+        void appendValue ( JSONValueRef & elem );
 
         /**
          * @fn setValue
          * @brief set entry to a new value
          * @param idx signed array index
-         * @param elem a JSONValue to store within array
+         * @param elem a JSONValueRef to store within array
          * @exception JSONIndexOutOfBounds if idx < 0
          * @exception JSONNullValue if elem == nullptr
          * if idx >= count (), the array will be extended
          * and missing elements with index < idx will be
          * filled with null values.
          */
-        void setValue ( long int idx, JSONValue * elem );
+        void setValue ( long int idx, JSONValueRef & elem );
 
         /**
          * @fn getValue
@@ -550,7 +681,7 @@ namespace ncbi
          * @fn getValue
          * @overload returns const JSONValue at idx
          * @param idx signed array index
-         * @exception JSONIndexOutOfBounds if idx < 0
+         * @exception JSONIndexOutOfBounds if idx < 0 or >= count
          * @return const JSONValue reference
          * a C++ reference is returned rather than a pointer in order
          * to facilitate certain idiomatic C++ expressions, in addition
@@ -562,17 +693,47 @@ namespace ncbi
          * @fn removeValue
          * @brief remove and return an entry if valid
          * @param idx signed array index
-         * @return nullptr if element does not exist or valid JSONValue pointer
          * replaces valid internal entries with null element
          * deletes trailing null elements making them undefined
          */
-        JSONValue * removeValue ( long int idx );
+        void removeValue ( long int idx );
         
         /**
          * @fn lock
          * @brief lock the array against future modification
          */
         void lock ();
+
+
+        /*=================================================*
+         *           C++ OPERATOR OVERLOADS                *
+         *=================================================*/
+
+        /**
+         * @fn operator[]
+         * @overload C++ only array operator to access non-const JSONValue at idx
+         * @param idx signed array index
+         * @exception JSONBadCast if value is not an array
+         * @exception JSONIndexOutOfBounds if idx < 0 or >= count
+         * @return non-const JSONValue reference
+         */
+        inline JSONValue & operator [] ( long int idx )
+        {
+            return getValue ( idx );
+        }
+
+        /**
+         * @fn operator[]
+         * @overload C++ only array operator to access const JSONValue at idx
+         * @param idx signed array index
+         * @exception JSONBadCast if value is not an array
+         * @exception JSONIndexOutOfBounds if idx < 0 or >= count
+         * @return const JSONValue reference
+         */
+        inline const JSONValue & operator [] ( long int idx ) const
+        {
+            return getValue ( idx );
+        }
 
         /**
          * @fn operator =
@@ -642,7 +803,7 @@ namespace ncbi
         { return * this; }
 
         // clone and invalidate
-        virtual JSONValue * clone () const override;
+        virtual JSONValueRef clone () const override;
         virtual void invalidate () override;
 
 
@@ -677,72 +838,44 @@ namespace ncbi
         std :: vector < std :: string > getNames () const;
 
         /**
-         * @fn addNameValuePair
+         * @fn addValue
          * @brief add a new ( name, value ) pair
          * @param name std::string with unique member name
-         * @param val a non-null JSONValue pointer
+         * @param val a JSONValueRef
          * @exception JSONUniqueConstraintViolation if name exists
          * @exception JSONNullValue if val == nullptr
          */
-        void addNameValuePair ( const std :: string & name, JSONValue * val );
+        void addValue ( const std :: string & name, JSONValueRef & val );
 
         /**
-         * @fn addFinalNameValuePair
+         * @fn addFinalValue
          * @brief add a new ( name, value ) pair and make element immutable
          * @param name std::string with unique member name
-         * @param val a non-null JSONValue pointer
+         * @param val a JSONValueRef
          * @exception JSONUniqueConstraintViolation if name exists
          * @exception JSONNullValue if val == nullptr
          */
-        void addFinalNameValuePair ( const std :: string & name, JSONValue * val );
+        void addFinalValue ( const std :: string & name, JSONValueRef & val );
         
         /**
          * @fn setValue
          * @brief set value of an existing pair or add a new pair
          * @param name std::string with unique member name
-         * @param val a non-null JSONValue pointer
+         * @param val a JSONValueRef
          * @exception JSONPermViolation if member exists and is final
          * @exception JSONNullValue if val == nullptr
          */
-        void setValue ( const std :: string & name, JSONValue * val );
-
-        /**
-         * @fn setValueOrDelete
-         * @brief calls setValue() and deletes val upon exceptions
-         * @param name std::string with unique member name
-         * @param val a non-null JSONValue pointer
-         * @exception JSONPermViolation if member exists and is final
-         * @exception JSONNullValue if val == nullptr
-         * In C++, the temptation is to create JSONValue objects inline
-         * to the setValue expression. When using setValue() directly,
-         * this can lead to orphaned objects. Use this method to
-         * indicate that the value object should be deleted upon error.
-         */
-        void setValueOrDelete ( const std :: string & name, JSONValue * val );
+        void setValue ( const std :: string & name, JSONValueRef & val );
 
         /**
          * @fn setFinalValue
          * @brief set value of an existing pair or add a new pair and mark member as final
          * @param name std::string with unique member name
-         * @param val a non-null JSONValue pointer
+         * @param val a JSONValueRef
          * @exception JSONPermViolation if member exists and is final
          * @exception JSONNullValue if val == nullptr
          */
-        void setFinalValue ( const std :: string & name, JSONValue * val );
-
-        /**
-         * @fn setFinalValueOrDelete
-         * @brief calls setFinalValue() and deletes val upon exceptions
-         * @param name std::string with unique member name
-         * @param val a non-null JSONValue pointer
-         * @exception JSONPermViolation if member exists and is final
-         * @exception JSONNullValue if val == nullptr
-         * In C++, the temptation is to create JSONValue objects inline
-         * to the setFinalValue expression. When using setFinalValue()
-         * directly, this can lead to orphaned objects. Use this method to
-         * indicate that the value object should be deleted upon error.
-         */
-        void setFinalValueOrDelete ( const std :: string & name, JSONValue * val );
+        void setFinalValue ( const std :: string & name, JSONValueRef & val );
 
         /**
          * @fn getValue
@@ -783,6 +916,37 @@ namespace ncbi
          */
         void lock ();
 
+
+        /*=================================================*
+         *           C++ OPERATOR OVERLOADS                *
+         *=================================================*/
+
+        /**
+         * @fn operator[]
+         * @overload C++ only array operator to access non-const named JSONValue
+         * @param name object member name
+         * @exception JSONBadCast if value is not an object
+         * @exception JSONNoSuchName if name is not a member of object
+         * @return non-const JSONValue reference
+         */
+        inline JSONValue & operator [] ( const std :: string & name )
+        {
+            return getValue ( name );
+        }
+
+        /**
+         * @fn operator[]
+         * @overload C++ only array operator to access const JSONValue at idx
+         * @param name object member name
+         * @exception JSONBadCast if value is not an object
+         * @exception JSONNoSuchName if name is not a member of object
+         * @return const JSONValue reference
+         */
+        inline const JSONValue & operator [] ( const std :: string & name ) const
+        {
+            return getValue ( name );
+        }
+
         /**
          * @fn operator =
          * @brief assignment operator
@@ -819,6 +983,35 @@ namespace ncbi
         
         friend class JSON;
     };
+
+
+    /*=================================================*
+     *                 C++ INLINES                     *
+     *=================================================*/
+
+    inline
+    JSONValue & JSONValue :: operator [] ( long int idx )
+    {
+        return toArray () . getValue ( idx );
+    }
+
+    inline
+    const JSONValue & JSONValue :: operator [] ( long int idx ) const
+    {
+        return toArray () . getValue ( idx );
+    }
+
+    inline
+    JSONValue & JSONValue :: operator [] ( const std :: string & name )
+    {
+        return toObject () . getValue ( name );
+    }
+
+    inline
+    const JSONValue & JSONValue :: operator [] ( const std :: string & name ) const
+    {
+        return toObject () . getValue ( name );
+    }
 
 
     /*=================================================*

@@ -33,7 +33,7 @@
 
 namespace ncbi
 {
-    JSON :: Limits default_limits;
+    JSON :: Limits JSON :: default_limits;
 
     std :: string double_to_string ( long double val, unsigned int precision )
     {
@@ -194,12 +194,12 @@ namespace ncbi
             throw JSONException ( __func__, __LINE__, "parsing recursion exceeds maximum depth" );
     }
 
-    JSONValue * JSON :: parse ( const std :: string & json )
+    JSONValueRef JSON :: parse ( const std :: string & json )
     {
         return parse ( default_limits, json );
     }
 
-    JSONValue * JSON :: parse ( const Limits & lim, const std :: string & json )
+    JSONValueRef JSON :: parse ( const Limits & lim, const std :: string & json )
     {
         if ( json . empty () )
             throw MalformedJSON ( __func__, __LINE__, "Empty JSON source" );
@@ -219,7 +219,8 @@ namespace ncbi
         if ( ! skip_whitespace ( json, pos ) )
             throw MalformedJSON ( __func__, __LINE__, "Expected: '{' or '[' at offset %zu", pos );
 
-        JSONValue *val = nullptr;
+        JSONValueRef val;
+
         switch ( json [ pos ] )
         {
         case '{':
@@ -233,20 +234,17 @@ namespace ncbi
         }
 
         if ( pos < json . size () )
-        {
-            delete val;
             throw MalformedJSON ( __func__, __LINE__, "Trailing byes in JSON text at offset %zu", pos );
-        }
 
         return val;
     }
 
-    JSONObject * JSON :: parseObject ( const std :: string & json )
+    JSONObjectRef JSON :: parseObject ( const std :: string & json )
     {
         return parseObject ( default_limits, json );
     }
 
-    JSONObject * JSON :: parseObject ( const Limits & lim, const std :: string & json )
+    JSONObjectRef JSON :: parseObject ( const Limits & lim, const std :: string & json )
     {
         if ( json . empty () )
             throw MalformedJSON ( __func__, __LINE__, "Empty JSON source" );
@@ -266,7 +264,8 @@ namespace ncbi
         if ( ! skip_whitespace ( json, pos ) )
             throw MalformedJSON ( __func__, __LINE__, "Expected: '{' at offset %zu", pos );
 
-        JSONObject *obj = nullptr;
+        JSONObjectRef obj;
+
         switch ( json [ pos ] )
         {
         case '{':
@@ -277,41 +276,38 @@ namespace ncbi
         }
 
         if ( pos < json . size () )
-        {
-            delete obj;
             throw MalformedJSON ( __func__, __LINE__, "Trailing byes in JSON text at offset %zu", pos );
-        }
 
         return obj;
     }
 
-    JSONValue * JSON :: makeNull ()
+    JSONValueRef JSON :: makeNull ()
     {
-        return new JSONWrapper ( jvt_null );
+        return JSONValueRef ( new JSONWrapper ( jvt_null ) );
     }
 
-    JSONValue * JSON :: makeBoolean ( bool val )
+    JSONValueRef JSON :: makeBoolean ( bool val )
     {
-        return new JSONWrapper ( jvt_bool, new JSONBoolean ( val ) );
+        return JSONValueRef ( new JSONWrapper ( jvt_bool, new JSONBoolean ( val ) ) );
     }
 
-    JSONValue * JSON :: makeNumber ( const std :: string & val )
+    JSONValueRef JSON :: makeNumber ( const std :: string & val )
     {
         size_t pos = 0;
         return parseNumber ( default_limits, val, pos );
     }
 
-    JSONValue * JSON :: makeInteger ( long long int val )
+    JSONValueRef JSON :: makeInteger ( long long int val )
     {
-        return new JSONWrapper ( jvt_int, new JSONInteger ( val ) );
+        return JSONValueRef ( new JSONWrapper ( jvt_int, new JSONInteger ( val ) ) );
     }
 
-    JSONValue * JSON :: makeDouble ( long double val, unsigned int precision )
+    JSONValueRef JSON :: makeDouble ( long double val, unsigned int precision )
     {
         return makeParsedNumber ( double_to_string ( val, precision ) );
     }
 
-    JSONValue * JSON :: makeString ( const std :: string & str )
+    JSONValueRef JSON :: makeString ( const std :: string & str )
     {
         if ( str . size () > default_limits . string_size )
             throw JSONException ( __func__, __LINE__, "string size exceeds allowed limit" );
@@ -319,24 +315,24 @@ namespace ncbi
         // examine all characters for legal and well-formed UTF-8
         test_wellformed_utf8 ( str );
         
-        JSONValue *val = makeParsedString ( str );
+        JSONValueRef val = makeParsedString ( str );
         if ( val == nullptr )
             throw JSONException ( __func__, __LINE__, "Failed to make JSONValue" );
         
         return val;
     }
 
-    JSONArray * JSON :: makeArray ()
+    JSONArrayRef JSON :: makeArray ()
     {
-        return new JSONArray ();
+        return JSONArrayRef ( new JSONArray () );
     }
 
-    JSONObject * JSON :: makeObject ()
+    JSONObjectRef JSON :: makeObject ()
     {
-        return new JSONObject ();
+        return JSONObjectRef ( new JSONObject () );
     }
     
-    JSONValue * JSON :: parse ( const Limits & lim, const std :: string & json,
+    JSONValueRef JSON :: parse ( const Limits & lim, const std :: string & json,
         size_t & pos, unsigned int depth )
     {
         if ( skip_whitespace ( json, pos ) )
@@ -365,10 +361,10 @@ namespace ncbi
             }
         }
 
-        return nullptr;
+        return JSONValueRef ( nullptr );
     }
 
-    JSONValue * JSON :: parseNull ( const std :: string & json, size_t & pos )
+    JSONValueRef JSON :: parseNull ( const std :: string & json, size_t & pos )
     {
         assert ( json [ pos ] == 'n' );
 
@@ -383,7 +379,7 @@ namespace ncbi
         return makeNull ();
     }
 
-    JSONValue * JSON :: parseBoolean ( const std :: string & json, size_t & pos )
+    JSONValueRef JSON :: parseBoolean ( const std :: string & json, size_t & pos )
     {
         assert ( json [ pos ] == 'f' || json [ pos ] == 't' );
 
@@ -414,14 +410,14 @@ namespace ncbi
                 throw JSONException ( __func__, __LINE__, "Expected keyword: 'true'" ); // test hit
         }
 
-        JSONValue *val = makeBoolean ( tf );
+        JSONValueRef val = makeBoolean ( tf );
         if ( val == nullptr )
             throw JSONException ( __func__, __LINE__, "Failed to make JSONValue" );
 
         return val;
     }
 
-    JSONValue * JSON :: parseNumber ( const Limits & lim, const std :: string & json, size_t & pos )
+    JSONValueRef JSON :: parseNumber ( const Limits & lim, const std :: string & json, size_t & pos )
     {
         assert ( isdigit ( json [ pos ] ) || json [ pos ] == '-' );
 
@@ -514,14 +510,14 @@ namespace ncbi
         if ( num_len > lim . numeral_length )
             throw JSONException ( __func__, __LINE__, "numeral size exceeds allowed limit" );
         
-        JSONValue *val = makeParsedNumber ( num_str . substr ( 0, num_len ) );
+        JSONValueRef val = makeParsedNumber ( num_str . substr ( 0, num_len ) );
         if ( val == nullptr )
             throw JSONException ( __func__, __LINE__, "Failed to make JSONValue" );
 
         return val;
     }
 
-    JSONValue * JSON :: parseString ( const Limits & lim, const std :: string & json, size_t & pos )
+    JSONValueRef JSON :: parseString ( const Limits & lim, const std :: string & json, size_t & pos )
     {
         assert ( json [ pos ] == '"' );
 
@@ -611,157 +607,132 @@ namespace ncbi
         // examine all characters for legal and well-formed UTF-8
         test_wellformed_utf8 ( str );
         
-        JSONValue *val = makeParsedString ( str );
+        JSONValueRef val = makeParsedString ( str );
         if ( val == nullptr )
             throw JSONException ( __func__, __LINE__, "Failed to make JSONValue" );
 
         return val;
     }
 
-    JSONArray * JSON :: parseArray ( const Limits & lim, const std :: string & json,
+    JSONArrayRef JSON :: parseArray ( const Limits & lim, const std :: string & json,
         size_t & pos, unsigned int depth )
     {
         assert ( json [ pos ] == '[' );
 
-        JSONArray *array = new JSONArray ();
-        try
+        JSONArrayRef array ( new JSONArray () );
+        while ( 1 )
         {
-            while ( 1 )
+            // skip over '[' and any whitespace
+            // json [ 0 ] is '[' or ','
+            if ( ! skip_whitespace ( json, ++ pos ) )
+                throw JSONException ( __func__, __LINE__, "Expected: ']'" ); // test hit
+
+            if ( json [ pos ] == ']' )
+                break;
+
+            // use scope to invalidate value
             {
-                // skip over '[' and any whitespace
-                // json [ 0 ] is '[' or ','
-                if ( ! skip_whitespace ( json, ++ pos ) )
-                    throw JSONException ( __func__, __LINE__, "Expected: ']'" ); // test hit
+                JSONValueRef value = parse ( lim, json, pos, depth );
+                if ( value == nullptr )
+                    throw JSONException ( __func__, __LINE__, "Failed to create JSON object" );
 
-                if ( json [ pos ] == ']' )
-                    break;
+                array -> appendValue ( value );
 
-                // use scope to invalidate value
-                {
-                    JSONValue *value = parse ( lim, json, pos, depth );
-                    if ( value == nullptr )
-                        throw JSONException ( __func__, __LINE__, "Failed to create JSON object" );
-
-                    array -> appendValue ( value );
-
-                    if ( array -> count () > default_limits . array_elem_count )
-                        throw JSONException ( __func__, __LINE__, "Array element count exceeds limit" );
-                }
-
-                // find and skip over ',' and skip any whitespace
-                // exit loop if no ',' found
-                if ( ! skip_whitespace ( json, pos ) || json [ pos ] != ',' )
-                    break;
+                if ( array -> count () > default_limits . array_elem_count )
+                    throw JSONException ( __func__, __LINE__, "Array element count exceeds limit" );
             }
 
-            // must end on ']'
-            if ( pos == std :: string :: npos || json [ pos ] != ']' )
-                throw JSONException ( __func__, __LINE__, "Excpected: ']'" ); // Test hit
+            // find and skip over ',' and skip any whitespace
+            // exit loop if no ',' found
+            if ( ! skip_whitespace ( json, pos ) || json [ pos ] != ',' )
+                break;
+        }
 
-            // skip over ']'
-            ++ pos;
-        }
-        catch ( ... )
-        {
-            delete array;
-            throw;
-        }
+        // must end on ']'
+        if ( pos == std :: string :: npos || json [ pos ] != ']' )
+            throw JSONException ( __func__, __LINE__, "Excpected: ']'" ); // Test hit
+
+        // skip over ']'
+        ++ pos;
 
         // JSONArray must be valid
         assert ( array != nullptr );
         return array;
     }
         
-    JSONObject * JSON :: parseObject ( const Limits & lim, const std :: string & json,
+    JSONObjectRef JSON :: parseObject ( const Limits & lim, const std :: string & json,
         size_t & pos, unsigned int depth )
     {
         test_depth ( lim, depth );
 
         assert ( json [ pos ] == '{' );
 
-        JSONObject *obj = new JSONObject ();
-        try
+        JSONObjectRef obj ( new JSONObject () );
+        while ( 1 )
         {
-            while ( 1 )
-            {
-                // skip over '{' and any whitespace
-                // json [ pos ] is '{' or ',', start at json [ pos + 1 ]
-                if ( ! skip_whitespace ( json, ++ pos ) )
-                    throw JSONException ( __func__, __LINE__, "Expected: '}'" ); // test hit
-
-                if ( json [ pos ] == '}' )
-                    break;
-
-                if ( json [ pos ] != '"' )
-                    throw JSONException ( __func__, __LINE__, "Expected: 'name' " );
-
-                std :: unique_ptr < JSONValue > name ( parseString ( lim, json, pos ) );
-                if ( name == nullptr )
-                    throw JSONException ( __func__, __LINE__, "Failed to create JSON object" );
-
-                // skip to ':'
-                if ( ! skip_whitespace ( json, pos ) || json [ pos ] != ':' )
-                    throw JSONException ( __func__, __LINE__, "Expected: ':'" ); // test hit
-                
-                // skip over ':'
-                ++ pos;
-                
-                // get JSON value;
-                {
-                    JSONValue *value = parse ( lim, json, pos, depth );
-                    try
-                    {
-                        if ( value == nullptr )
-                            throw JSONException ( __func__, __LINE__, "Failed to create JSON object" );
-                            
-                        obj -> addNameValuePair ( name -> toString(), value );
-                    }
-                    catch ( ... )
-                    {
-                        delete value;
-                        throw;
-                    }
-                }
-                
-                if ( obj -> count () > default_limits . object_mbr_count )
-                    throw JSONException ( __func__, __LINE__, "Array element count exceeds limit" );
-
-                // find and skip over ',' and skip any whitespace
-                // exit loop if no ',' found
-                if ( ! skip_whitespace ( json, pos ) || json [ pos ] != ',' )
-                    break;
-            }
-
-            // must end on '}'
-            if ( pos == std :: string :: npos || json [ pos ] != '}' )
+            // skip over '{' and any whitespace
+            // json [ pos ] is '{' or ',', start at json [ pos + 1 ]
+            if ( ! skip_whitespace ( json, ++ pos ) )
                 throw JSONException ( __func__, __LINE__, "Expected: '}'" ); // test hit
 
-            // skip over '}'
+            if ( json [ pos ] == '}' )
+                break;
+
+            if ( json [ pos ] != '"' )
+                throw JSONException ( __func__, __LINE__, "Expected: 'name' " );
+
+            JSONValueRef name = parseString ( lim, json, pos );
+            if ( name == nullptr )
+                throw JSONException ( __func__, __LINE__, "Failed to create JSON object" );
+
+            // skip to ':'
+            if ( ! skip_whitespace ( json, pos ) || json [ pos ] != ':' )
+                throw JSONException ( __func__, __LINE__, "Expected: ':'" ); // test hit
+                
+            // skip over ':'
             ++ pos;
-        }
-        catch ( ... )
-        {
-            delete obj;
-            throw;
+                
+            // get JSON value;
+            {
+                JSONValueRef value = parse ( lim, json, pos, depth );
+                if ( value == nullptr )
+                    throw JSONException ( __func__, __LINE__, "Failed to create JSON object" );
+                            
+                obj -> addValue ( name -> toString (), value );
+            }
+                
+            if ( obj -> count () > default_limits . object_mbr_count )
+                throw JSONException ( __func__, __LINE__, "Array element count exceeds limit" );
+
+            // find and skip over ',' and skip any whitespace
+            // exit loop if no ',' found
+            if ( ! skip_whitespace ( json, pos ) || json [ pos ] != ',' )
+                break;
         }
 
+        // must end on '}'
+        if ( pos == std :: string :: npos || json [ pos ] != '}' )
+            throw JSONException ( __func__, __LINE__, "Expected: '}'" ); // test hit
+
+        // skip over '}'
+        ++ pos;
 
         // JSONObject must be valid
         assert ( obj != nullptr );
         return obj;
     }
 
-    JSONValue * JSON :: makeParsedNumber ( const std :: string & val )
+    JSONValueRef JSON :: makeParsedNumber ( const std :: string & val )
     {
-        return new JSONWrapper ( jvt_num, new JSONNumber ( val ) );
+        return JSONValueRef ( new JSONWrapper ( jvt_num, new JSONNumber ( val ) ) );
     }
 
-    JSONValue * JSON :: makeParsedString ( const std :: string & val )
+    JSONValueRef JSON :: makeParsedString ( const std :: string & val )
     {
-        return new JSONWrapper ( jvt_str, new JSONString ( val ) );
+        return JSONValueRef ( new JSONWrapper ( jvt_str, new JSONString ( val ) ) );
     }
 
-    JSONValue * JSON :: test_parse ( const std :: string & json, bool consume_all )
+    JSONValueRef JSON :: test_parse ( const std :: string & json, bool consume_all )
     {
         size_t pos = 0;
         if ( json . empty () )
@@ -770,13 +741,10 @@ namespace ncbi
         if ( json . size () > default_limits . json_string_size )
             throw JSONException ( __func__, __LINE__, "JSON source exceeds allowed size limit" );
 
-        JSONValue *val = parse ( default_limits, json, pos, 0 );
+        JSONValueRef val = parse ( default_limits, json, pos, 0 );
 
         if ( consume_all && pos < json . size () )
-        {
-            delete val;
             throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" ); // test hit
-        }
 
         return val;
     }
