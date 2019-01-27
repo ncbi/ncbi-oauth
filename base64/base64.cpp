@@ -37,10 +37,10 @@ namespace ncbi
     // from binary 0..63 to standard BASE64 encoding
     static
     const char encode_std_table [] =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    "abcdefghijklmnopqrstuvwxyz"
-    "0123456789"
-    "+/";
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz"
+        "0123456789"
+        "+/";
 
     // from octet stream ( presumed standard BASE64 encoding )
     // to binary, where
@@ -50,31 +50,31 @@ namespace ncbi
     //   -3 would normally mean ignore ( invalid within JWT )
     static
     const char decode_std_table [] =
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x00 .. \x0F
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x10 .. \x1F
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x3e\xff\xff\xff\x3f" // \x20 .. \x2F
-    "\x34\x35\x36\x37\x38\x39\x3a\x3b\x3c\x3d\xff\xff\xff\xfe\xff\xff" // \x30 .. \x3F
-    "\xff\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e" // \x40 .. \x4F
-    "\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\xff\xff\xff\xff\xff" // \x50 .. \x5F
-    "\xff\x1a\x1b\x1c\x1d\x1e\x1f\x20\x21\x22\x23\x24\x25\x26\x27\x28" // \x60 .. \x6F
-    "\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30\x31\x32\x33\xff\xff\xff\xff\xff" // \x70 .. \x7F
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x80 .. \x8F
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x90 .. \x9F
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xA0 .. \xAF
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xB0 .. \xBF
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xC0 .. \xCF
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xD0 .. \xDF
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xE0 .. \xEF
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xF0 .. \xFF
-    ;
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x00 .. \x0F
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x10 .. \x1F
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x3e\xff\xff\xff\x3f" // \x20 .. \x2F
+        "\x34\x35\x36\x37\x38\x39\x3a\x3b\x3c\x3d\xff\xff\xff\xfe\xff\xff" // \x30 .. \x3F
+        "\xff\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e" // \x40 .. \x4F
+        "\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\xff\xff\xff\xff\xff" // \x50 .. \x5F
+        "\xff\x1a\x1b\x1c\x1d\x1e\x1f\x20\x21\x22\x23\x24\x25\x26\x27\x28" // \x60 .. \x6F
+        "\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30\x31\x32\x33\xff\xff\xff\xff\xff" // \x70 .. \x7F
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x80 .. \x8F
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x90 .. \x9F
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xA0 .. \xAF
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xB0 .. \xBF
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xC0 .. \xCF
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xD0 .. \xDF
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xE0 .. \xEF
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xF0 .. \xFF
+        ;
     
     // from binary 0..63 to BASE64-URL encoding
     static
     const char encode_url_table [] =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    "abcdefghijklmnopqrstuvwxyz"
-    "0123456789"
-    "-_";
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz"
+        "0123456789"
+        "-_";
     
     // from octet stream ( presumed BASE64-URL encoding )
     // to binary, where
@@ -84,23 +84,23 @@ namespace ncbi
     //   -3 would normally mean ignore ( invalid within JWT )
     static
     const char decode_url_table [] =
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x00 .. \x0F
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x10 .. \x1F
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x3e\xff\xff" // \x20 .. \x2F
-    "\x34\x35\x36\x37\x38\x39\x3a\x3b\x3c\x3d\xff\xff\xff\xfe\xff\xff" // \x30 .. \x3F
-    "\xff\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e" // \x40 .. \x4F
-    "\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\xff\xff\xff\xff\x3f" // \x50 .. \x5F
-    "\xff\x1a\x1b\x1c\x1d\x1e\x1f\x20\x21\x22\x23\x24\x25\x26\x27\x28" // \x60 .. \x6F
-    "\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30\x31\x32\x33\xff\xff\xff\xff\xff" // \x70 .. \x7F
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x80 .. \x8F
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x90 .. \x9F
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xA0 .. \xAF
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xB0 .. \xBF
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xC0 .. \xCF
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xD0 .. \xDF
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xE0 .. \xEF
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xF0 .. \xFF
-    ;
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x00 .. \x0F
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x10 .. \x1F
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x3e\xff\xff" // \x20 .. \x2F
+        "\x34\x35\x36\x37\x38\x39\x3a\x3b\x3c\x3d\xff\xff\xff\xfe\xff\xff" // \x30 .. \x3F
+        "\xff\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e" // \x40 .. \x4F
+        "\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\xff\xff\xff\xff\x3f" // \x50 .. \x5F
+        "\xff\x1a\x1b\x1c\x1d\x1e\x1f\x20\x21\x22\x23\x24\x25\x26\x27\x28" // \x60 .. \x6F
+        "\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30\x31\x32\x33\xff\xff\xff\xff\xff" // \x70 .. \x7F
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x80 .. \x8F
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \x90 .. \x9F
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xA0 .. \xAF
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xB0 .. \xBF
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xC0 .. \xCF
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xD0 .. \xDF
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xE0 .. \xEF
+        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff" // \xF0 .. \xFF
+        ;
     
     static
     const std :: string encodeBase64Impl ( const void * data, size_t bytes, const char encode_table [] )
@@ -111,13 +111,13 @@ namespace ncbi
         
         // this exception represents an internal error in any case
         if ( data == nullptr )
-            throw JWTException ( __func__, __LINE__, "invalid payload" );
+            throw B64Exception ( __func__, __LINE__, "invalid payload" );
 
         // TBD - place an upper limit on data size
         // a very large payload will create a very large string allocation
         // and may indicate garbage that could result in a segfault
         if ( bytes >= 0x40000000 )
-            throw JWTException ( __func__, __LINE__, "payload too large" );
+            throw B64Exception ( __func__, __LINE__, "payload too large" );
 
         // gather encoded output in a string
         // this is why we wanted to limit the data size
@@ -241,7 +241,7 @@ namespace ncbi
             default:
 
                 // this is theoretically impossible
-                throw JWTException ( __func__, __LINE__, "1 - aaaah!" );
+                throw B64Exception ( __func__, __LINE__, "1 - aaaah!" );
         }
 
         // if "j" is not 0 at this point, it means
@@ -253,76 +253,9 @@ namespace ncbi
         // done.
         return encoding;
     }
-
-
-
-
-    // Base64Payload
-    void Base64Payload :: setSize ( size_t amt )
-    {
-        if ( amt > cap || buff == nullptr )
-            throw JWTException ( __func__, __LINE__, "illegal payload size" );
-
-        sz = amt;
-        buff [ amt ] = 0;
-    }
-    
-    void Base64Payload :: increaseCapacity ( size_t amt )
-    {
-        unsigned char * new_buff = new unsigned char [ cap + amt + 1 ];
-        memmove ( new_buff, buff, sz );
-        delete [] buff;
-        cap += amt;
-        buff = new_buff;
-    }
-
-    Base64Payload :: Base64Payload ()
-        : buff ( nullptr )
-        , sz ( 0 )
-        , cap ( 0 )
-    {
-    }
-
-    Base64Payload :: Base64Payload ( size_t initial_capacity )
-        : buff ( nullptr )
-        , sz ( 0 )
-        , cap ( initial_capacity )
-    {
-        buff = new unsigned char [ cap + 1 ];
-    }
-
-    Base64Payload :: Base64Payload ( const Base64Payload & payload )
-        : buff ( payload . buff )
-        , sz ( payload . sz )
-        , cap ( payload . cap )
-    {
-        payload . buff = nullptr;
-        payload . sz = payload . cap = 0;
-    }
-
-    Base64Payload & Base64Payload :: operator = ( const Base64Payload & payload )
-    {
-        delete [] buff;
-
-        buff = payload . buff;
-        sz = payload . sz;
-        cap = payload . cap;
-        
-        payload . buff = nullptr;
-        payload . sz = payload . cap = 0;
-
-        return * this;
-    }
-
-    Base64Payload :: ~ Base64Payload ()
-    {
-        delete [] buff;
-        buff = nullptr;
-        sz = cap = 0;
-    }
     
     static
-    const Base64Payload decodeBase64Impl ( const std :: string &encoding, const char decode_table [] )
+    const JWPayload decodeBase64Impl ( const std :: string &encoding, const char decode_table [] )
     {
         // base the estimate of decoded size on input size
         // this can be over-estimated due to embedded padding or formatting characters
@@ -337,7 +270,7 @@ namespace ncbi
         size_t bytes = ( ( len + 3 ) / 4 ) * 3;
         
         // create an output buffer
-        Base64Payload payload ( bytes );
+        JWPayload payload ( bytes );
         unsigned char * buff = payload . data ();
 
         // generate a capacity limit, beyond which
@@ -401,7 +334,7 @@ namespace ncbi
                 // but it's not allowed in JWT and so is not expected to be in table
                 // any other value ( notably -1 ) is illegal
                 if ( byte != -3 )
-                    throw JWTException ( __func__, __LINE__, "illegal input characters" );
+                    throw B64Exception ( __func__, __LINE__, "illegal input characters" );
             }
         }
 
@@ -416,7 +349,7 @@ namespace ncbi
                 // encoding granularity is an octet - 8 bits
                 // it MUST be split across two codes - 6 bits each, i.e. 12 bits
                 // having only 6 bits in accumulator is illegal
-                throw JWTException ( __func__, __LINE__, "malformed input - group with 1 base64 encode character" );
+                throw B64Exception ( __func__, __LINE__, "malformed input - group with 1 base64 encode character" );
                 
             case 2:
                 
@@ -461,7 +394,7 @@ namespace ncbi
             default:
 
                 // theoretically impossible
-                throw JWTException ( __func__, __LINE__, "2 - aaah!" );
+                throw B64Exception ( __func__, __LINE__, "2 - aaah!" );
         }
 
         // NOW store size on object
@@ -472,7 +405,7 @@ namespace ncbi
     }
 
     static
-    const std :: string payloadToUTF8 ( const Base64Payload & payload )
+    const std :: string payloadToUTF8 ( const JWPayload & payload )
     {
         const unsigned char * buff = payload . data ();
         size_t size = payload . size ();
@@ -482,7 +415,7 @@ namespace ncbi
         for ( size_t i = 0; i < size; ++ i )
         {
             if ( buff [ i ] == 0 )
-                throw JWTException ( __func__, __LINE__, "text contains embedded NUL" );
+                throw B64Exception ( __func__, __LINE__, "text contains embedded NUL" );
         }
 
         return std :: string ( ( const char * ) buff, size );
@@ -493,15 +426,15 @@ namespace ncbi
         return encodeBase64Impl ( data, bytes, encode_std_table );
     }
     
-    const Base64Payload decodeBase64 ( const std :: string &encoding )
+    const JWPayload decodeBase64 ( const std :: string &encoding )
     {
-        Base64Payload payload = decodeBase64Impl ( encoding, decode_std_table );
+        JWPayload payload = decodeBase64Impl ( encoding, decode_std_table );
         return payload;
     }
     
     const std :: string decodeBase64String ( const std :: string &encoding )
     {
-        Base64Payload payload = decodeBase64Impl ( encoding, decode_std_table );
+        JWPayload payload = decodeBase64Impl ( encoding, decode_std_table );
         return payloadToUTF8 ( payload );
     }
     
@@ -510,14 +443,14 @@ namespace ncbi
         return encodeBase64Impl ( data, bytes, encode_url_table );
     }
     
-    const Base64Payload decodeBase64URL ( const std :: string &encoding )
+    const JWPayload decodeBase64URL ( const std :: string &encoding )
     {
         return decodeBase64Impl ( encoding, decode_url_table );
     }
     
     const std :: string decodeBase64URLString ( const std :: string &encoding )
     {
-        Base64Payload payload = decodeBase64Impl ( encoding, decode_url_table );
+        JWPayload payload = decodeBase64Impl ( encoding, decode_url_table );
         return payloadToUTF8 ( payload );
     }
     

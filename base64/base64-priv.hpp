@@ -43,6 +43,10 @@ namespace ncbi
     const JWPayload decodeBase64URL ( const std :: string & encoding );
     const std :: string decodeBase64URLString ( const std :: string & encoding );
     
+    /*=================================================*
+     *                   EXCEPTIONS                    *
+     *=================================================*/
+    DECLARE_JWX_MSG_EXCEPTION ( B64Exception, JWX );
 }
 
 #endif // _hpp_ncbi_base64_priv_
