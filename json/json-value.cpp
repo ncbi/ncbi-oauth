@@ -30,37 +30,37 @@ namespace ncbi
 {
 
     // These are all false because it's a base class and can't know what it is
-    bool JSONValue :: isNull () const
+    bool JSONValue :: isNull () const noexcept
     {
         return false;
     }
     
-    bool JSONValue :: isBoolean () const
+    bool JSONValue :: isBoolean () const noexcept
     {
         return false;
     }
     
-    bool JSONValue :: isInteger () const
+    bool JSONValue :: isInteger () const noexcept
     {
         return false;
     }
     
-    bool JSONValue :: isNumber () const
+    bool JSONValue :: isNumber () const noexcept
     {
         return false;
     }
     
-    bool JSONValue :: isString () const
+    bool JSONValue :: isString () const noexcept
     {
         return false;
     }
     
-    bool JSONValue :: isArray () const
+    bool JSONValue :: isArray () const noexcept
     {
         return false;
     }
 
-    bool JSONValue :: isObject () const
+    bool JSONValue :: isObject () const noexcept
     {
         return false;
     }
@@ -159,7 +159,7 @@ namespace ncbi
         // nothing to do
     }
     
-    JSONValue :: ~JSONValue ()
+    JSONValue :: ~JSONValue () noexcept
     {
         // nothing to do
     }

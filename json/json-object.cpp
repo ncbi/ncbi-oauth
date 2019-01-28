@@ -139,23 +139,23 @@ namespace ncbi
         
         * copy = * this;
         
-        return copy;
+        return copy . release ();
     }
 
-    void JSONObject :: invalidate ()
+    void JSONObject :: invalidate () noexcept
     {
         for ( auto it = members . begin (); it != members . end (); ++ it )
             it -> second . second -> invalidate ();
     }
 
     // asks whether object is empty
-    bool JSONObject :: isEmpty () const
+    bool JSONObject :: isEmpty () const noexcept
     {
         return members . empty ();
     }
 
     // does a member exist
-    bool JSONObject :: exists ( const std :: string & name ) const
+    bool JSONObject :: exists ( const std :: string & name ) const noexcept
     {
         auto it = members . find ( name );
 
@@ -166,7 +166,7 @@ namespace ncbi
     }
 
     // return the number of members
-    unsigned long int JSONObject :: count () const
+    unsigned long int JSONObject :: count () const noexcept
     {
         return members . size ();
     }
@@ -184,8 +184,11 @@ namespace ncbi
         
     // add a new ( name, value ) pair
     // "name" must be unique or an exception will be thrown
-    void JSONObject :: addValue ( const std :: string & name, JSONValueRef & val )
+    void JSONObject :: addValue ( const std :: string & name, const JSONValueRef & val )
     {
+        if ( locked )
+            throw JSONException ( __func__, __LINE__, "object cannot be modified" );
+
         auto it = members . find ( name );
         
         // error if it exists
@@ -204,8 +207,11 @@ namespace ncbi
         
     // add a new ( name, value ) pair
     // "name" must be unique or an exception will be thrown
-    void JSONObject :: addFinalValue ( const std :: string & name, JSONValueRef &val )
+    void JSONObject :: addFinalValue ( const std :: string & name, const JSONValueRef &val )
     {
+        if ( locked )
+            throw JSONException ( __func__, __LINE__, "object cannot be modified" );
+
         auto it = members . find ( name );
         
         // error if it exists
@@ -223,8 +229,11 @@ namespace ncbi
         
     // set entry to a new value
     // throws exception if entry exists and is final
-    void JSONObject :: setValue ( const std :: string & name, JSONValueRef & val )
+    void JSONObject :: setValue ( const std :: string & name, const JSONValueRef & val )
     {
+        if ( locked )
+            throw JSONException ( __func__, __LINE__, "object cannot be modified" );
+
         auto it = members . find ( name );
         
         // if doesnt exist, add
@@ -248,8 +257,11 @@ namespace ncbi
 
     // set entry to a final value
     // throws exception if entry exists and is final
-    void JSONObject :: setFinalValue ( const std :: string & name, JSONValueRef & val )
+    void JSONObject :: setFinalValue ( const std :: string & name, const JSONValueRef & val )
     {
+        if ( locked )
+            throw JSONException ( __func__, __LINE__, "object cannot be modified" );
+
         auto it = members . find ( name );
         
         // if doesnt exist, add
@@ -296,6 +308,9 @@ namespace ncbi
     // remove a named value
     void JSONObject :: removeValue ( const std :: string & name )
     {
+        if ( locked )
+            throw JSONException ( __func__, __LINE__, "object cannot be modified" );
+
         auto it = members . find ( name );
         if ( it != members . end () && it -> second . first == false )
         {
@@ -319,11 +334,14 @@ namespace ncbi
             else
                 setValue ( name, val );
         }
+
+        locked = obj . locked;
         
         return * this;
     }
     
     JSONObject :: JSONObject ( const JSONObject & obj )
+        : locked ( false )
     {
         for ( auto it = obj . members . cbegin(); it != obj . members . cend (); ++ it )
         {
@@ -335,16 +353,28 @@ namespace ncbi
             else
                 setValue ( name, val );
         }
+
+        locked = obj . locked;
     }
 
-    JSONObject :: ~ JSONObject ()
+    JSONObject :: ~ JSONObject () noexcept
     {
-        clear ();
+        locked = false;
+        try
+        {
+            clear ();
+        }
+        catch ( ... )
+        {
+        }
     }
     
     // used to empty out the object before copy
     void JSONObject :: clear ()
     {
+        if ( locked )
+            throw JSONException ( __func__, __LINE__, "object cannot be modified" );
+
         if ( ! members . empty () )
         {
             for ( auto it = members . begin(); it != members . end (); )
@@ -356,6 +386,7 @@ namespace ncbi
     }
 
     JSONObject :: JSONObject ()
+        : locked ( false )
     {
     }
 

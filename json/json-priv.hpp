@@ -62,8 +62,8 @@ namespace ncbi
         virtual std :: string toString () const = 0;
         virtual std :: string toJSON () const;
         virtual JSONPrimitive * clone () const = 0;
-        virtual void invalidate () = 0;
-        virtual ~ JSONPrimitive () {}
+        virtual void invalidate () noexcept = 0;
+        virtual ~ JSONPrimitive () noexcept {}
     };
     
     struct JSONBoolean : JSONPrimitive
@@ -78,7 +78,7 @@ namespace ncbi
         virtual JSONPrimitive * clone () const
         { return new JSONBoolean ( value ); }
 
-        virtual void invalidate ()
+        virtual void invalidate () noexcept
         { value = false; }
         
         JSONBoolean ( bool val )
@@ -99,7 +99,7 @@ namespace ncbi
         virtual JSONPrimitive * clone () const
         { return new JSONInteger ( value ); }
 
-        virtual void invalidate ()
+        virtual void invalidate () noexcept
         { value = 0; }
         
         JSONInteger ( long long int val )
@@ -120,7 +120,7 @@ namespace ncbi
         virtual JSONPrimitive * clone () const
         { return new JSONNumber ( value ); }
 
-        virtual void invalidate ()
+        virtual void invalidate () noexcept
         {
             size_t vsize = value . size ();
             memset_while_respecting_language_semantics
@@ -132,7 +132,7 @@ namespace ncbi
         {
         }
 
-        ~ JSONNumber ()
+        ~ JSONNumber () noexcept
         {
         }
 
@@ -151,7 +151,7 @@ namespace ncbi
         virtual JSONPrimitive * clone () const
         { return new JSONString ( value ); }
 
-        virtual void invalidate ()
+        virtual void invalidate () noexcept
         {
             size_t vsize = value . size ();
             memset_while_respecting_language_semantics
@@ -163,7 +163,7 @@ namespace ncbi
         {
         }
 
-        ~ JSONString ()
+        ~ JSONString () noexcept
         {
         }
 
@@ -172,11 +172,11 @@ namespace ncbi
     
     struct JSONWrapper : JSONValue
     {
-        virtual bool isNull () const override;
-        virtual bool isBoolean () const override;
-        virtual bool isNumber () const override;         // is any type of number
-        virtual bool isInteger () const override;        // a number that is an integer
-        virtual bool isString () const override;         // is specifically a string
+        virtual bool isNull () const noexcept override;
+        virtual bool isBoolean () const noexcept override;
+        virtual bool isNumber () const noexcept override;         // is any type of number
+        virtual bool isInteger () const noexcept override;        // a number that is an integer
+        virtual bool isString () const noexcept override;         // is specifically a string
 
         virtual JSONValue & setNull () override;
         virtual JSONValue & setBoolean ( bool val ) override;
@@ -193,7 +193,7 @@ namespace ncbi
 
         virtual JSONValueRef clone () const override;
 
-        virtual void invalidate () override;
+        virtual void invalidate () noexcept override;
 
         // C++ assignment
         JSONWrapper & operator = ( const JSONWrapper & val );
@@ -201,7 +201,7 @@ namespace ncbi
 
         JSONWrapper ( JSONValType type );
         JSONWrapper ( JSONValType type, JSONPrimitive * value );
-        virtual ~ JSONWrapper ();
+        virtual ~ JSONWrapper () noexcept override;
 
         JSONPrimitive * value; // wrapped value from library
         JSONValType type;

@@ -224,10 +224,10 @@ namespace ncbi
         switch ( json [ pos ] )
         {
         case '{':
-            val = parseObject ( lim, json, pos, 0 );
+            val = parseObject ( lim, json, pos, 0 ) . release ();
             break;
         case '[':
-            val = parseArray ( lim, json, pos, 0 );
+            val = parseArray ( lim, json, pos, 0 ) . release ();
             break;
         default:
             throw MalformedJSON ( __func__, __LINE__, "Expected: '{' or '[' at offset %zu", pos );
@@ -340,9 +340,9 @@ namespace ncbi
             switch ( json [ pos ] )
             {
                 case '{':
-                    return parseObject ( lim, json, pos, depth );
+                    return parseObject ( lim, json, pos, depth ) . release ();
                 case '[':
-                    return parseArray ( lim, json, pos, depth );
+                    return parseArray ( lim, json, pos, depth ) . release ();
                 case '"':
                     return parseString ( lim, json, pos );
                 case 'f':

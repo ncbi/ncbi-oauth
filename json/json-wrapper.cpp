@@ -32,27 +32,27 @@ namespace ncbi
 {
     // JSONWrapper - an implementation of JSONValue
     
-    bool JSONWrapper :: isNull () const
+    bool JSONWrapper :: isNull () const noexcept
     {
         return type == jvt_null;
     }
     
-    bool JSONWrapper :: isBoolean () const
+    bool JSONWrapper :: isBoolean () const noexcept
     {
         return type == jvt_bool;
     }
     
-    bool JSONWrapper :: isInteger () const
+    bool JSONWrapper :: isInteger () const noexcept
     {
         return type == jvt_int;
     }
     
-    bool JSONWrapper :: isNumber () const
+    bool JSONWrapper :: isNumber () const noexcept
     {
         return type == jvt_num;
     }
     
-    bool JSONWrapper :: isString () const
+    bool JSONWrapper :: isString () const noexcept
     {
         return type == jvt_str;
     }
@@ -168,7 +168,7 @@ namespace ncbi
         return JSONValueRef ( new JSONWrapper ( type, value -> clone () ) );
     }
 
-    void JSONWrapper :: invalidate ()
+    void JSONWrapper :: invalidate () noexcept
     {
         if ( value != nullptr )
             value -> invalidate ();
@@ -203,7 +203,7 @@ namespace ncbi
     {
     }
 
-    JSONWrapper :: ~ JSONWrapper ()
+    JSONWrapper :: ~ JSONWrapper () noexcept
     {
         delete value;
         value = nullptr;

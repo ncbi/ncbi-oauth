@@ -103,10 +103,10 @@ namespace ncbi
 
         * copy = * this;
 
-        return copy;
+        return copy . release ();
     }
     
-    void JSONArray :: invalidate ()
+    void JSONArray :: invalidate () noexcept
     {
         size_t i, count = array . size ();
         for ( i = 0; i < count; ++ i )
@@ -116,19 +116,19 @@ namespace ncbi
     }
 
     // asks whether array is empty
-    bool JSONArray :: isEmpty () const
+    bool JSONArray :: isEmpty () const noexcept
     {
         return array . empty ();
     }
 
     // return the number of elements
-    unsigned long int JSONArray :: count () const
+    unsigned long int JSONArray :: count () const noexcept
     {
         return ( unsigned long int ) array . size ();
     }
 
     // does an element exist
-    bool JSONArray :: exists ( long int idx ) const
+    bool JSONArray :: exists ( long int idx ) const noexcept
     {
         if ( idx < 0 || ( size_t ) idx >= array . size () )
             return false;
@@ -138,7 +138,7 @@ namespace ncbi
     }
 
     // add a new element to end of array
-    void JSONArray :: appendValue ( JSONValueRef & elem )
+    void JSONArray :: appendValue ( const JSONValueRef & elem )
     {
         if ( locked )
             throw JSONException ( __func__, __LINE__, "array object cannot be modified" );
@@ -152,7 +152,7 @@ namespace ncbi
     // set entry to a new value
     // will fill any undefined intermediate elements with null values
     // throws exception on negative index
-    void JSONArray :: setValue ( long int idx, JSONValueRef & elem )
+    void JSONArray :: setValue ( long int idx, const JSONValueRef & elem )
     {
         if ( locked )
             throw JSONException ( __func__, __LINE__, "array object cannot be modified" );
@@ -272,7 +272,7 @@ namespace ncbi
     }
     
     JSONArray :: JSONArray ( const JSONArray & a )
-    : locked ( false )
+        : locked ( false )
     {
         size_t i, count = a . array . size ();
         for ( i = 0; i < count; ++ i )
@@ -283,7 +283,7 @@ namespace ncbi
         locked = a . locked;
     }
         
-    JSONArray :: ~ JSONArray ()
+    JSONArray :: ~ JSONArray () noexcept
     {
         locked = false;
         try

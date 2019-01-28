@@ -27,11 +27,14 @@
 #ifndef _hpp_ncbi_json_
 #define _hpp_ncbi_json_
 
+#ifndef _hpp_ncbi_jwr_
+#include <ncbi/jwr.hpp>
+#endif
+
 #ifndef _hpp_ncbi_jwx_
 #include <ncbi/jwx.hpp>
 #endif
 
-#include <memory>
 #include <vector>
 #include <map>
 
@@ -62,19 +65,19 @@ namespace ncbi
      * @typedef JSONValueRef
      * @brief a unique reference to a JSONValue
      */
-    typedef std :: unique_ptr < JSONValue > JSONValueRef;
+    typedef JWRH < JSONValue > JSONValueRef;
 
     /**
      * @typedef JSONArrayRef
      * @brief a unique reference to a JSONArray
      */
-    typedef std :: unique_ptr < JSONArray > JSONArrayRef;
+    typedef JWRH < JSONArray > JSONArrayRef;
 
     /**
      * @typedef JSONObjectRef
      * @brief a unique reference to a JSONObject
      */
-    typedef std :: unique_ptr < JSONObject > JSONObjectRef;
+    typedef JWRH < JSONObject > JSONObjectRef;
 
     /**
      * @class JSON
@@ -257,19 +260,19 @@ namespace ncbi
          * @fn isNull
          * @return Boolean true if value is 'null'
          */
-        virtual bool isNull () const;
+        virtual bool isNull () const noexcept;
 
         /**
          * @fn isBoolean
          * @return Boolean true if value is 'true' or 'false'
          */
-        virtual bool isBoolean () const;
+        virtual bool isBoolean () const noexcept;
 
         /**
          * @fn isNumber
          * @return Boolean true if value is a number according to JSON spec
          */
-        virtual bool isNumber () const;
+        virtual bool isNumber () const noexcept;
 
         /**
          * @fn isInteger
@@ -277,27 +280,27 @@ namespace ncbi
          * an Integer is an integral number that can be represented
          * in a C++ long long int type.
          */
-        virtual bool isInteger () const;
+        virtual bool isInteger () const noexcept;
 
         /**
          * @fn isString
          * @return Boolean true if value is textual according to JSON spec
          */
-        virtual bool isString () const;
+        virtual bool isString () const noexcept;
 
         /**
          * @fn isArray
          * @return Boolean true if the value is an array
          * an array may contain other values
          */
-        virtual bool isArray () const;
+        virtual bool isArray () const noexcept;
 
         /**
          * @fn isObject
          * @return Boolean true if the value is an object
          * an object may contain other values
          */
-        virtual bool isObject () const;
+        virtual bool isObject () const noexcept;
 
 
 
@@ -463,7 +466,7 @@ namespace ncbi
          * @fn invalidate
          * @brief overwrite potentially sensitive contents in memory
          */
-        virtual void invalidate () = 0;
+        virtual void invalidate () noexcept = 0;
 
 
         /*=================================================*
@@ -578,7 +581,7 @@ namespace ncbi
          * @fn ~JSONValue
          * @brief disposes of dynmically allocated content in derived classes
          */
-        virtual ~JSONValue ();
+        virtual ~JSONValue () noexcept;
 
     protected:
         
@@ -601,7 +604,7 @@ namespace ncbi
          *=================================================*/
 
         // type predicate
-        virtual bool isArray () const override
+        virtual bool isArray () const noexcept override
         { return true; }
 
         // getters
@@ -617,7 +620,7 @@ namespace ncbi
 
         // clone and invalidate
         virtual JSONValueRef clone () const override;
-        virtual void invalidate () override;
+        virtual void invalidate () noexcept override;
 
 
         /*=================================================*
@@ -628,13 +631,13 @@ namespace ncbi
          * @fn isEmpty
          * @return Boolean true if array has no elements
          */
-        bool isEmpty () const;
+        bool isEmpty () const noexcept;
 
         /**
          * @fn count
          * @return Natural number with the number of contained elements
          */
-        unsigned long int count () const;
+        unsigned long int count () const noexcept;
 
         /**
          * @fn exists
@@ -642,7 +645,7 @@ namespace ncbi
          * @param idx signed array index
          * @return Boolean true if element exists
          */
-        bool exists ( long int idx ) const;
+        bool exists ( long int idx ) const noexcept;
 
         /**
          * @fn appendValue
@@ -650,7 +653,7 @@ namespace ncbi
          * @param elem a JSONValueRef to value
          * @exception JSONNullValue if elem == nullptr
          */
-        void appendValue ( JSONValueRef & elem );
+        void appendValue ( const JSONValueRef & elem );
 
         /**
          * @fn setValue
@@ -663,7 +666,7 @@ namespace ncbi
          * and missing elements with index < idx will be
          * filled with null values.
          */
-        void setValue ( long int idx, JSONValueRef & elem );
+        void setValue ( long int idx, const JSONValueRef & elem );
 
         /**
          * @fn getValue
@@ -757,7 +760,7 @@ namespace ncbi
          * @fn ~JSONArray
          * @brief deletes any contents and destroys internal structures
          */        
-        virtual ~JSONArray () override;
+        virtual ~JSONArray () noexcept override;
         
     private:
         
@@ -788,7 +791,7 @@ namespace ncbi
          *=================================================*/
 
         // type predicate
-        virtual bool isObject () const override
+        virtual bool isObject () const noexcept override
         { return true; }
 
         // getters
@@ -804,7 +807,7 @@ namespace ncbi
 
         // clone and invalidate
         virtual JSONValueRef clone () const override;
-        virtual void invalidate () override;
+        virtual void invalidate () noexcept override;
 
 
         /*=================================================*
@@ -815,13 +818,13 @@ namespace ncbi
          * @fn isEmpty
          * @return Boolean true if object has no ( name, value ) pairs
          */
-        bool isEmpty () const;
+        bool isEmpty () const noexcept;
 
         /**
          * @fn count
          * @return Natural number with the number of member pairs
          */
-        unsigned long int count () const;
+        unsigned long int count () const noexcept;
 
         /**
          * @fn exists
@@ -829,7 +832,7 @@ namespace ncbi
          * @param name std::string with the member name
          * @return Boolean true if pair exists
          */
-        bool exists ( const std :: string & name ) const;
+        bool exists ( const std :: string & name ) const noexcept;
         
         /**
          * @fn getNames
@@ -845,7 +848,7 @@ namespace ncbi
          * @exception JSONUniqueConstraintViolation if name exists
          * @exception JSONNullValue if val == nullptr
          */
-        void addValue ( const std :: string & name, JSONValueRef & val );
+        void addValue ( const std :: string & name, const JSONValueRef & val );
 
         /**
          * @fn addFinalValue
@@ -855,7 +858,7 @@ namespace ncbi
          * @exception JSONUniqueConstraintViolation if name exists
          * @exception JSONNullValue if val == nullptr
          */
-        void addFinalValue ( const std :: string & name, JSONValueRef & val );
+        void addFinalValue ( const std :: string & name, const JSONValueRef & val );
         
         /**
          * @fn setValue
@@ -865,7 +868,7 @@ namespace ncbi
          * @exception JSONPermViolation if member exists and is final
          * @exception JSONNullValue if val == nullptr
          */
-        void setValue ( const std :: string & name, JSONValueRef & val );
+        void setValue ( const std :: string & name, const JSONValueRef & val );
 
         /**
          * @fn setFinalValue
@@ -875,7 +878,7 @@ namespace ncbi
          * @exception JSONPermViolation if member exists and is final
          * @exception JSONNullValue if val == nullptr
          */
-        void setFinalValue ( const std :: string & name, JSONValueRef & val );
+        void setFinalValue ( const std :: string & name, const JSONValueRef & val );
 
         /**
          * @fn getValue
@@ -969,7 +972,7 @@ namespace ncbi
          * @fn ~JSONObject
          * @brief deletes any contents and destroys internal structures
          */        
-        virtual ~JSONObject () override;
+        virtual ~JSONObject () noexcept override;
 
         
     private:
