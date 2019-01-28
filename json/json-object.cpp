@@ -306,17 +306,21 @@ namespace ncbi
     }
         
     // remove a named value
-    void JSONObject :: removeValue ( const std :: string & name )
+    JSONValueRef JSONObject :: removeValue ( const std :: string & name )
     {
         if ( locked )
             throw JSONException ( __func__, __LINE__, "object cannot be modified" );
 
+        JSONValueRef removed;
+
         auto it = members . find ( name );
         if ( it != members . end () && it -> second . first == false )
         {
-            delete  it -> second . second;
+            removed = it -> second . second;
             members . erase ( it );
         }
+
+        return removed;
     }
 
     // C++ assignment

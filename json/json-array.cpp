@@ -163,7 +163,7 @@ namespace ncbi
         if ( elem == nullptr )
         {
             // basically trying to remove what's there
-            removeValue ( idx );
+            deleteValue ( idx );
         }
         else
         {
@@ -209,21 +209,23 @@ namespace ncbi
     // remove and delete an entry if valid
     // replaces valid internal entries with null element
     // deletes trailing null elements making them undefined
-    void JSONArray :: removeValue ( long int idx )
+    JSONValueRef JSONArray :: removeValue ( long int idx )
     {
         if ( locked )
             throw JSONException ( __func__, __LINE__, "array object cannot be modified" );
 
+        JSONValueRef removed;
+
        // test for illegal index
         if ( idx < 0 || ( size_t ) idx >= array . size () )
-            return;
+            return removed;
 
         // if the element is already null
         if ( array [ idx ] -> isNull () )
-            return;
+            return removed;
 
         // delete existing element
-        delete array [ idx ];
+        removed = array [ idx ];
 
         // if it was not the last element in the array
         // just replace it with a null value
@@ -247,6 +249,8 @@ namespace ncbi
                 array . pop_back ();
             }
         }
+
+        return removed;
     }
 
     // C++ assignment

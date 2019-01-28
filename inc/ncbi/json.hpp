@@ -696,10 +696,23 @@ namespace ncbi
          * @fn removeValue
          * @brief remove and return an entry if valid
          * @param idx signed array index
+         * @return JSONValueRef with removed value
          * replaces valid internal entries with null element
          * deletes trailing null elements making them undefined
          */
-        void removeValue ( long int idx );
+        JSONValueRef removeValue ( long int idx );
+
+        /**
+         * @fn deleteValue
+         * @brief remove and return an entry if valid
+         * @param idx signed array index
+         * replaces valid internal entries with null element
+         * deletes trailing null elements making them undefined
+         */
+        inline void deleteValue ( long int idx )
+        {
+            JSONValueRef removed = removeValue ( idx );
+        }
         
         /**
          * @fn lock
@@ -903,15 +916,28 @@ namespace ncbi
          * to the fact that success can never return nullptr.
          */
         const JSONValue & getValue ( const std :: string & name ) const;
-        
+
         /**
          * @fn removeValue
          * @brief remove and delete named value
          * @param name std:: string with member name
          * @exception JSONPermViolation if member exists and is final
+         * @return JSONValueRef with removed value
          * ignored if member is not found
          */
-        void removeValue ( const std :: string & name );
+        JSONValueRef removeValue ( const std :: string & name );
+
+        /**
+         * @fn deleteValue
+         * @brief remove and delete named value
+         * @param name std:: string with member name
+         * @exception JSONPermViolation if member exists and is final
+         * ignored if member is not found
+         */
+        inline void deleteValue ( const std :: string & name )
+        {
+            JSONValueRef removed = removeValue ( name );
+        }
         
         /**
          * @fn lock
