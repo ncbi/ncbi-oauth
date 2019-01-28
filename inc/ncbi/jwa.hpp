@@ -58,10 +58,11 @@ namespace ncbi
         /**
          * @fn acceptJWKAlgorithm
          * @brief a predicate function on whether a named algorithm is accepted
+         * @param kty a key type of 'oct', 'RSA', or 'EC'
          * @param alg an algorithm name
          * @return Boolean true if the algorithm name is recognized and accepted
          */
-        static bool acceptJWKAlgorithm ( const std :: string & alg );
+        static bool acceptJWKAlgorithm ( const std :: string & kty, const std :: string & alg );
     };
 
 
