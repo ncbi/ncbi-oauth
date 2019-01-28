@@ -133,6 +133,13 @@ namespace ncbi
         mutable unsigned char * buff;
         mutable size_t sz, cap;
     };
+
+
+    /*=================================================*
+     *                   EXCEPTIONS                    *
+     *=================================================*/
+    DECLARE_JWX_MSG_EXCEPTION ( JWPException, JWX );
+
 }
 
 #endif // _hpp_ncbi_jwp_
