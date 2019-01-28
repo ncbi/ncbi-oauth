@@ -1,4 +1,16 @@
-default: ncbi-json ncbi-jwt ncbi-oauth-test
+default: all
+
+ALL_LIBS =      \
+	ncbi-base64 \
+	ncbi-json   \
+	ncbi-jwk    \
+#	ncbi-jwa    \
+	ncbi-jws    \
+	ncbi-jwt    \
+	ncbi-token  \
+#	ncbi-jwe
+
+all: $(ALL_LIBS) ncbi-oauth-test
 
 fuzz: ncbi-oauth-fuzz
 
@@ -20,14 +32,24 @@ LOBX = pic.o
 GPP ?= g++ -std=c++11
 
 # rule to build object files from source
-$(OBJDIR)/%.$(LOBX): ncbi-json/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-json -Iinc -fPIC -MD -Wall
+$(OBJDIR)/%.$(LOBX): base64/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ibase64 -Iinc -fPIC -MD -Wall
+
+$(OBJDIR)/%.$(LOBX): json/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ijson -Ibase64 -Iinc -fPIC -MD -Wall
+
+$(OBJDIR)/%.$(LOBX): jwk/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ijwk -Ibase64 -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(LOBX): ncbi-jwt/%.cpp
 	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-jwt -Iinc -fPIC -MD -Wall
-
 $(OBJDIR)/%.tst.$(LOBX): ncbi-jwt/%.cpp
 	$(GPP) $(CFLAGS) -g -c $< -DJWT_TESTING -o $@ -Incbi-jwt -Iinc -fPIC -MD -Wall
+
+$(OBJDIR)/%.$(LOBX): ncbi-token/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-token -Iinc -fPIC -MD -Wall
+$(OBJDIR)/%.tst.$(LOBX): ncbi-token/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -DTOKEN_TESTING -o $@ -Incbi-token -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(OBJX): ncbi-oauth-test/%.cpp
 	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-oauth-test -Iinc -Igoogletest/googletest/include -MD -Wall
@@ -42,6 +64,21 @@ OAUTHLIBS =                     \
 	$(LIBDIR)/libncbi-jwt.a     \
 	$(LIBDIR)/libncbi-tst-jwt.a
 
+## ncbi-base64
+LIBB64SRC =  \
+	base64   \
+	jwp      \
+	jwx      \
+	memset_s
+
+LIBB64OBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .$(LOBX),$(LIBB64SRC)))
+
+ncbi-base64: $(LIBDIR) $(LIBDIR)/libncbi-base64.a
+
+$(LIBDIR)/libncbi-base64.a: $(OBJDIR) $(LIBB64OBJ) $(MAKEFILE)
+	ar -rc $@ $(LIBB64OBJ)
+
 ## ncbi-json
 LIBJSONSRC =       \
 	json           \
@@ -49,9 +86,7 @@ LIBJSONSRC =       \
 	json-array     \
 	json-value     \
 	json-wrapper   \
-	json-primitive \
-	jwx            \
-	memset_s
+	json-primitive
 
 LIBJSONOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .$(LOBX),$(LIBJSONSRC)))
@@ -60,6 +95,20 @@ ncbi-json: $(LIBDIR) $(LIBDIR)/libncbi-json.a
 
 $(LIBDIR)/libncbi-json.a: $(OBJDIR) $(LIBJSONOBJ) $(MAKEFILE)
 	ar -rc $@ $(LIBJSONOBJ)
+
+## ncbi-jwk
+LIBJWKSRC =        \
+	jwk-mgr        \
+	jwk-set        \
+	jwk-key
+
+LIBJWKOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .$(LOBX),$(LIBJWKSRC)))
+
+ncbi-jwk: $(LIBDIR) $(LIBDIR)/libncbi-jwk.a
+
+$(LIBDIR)/libncbi-jwk.a: $(OBJDIR) $(LIBJWKOBJ) $(MAKEFILE)
+	ar -rc $@ $(LIBJWKOBJ)
 
 ## ncbi-jwt
 #LIBJWTSRC =            \
@@ -115,6 +164,18 @@ ncbi-tst-jwt: $(LIBDIR) $(LIBDIR)/libncbi-tst-jwt.a
 
 $(LIBDIR)/libncbi-tst-jwt.a: $(OBJDIR) $(LIBTSTJWTOBJ) $(MAKEFILE)
 	ar -rc $@ $(LIBTSTJWTOBJ)
+
+## ncbi-token
+LIBTOKSRC =            \
+	token-store
+
+LIBTOKOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .$(LOBX),$(LIBTOKSRC)))
+
+ncbi-token: $(LIBDIR) $(LIBDIR)/libncbi-token.a
+
+$(LIBDIR)/libncbi-token.a: $(OBJDIR) $(LIBTOKOBJ) $(MAKEFILE)
+	ar -rc $@ $(LIBTOKOBJ)
 
 ## mbedtls
 MBEDLIBS =                    \
@@ -212,4 +273,4 @@ clean:
 	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR)
 	$(MAKE) -C mbedtls clean
 
-.PHONY: default mbedtls
+.PHONY: default all ncbi-json ncbi-jwt ncbi-token mbedtls
