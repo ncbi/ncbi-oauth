@@ -135,11 +135,16 @@ namespace ncbi
     
     JSONValueRef JSONObject :: clone () const
     {
+        return cloneObject () . release ();
+    }
+    
+    JSONObjectRef JSONObject :: cloneObject () const
+    {
         JSONObjectRef copy ( new JSONObject () );
         
         * copy = * this;
         
-        return copy . release ();
+        return copy;
     }
 
     void JSONObject :: invalidate () noexcept

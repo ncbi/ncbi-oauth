@@ -720,6 +720,13 @@ namespace ncbi
          */
         void lock ();
 
+        /**
+         * @fn cloneArray
+         * @return creates a deep copy of array
+         * avoids need to typecast a JSONValueRef
+         */
+        JSONArrayRef cloneArray () const;
+
 
         /*=================================================*
          *           C++ OPERATOR OVERLOADS                *
@@ -944,6 +951,14 @@ namespace ncbi
          * @brief lock the object against future modification
          */
         void lock ();
+
+        /**
+         * @fn cloneObject
+         * @return creates a deep copy of object
+         * avoids need to typecast a JSONValueRef
+         */
+        JSONObjectRef cloneObject () const;
+
 
 
         /*=================================================*

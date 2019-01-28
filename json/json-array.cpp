@@ -99,11 +99,16 @@ namespace ncbi
     
     JSONValueRef JSONArray :: clone () const
     {
+        return cloneArray () . release ();
+    }
+    
+    JSONArrayRef JSONArray :: cloneArray () const
+    {
         JSONArrayRef copy ( new JSONArray () );
 
         * copy = * this;
 
-        return copy . release ();
+        return copy;
     }
     
     void JSONArray :: invalidate () noexcept
