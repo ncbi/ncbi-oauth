@@ -25,6 +25,8 @@
  */
 
 #include <ncbi/jwk.hpp>
+#include <ncbi/jwa.hpp>
+#include "base64-priv.hpp"
 
 #include <mbedtls/pk.h>
 #include <mbedtls/error.h>
@@ -47,51 +49,124 @@ namespace ncbi
 
     static void validateHMAC ( const JSONObject & props )
     {
-    }
-
-    static void validatePrivateRSA ( const JSONObject & props )
-    {
-    }
-
-    static void validatePublicRSA ( const JSONObject & props )
-    {
+        // key string
+        if ( ! props . getValue ( "k" ) . isString () )
+        {
+            throw JWKException ( __func__, __LINE__,
+                "expected k value as string for JWK" );
+        }
     }
 
     static void validateRSA ( const JSONObject & props )
     {
-        if ( props . exists ( "d" ) )
-            validatePrivateRSA ( props );
-        else
-            validatePublicRSA ( props );
-    }
+        const char * pub_props [] = { "d", "e" };
 
-    static void validatePrivateEC ( const JSONObject & props )
-    {
-    }
+        size_t i;
+        for ( i = 0; i < sizeof pub_props / sizeof pub_props [ 0 ]; ++ i )
+        {
+            if ( ! props . getValue ( pub_props [ i ] ) . isString () )
+            {
+                throw JWKException ( __func__, __LINE__,
+                    "expected %s value as string for JWK", pub_props [ i ] );
+            }
+        }
 
-    static void validatePublicEC ( const JSONObject & props )
-    {
+        const char * priv_props [] = { "d", "p", "q" };
+
+        assert ( sizeof priv_props / sizeof priv_props [ 0 ] != 0 );
+        if ( props . exists ( priv_props [ 0 ] ) )
+        {
+            for ( i = 0; i < sizeof priv_props / sizeof priv_props [ 0 ]; ++ i )
+            {
+                if ( ! props . getValue ( priv_props [ i ] ) . isString () )
+                {
+                    throw JWKException ( __func__, __LINE__,
+                        "expected %s value as string for JWK", priv_props [ i ] );
+                }
+            }
+        }
     }
 
     static void validateEC ( const JSONObject & props )
     {
-        if ( props . exists ( "d" ) )
-            validatePrivateEC ( props );
-        else
-            validatePublicEC ( props );
+        const char * pub_props [] = { "crv", "x", "y" };
+
+        size_t i;
+        for ( i = 0; i < sizeof pub_props / sizeof pub_props [ 0 ]; ++ i )
+        {
+            if ( ! props . getValue ( pub_props [ i ] ) . isString () )
+            {
+                throw JWKException ( __func__, __LINE__,
+                    "expected %s value as string for JWK", pub_props [ i ] );
+            }
+        }
+
+        const char * priv_props [] = { "d" };
+
+        assert ( sizeof priv_props / sizeof priv_props [ 0 ] != 0 );
+        if ( props . exists ( priv_props [ 0 ] ) )
+        {
+            for ( i = 0; i < sizeof priv_props / sizeof priv_props [ 0 ]; ++ i )
+            {
+                if ( ! props . getValue ( priv_props [ i ] ) . isString () )
+                {
+                    throw JWKException ( __func__, __LINE__,
+                        "expected %s value as string for JWK", priv_props [ i ] );
+                }
+            }
+        }
     }
 
-    JWKRef JWKMgr :: parseJWK ( const std :: string & json_text )
+    static void validateJWK ( const JSONObject & props )
     {
-        // keys have known depths
-        JSON :: Limits lim;
-        lim . recursion_depth = 10; // TBD - get real limit
+        // key type
+        std :: string kty = props . getValue ( "kty" ) . toString ();
 
-        JSONObjectRef props_ref = JSON :: parseObject ( lim, json_text );
-        const JSONObject & props = * props_ref;
+        // check the alg
+        if ( props . exists ( "alg" ) )
+        {
+            std :: string alg = props . getValue ( "alg" ) . toString ();
+            if ( ! JWAMgr :: acceptJWKAlgorithm ( kty, alg ) )
+            {
+                throw JWKException ( __func__, __LINE__,
+                    "unsupported alg value for JWK: '%s'", alg . c_str () );
+            }
+        }
+
+        // examine the usage
+        if ( props . exists ( "key_ops" ) )
+        {
+            const JSONArray & ops = props . getValue ( "key_ops" ) . toArray ();
+            unsigned int i, count = ops . count ();
+            for ( i = 0; i < count; ++ i )
+            {
+                std :: string op = ops [ i ] . toString ();
+                if ( op . compare ( "sign" ) != 0 &&
+                     op . compare ( "verify" ) != 0 &&
+                     op . compare ( "encrypt" ) != 0 &&
+                     op . compare ( "decrypt" ) != 0 &&
+                     op . compare ( "wrapKey" ) != 0 &&
+                     op . compare ( "unwrapKey" ) != 0 &&
+                     op . compare ( "deriveKey" ) != 0 &&
+                     op . compare ( "deriveBits" ) != 0 )
+                {
+                    throw JWKException ( __func__, __LINE__,
+                        "unrecognized key_ops[] value for JWK: '%s'", op . c_str () );
+                }
+            }
+        }
+        else if ( props . exists ( "use" ) )
+        {
+            std :: string use = props . getValue ( "use" ) . toString ();
+            if ( use . compare ( "sig" ) != 0 &&
+                 use . compare ( "enc" ) != 0 )
+            {
+                throw JWKException ( __func__, __LINE__,
+                    "unrecognized use value for JWK: '%s'", use . c_str () );
+            }
+        }
 
         // examine the type
-        std :: string kty = props . getValue ( "kty" ) . toString ();
         if ( kty . compare ( "oct" ) == 0 )
             validateHMAC ( props );
         else if ( kty . compare ( "RSA" ) == 0 )
@@ -101,15 +176,62 @@ namespace ncbi
         else
         {
             throw JWKException ( __func__, __LINE__,
-                "bad kty value for JWK: '%s'", kty . c_str () );
+                "unrecognized kty value for JWK: '%s'", kty . c_str () );
         }
 
-        return JWKRef ( new JWK ( props_ref ) );
+        // check the kid
+        if ( ! props . exists ( "kid" ) )
+        {
+            throw JWKException ( __func__, __LINE__,
+                "expected kid value for JWK" );
+        }
+    }
+
+    static void validateJWKSet ( const JSONObject & kset )
+    {
+        std :: set < std :: string > kid_set;
+
+        const JSONArray & keys = kset . getValue ( "keys" ) . toArray ();
+        unsigned long int i, count = keys . count ();
+        for ( i = 0; i < count; ++ i )
+        {
+            const JSONObject & props = keys [ i ] . toObject ();
+            validateJWK ( props );
+
+            std :: string kid = props . getValue ( "kid" ) . toString ();
+            auto it = kid_set . insert ( kid );
+            if ( it . second )
+            {
+                throw JWKException ( __func__, __LINE__,
+                    "duplicate kid in JWKSet: %s", kid . c_str () );
+            }
+        }
+    }
+
+    JWKRef JWKMgr :: parseJWK ( const std :: string & json_text )
+    {
+        // keys have known depths
+        JSON :: Limits lim;
+        lim . recursion_depth = 10; // TBD - get real limit
+
+        JSONObjectRef props = JSON :: parseObject ( lim, json_text );
+
+        validateJWK ( * props );
+
+        return JWKRef ( new JWK ( props ) );
     }
 
     JWKSetRef JWKMgr :: parseJWKSet ( const std :: string & json_text )
     {
-        throw "aaah!";
+        // key sets have known depths
+        JSON :: Limits lim;
+        lim . recursion_depth = 11; // TBD - get real limit
+
+        JSONObjectRef props = JSON :: parseObject ( lim, json_text );
+
+        validateJWKSet ( * props );
+
+        return JWKSetRef ( new JWKSet ( props ) );
     }
 
 
@@ -143,7 +265,7 @@ namespace ncbi
             std :: string encoded = encodeBase64URL ( ( void * ) bp, mpi_size );
 
             // write it into the props
-            props . setValueOrDelete ( mbr, JSONValue :: makeString ( encoded ) );
+            props . setValue ( mbr, JSON :: makeString ( encoded ) );
         }
         catch ( ... )
         {
@@ -359,7 +481,7 @@ namespace ncbi
 
                                     // create the key
                                     // NB - MUST be last step within try block
-                                    jwk = new JWK ( props );
+                                    jwk = new JWK ( props_ref );
                                 }
                             }
                             else if ( 0 )

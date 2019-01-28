@@ -27,11 +27,10 @@
 #ifndef _hpp_ncbi_jwk_
 #define _hpp_ncbi_jwk_
 
-#ifndef _hpp_ncbi_jwx_
-#include <ncbi/jwx.hpp>
+#ifndef _hpp_ncbi_json_
+#include <ncbi/json.hpp>
 #endif
 
-#include <atomic>
 #include <string>
 #include <vector>
 #include <map>
@@ -50,6 +49,18 @@ namespace ncbi
     class JWKSet;
 
     /**
+     * @typedef JWKRef
+     * @brief shared reference to a JWK
+     */
+    typedef JWRS < const JWK > JWKRef;
+
+    /**
+     * @typedef JWKSetRef
+     * @brief unique reference to a JWKSet
+     */
+    typedef JWRH < JWKSet > JWKSetRef;
+
+    /**
      * @class JWKMgr
      * @brief JSON Web Key Manager
      * globally accessible factory functions
@@ -58,65 +69,28 @@ namespace ncbi
     {
     public:
 
-        /* DISCUSSION
-
-           Life starts with an authentication, outside of the scope of JWK.
-
-           Via the authentication token, a program requests its root tokens,
-           that are stored in the form of a hierarchical tree like a file system.
-
-           The tokens can be navigated and will contain private and shared
-           branches. For interfacing with JWT/JWS/JWE/JWA/JWK, the program
-           may access one (or more?) private signing keys as individual
-           serialized JWKs, and will also access serialized JWKSets that
-           are almost certainly shared.
-
-           The program will then use what amounts to an opaque JWK for signing
-           or encryption operations, the individual key being private or public
-           respectively, and a JWKSet for verification or decryption operations,
-           the contained keys being public or private respectively.
-
-           Once the secret-store service is up and running, the actual private
-           keys will be stored within the service process space, and the JWK
-           objects within the client process space will be stubbed to remove
-           sensitive properties.
-
-           But if I read what I just wrote a second ago, it means that you
-           obtain your starting JWKs and JWKSets from your root token tree,
-           which works with this library behind the scenes.
-
-           So by one way or another, the process in question obtains some token
-           of authentication. If interactive, it may get a user's token. Otherwise,
-           it may get its own token based upon attestation of some sort. The
-           authentication token assigned and perhaps bound to the running process
-           is then usable to obtain the root token tree for that identity. The
-           program then navigates the tree to find JWKs and JWKSets of interest.
-
-           The utility of converting JSON and PEM into JWKs and JWKSets within
-           the JWKMgr is both for use by the token tree code as a client, and
-           for programs that are interacting with external sources of key data.
-
-           The program is then able to make use of JWT/JWS/JWE using these keys.
-           JWA involvement is almost zero from the client's perspective, being
-           used by JWS/JWE for implementation.
-
+        /**
+         * @fn makeJWKSet
+         * @brief create an empty JWKSet
+         * @return JWKSetRef
          */
+        static JWKSetRef makeJWKSet ();
 
         /**
          * @fn parseJWK
          * @brief inflate a JWK from JSON text
          * @param json_text a serialized version of a JWK
-         * @return const JWK pointer
+         * @return JWKRef
          */
-        static const JWK * parseJWK ( const std :: string & json_text );
+        static JWKRef parseJWK ( const std :: string & json_text );
 
         /**
          * @fn parseJWKSet
          * @brief inflate a JWK from JSON text
          * @param json_text a serialized version of a JWKSet
-         * @return const JWKSet pointer
+         * @return JWKSetRef
          */
-        static JWKSet * parseJWKSet ( const std :: string & json_text );
+        static JWKSetRef parseJWKSet ( const std :: string & json_text );
 
         /**
          * @fn parsePEM
@@ -125,9 +99,9 @@ namespace ncbi
          * @param use the intended key usage "sig" or "enc"
          * @param alg the algorithm to apply with key, e.g. "RS256"
          * @param kid a globally unique identifier for this key
-         * @return a const JWK pointer
+         * @return JWKRef
          */
-        static const JWK * parsePEM ( const std :: string & pem_text,
+        static JWKRef parsePEM ( const std :: string & pem_text,
             const std :: string & use, const std :: string & alg, const std :: string & kid );
 
         /**
@@ -138,9 +112,9 @@ namespace ncbi
          * @param use the intended key usage "sig" or "enc"
          * @param alg the algorithm to apply with key, e.g. "RS256"
          * @param kid a globally unique identifier for this key
-         * @return a const JWK pointer
+         * @return JWKRef
          */
-        static const JWK * parsePEM ( const std :: string & pem_text, const std :: string & pwd,
+        static JWKRef parsePEM ( const std :: string & pem_text, const std :: string & pwd,
             const std :: string & use, const std :: string & alg, const std :: string & kid );
     };
 
@@ -158,40 +132,56 @@ namespace ncbi
 
         /**
          * @fn forSigning
-         * @return Boolean true if this key is intended for signatures
+         * @return Boolean true if this key is intended for signing
+         * detects private or symmetrical signing keys
          */
-        virtual bool forSigning () const;
+        bool forSigning () const noexcept;
+
+        /**
+         * @fn forVerifying
+         * @return Boolean true if this key is intended for signature verification
+         * detects public or symmetrical signature verification keys
+         */
+        bool forVerifying () const noexcept;
 
         /**
          * @fn forEncryption
-         * @return Boolean true if this key is intended for encryption
+         * @return Boolean true if this key is intended for encrypting
+         * detects public or symmetrical encryption keys
          */
-        virtual bool forEncryption () const;
+        bool forEncryption () const noexcept;
+
+        /**
+         * @fn forDecryption
+         * @return Boolean true if this key is intended for decryption
+         * detects private or symmetrical encryption keys
+         */
+        bool forDecryption () const noexcept;
 
         /**
          * @fn isPrivate
          * @return Boolean true if the key contains private material
          * a private key is required for signing or decryption
          */
-        virtual bool isPrivate () const;
+        bool isPrivate () const noexcept;
 
         /**
          * @fn isSymmetric
          * @return Boolean true if the key is symmetric
          */
-        virtual bool isSymmetric () const;
+        bool isSymmetric () const noexcept;
 
         /**
          * @fn isRSA
          * @return Boolean true if the key is for use in RSA algorithms
          */
-        virtual bool isRSA () const;
+        bool isRSA () const noexcept;
 
         /**
          * @fn isEllipticCurve
          * @return Boolean true if the key is for use in elliptical curve algorithms
          */
-        virtual bool isEllipticCurve () const;
+        bool isEllipticCurve () const noexcept;
 
 
         /*=================================================*
@@ -207,13 +197,22 @@ namespace ncbi
         std :: string getType () const;
 
         /**
-         * @fn getId
-         * @return std::string with value of "kid" property
-         * \exception PropertyNotFound if the property is not present
-         * this property is considered OPTIONAL under RFC (section 4.5)
-         * but may be configured to be MANDATORY in this implementation.
+         * @fn getUse
+         * @return std:: string with value of "use" property
+         * this property is needed for public keys (section 4.2)
+         * legal values are "sig" (signature) and "enc" (encryption)
          */
-        std :: string getID () const;
+        std :: string getUse () const;
+
+        /**
+         * @fn getOperations
+         * @return std::vector<std::string> with value of "key_ops" property
+         * this property is an alternate for "use" (section 4.3)
+         * registered values are:
+         * "sign", "verify", "encrypt", "decrypt", "wrapKey",
+         * "unwrapKey", "deriveKey", "deriveBits"
+         */
+        std :: vector < std :: string > getOperations () const;
 
         /**
          * @fn getAlg
@@ -223,12 +222,13 @@ namespace ncbi
         std :: string getAlg () const;
 
         /**
-         * @fn getUse
-         * @return std:: string with value of "use" property
-         * this property is needed for public keys (section 4.2)
-         * legal values are "sig" (signature) and "enc" (encryption)
+         * @fn getId
+         * @return std::string with value of "kid" property
+         * \exception PropertyNotFound if the property is not present
+         * this property is considered OPTIONAL under RFC (section 4.5)
+         * but has been configured to be MANDATORY in this implementation.
          */
-        std :: string getUse () const;
+        std :: string getID () const;
 
 
         /*=================================================*
@@ -252,40 +252,20 @@ namespace ncbi
         std :: string readableJSON ( unsigned int indent = 0 ) const;
 
 
-        /*=================================================*
-         *         PRIMITIVE MEMORY MANAGEMENT             *
-         *=================================================*/
-
         /**
-         * @fn duplicate
-         * @brief create a duplicate pointer REFERENCE
-         * @return const JWK pointer
-         * the underlying implementation will either clone the object
-         * or increment a reference count to the object, at its discretion.
-         */
-        const JWK * duplicate () const;
+         * @fn ~JWK
+         * @brief deletes any contents and destroys internal structures
+         */        
+        ~ JWK () noexcept;
 
-        /**
-         * @fn release
-         * @brief release a REFERENCE to the object
-         * this message replaces the use of the delete operator
-         * and the exact behavior will depend upon whether the
-         * duplicate method was to clone or to increment a counter.
-         * if duplicate cloned the object, then the method will
-         * delete the object. Otherwise, it will decrement the
-         * reference counter and only delete if the count goes to 0.
-         */
-        void release () const;
 
-    protected:
+    private:
 
-        virtual ~ JWK ();
+        JWK ( const JSONObjectRef & props );
 
-        JWK ( JSONObject * props );
+        JSONObjectRef props;
 
-        JSONObject * props;
-        mutable std :: atomic < unsigned int > refcount;
-
+        friend class JWKMgr;
         friend class JWKSet;
     };
 
@@ -298,27 +278,101 @@ namespace ncbi
     {
     public:
 
-        bool isEmpty () const;
-        unsigned long int count () const;
+        /**
+         * @fn isEmpty
+         * @return Boolean true if set has no keys
+         */
+        bool isEmpty () const noexcept;
 
-        bool contains ( const std :: string & kid ) const;
+        /**
+         * @fn count
+         * @return Natural number with the set cardinality
+         */
+        unsigned long int count () const noexcept;
 
+        /**
+         * @fn contains
+         * @brief answers whether the indicated entry exists
+         * @param kid std::string with the key identifier
+         * @return Boolean true if entry exists
+         */
+        bool contains ( const std :: string & kid ) const noexcept;
+
+        /**
+         * @fn getKeyIDs
+         * @return std::vector<std::string> of key identifiers
+         */
         std :: vector < std :: string > getKeyIDs () const;
 
-        void addKey ( const JWK * jwk );
-        const JWK * getKey ( const std :: string & kid ) const;
+        /**
+         * @fn addKey
+         * @brief add a new JWK
+         * @param key const JWKRef
+         */
+        void addKey ( JWKRef & key );
+
+        /**
+         * @fn getKey
+         * @brief return JWK for key identifier
+         * @param kid std::string with key id
+         * @return JWKRef
+         */
+        JWKRef getKey ( const std :: string & kid ) const;
+
+        /**
+         * @fn removeKey
+         * @brief remove and release JWK found with kid
+         * @param kid std::string with key id
+         * ignored if entry is not found
+         */
         void removeKey ( const std :: string & kid );
 
-        JWKSet ( const JWKSet & ks );
+        /**
+         * @fn clone
+         * @return creates a deep copy of set
+         */
+        JWKSetRef clone () const;
+
+        /**
+         * @fn invalidate
+         * @brief overwrite potentially sensitive contents in memory
+         */
+        void invalidate () noexcept;
+
+        /**
+         * @fn operator =
+         * @brief assignment operator
+         * @param ks source of contents to clone
+         * @return C++ self-reference for use in idiomatic C++ expressions
+         * will delete any current contents
+         * clones contents of source set
+         */
         JWKSet & operator = ( const JWKSet & ks );
 
-        JWKSet ();
-        ~ JWKSet ();
+        /**
+         * @fn JWKSet
+         * @overload copy constructor
+         * @param ks source of contents to clone
+         * clones contents of source set
+         */
+        JWKSet ( const JWKSet & ks );
+
+        /**
+         * @fn ~JWKSet
+         * @brief deletes any contents and destroys internal structures
+         */        
+        ~ JWKSet () noexcept;
 
     private:
 
-        JSONObject * kset;
-        std :: map < std :: string, const JWK * > map;
+        void extractKeys ();
+
+        JWKSet ( const JSONObjectRef & kset );
+
+        JSONObjectRef kset;
+        std :: map < std :: string, std :: pair < unsigned long int, JWKRef > > map;
+
+        friend class JWKMgr;
     };
 
 
