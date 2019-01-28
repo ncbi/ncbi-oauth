@@ -120,7 +120,7 @@ namespace ncbi
     JWKSet & JWKSet :: operator = ( const JWKSet & ks )
     {
         map . clear ();
-        kset = static_cast < JSONObject * > ( ks . kset -> clone () . release () );
+        kset = ks . kset -> cloneObject ();
 
         extractKeys ();
 
@@ -128,7 +128,7 @@ namespace ncbi
     }
 
     JWKSet :: JWKSet ( const JWKSet & ks )
-        : kset ( static_cast < JSONObject * > ( ks . kset -> clone () . release () ) )
+        : kset ( ks . kset -> cloneObject () )
     {
         extractKeys ();
     }
@@ -146,7 +146,7 @@ namespace ncbi
         for ( i = 0; i < count; ++ i )
         {
             const JSONObject & key = keys [ i ] . toObject ();
-            JSONObjectRef cpy ( static_cast < JSONObject* > ( key . clone () . release () ) );
+            JSONObjectRef cpy ( key . cloneObject () );
             JWKRef jwk ( new JWK ( cpy ) );
             std :: string kid = key . getValue ( "kid" ) . toString ();
             std :: pair < unsigned long int, JWKRef > entry ( i, jwk );

@@ -273,7 +273,7 @@ namespace ncbi
         JSONObject * old_claims = claims;
         try
         {
-            claims = static_cast < JSONObject * > ( jwt . claims -> clone () );
+            claims = jwt . claims -> cloneObject ();
         }
         catch ( ... )
         {
@@ -303,7 +303,7 @@ namespace ncbi
         , require_exp_on_validate ( jwt . require_exp_on_validate )
     {
         assert ( jwt . claims != nullptr );
-        claims = static_cast < JSONObject * > ( jwt . claims -> clone () );
+        claims = jwt . claims -> cloneObject ();
     }
     
     void JWTClaims :: validateStringOrURI ( const std::string &str )
