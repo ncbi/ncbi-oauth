@@ -26,6 +26,8 @@
 
 #include <ncbi/jwt.hpp>
 
+#include <cassert>
+
 namespace ncbi
 {
 

@@ -250,6 +250,7 @@ OAUTHTESTLIB =     \
 	-lmbedcrypto   \
 	-lmbedx509     \
 	-lmbedtls      \
+	-luuid         \
 	-lpthread
 
 ncbi-oauth-test: $(BINDIR) $(BINDIR)/ncbi-oauth-test

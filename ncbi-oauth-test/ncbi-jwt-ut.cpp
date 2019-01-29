@@ -86,6 +86,21 @@ namespace ncbi
                 "}";
 
             key = JWKMgr :: parseJWK ( jwk_json );
+
+            const char jwk_set_json [] =
+                "{"
+                    "\"keys\":"
+                    "["
+                        "{"
+                            "\"kty\":\"oct\","
+                            "\"kid\":\"12345\","
+                            "\"alg\":\"HS384\","
+                            "\"k\":\"wonder-key-id\","
+                        "}"
+                    "]"
+                "}";
+
+            key_set = JWKMgr :: parseJWKSet ( jwk_set_json );
         }
         
         void TearDown ()

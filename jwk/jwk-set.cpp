@@ -27,6 +27,8 @@
 #include <ncbi/jwk.hpp>
 #include <ncbi/jwa.hpp>
 
+#include <cassert>
+
 namespace ncbi
 {
 

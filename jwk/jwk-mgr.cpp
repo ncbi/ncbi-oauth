@@ -31,6 +31,8 @@
 #include <mbedtls/pk.h>
 #include <mbedtls/error.h>
 
+#include <cassert>
+
 namespace ncbi
 {
     static
@@ -199,8 +201,8 @@ namespace ncbi
             validateJWK ( props );
 
             std :: string kid = props . getValue ( "kid" ) . toString ();
-            auto it = kid_set . insert ( kid );
-            if ( it . second )
+            auto it = kid_set . emplace ( kid );
+            if ( ! it . second )
             {
                 throw JWKException ( __func__, __LINE__,
                     "duplicate kid in JWKSet: %s", kid . c_str () );
@@ -212,7 +214,7 @@ namespace ncbi
     {
         // keys have known depths
         JSON :: Limits lim;
-        lim . recursion_depth = 10; // TBD - get real limit
+        lim . recursion_depth = 20; // TBD - get real limit
 
         JSONObjectRef props = JSON :: parseObject ( lim, json_text );
 
@@ -225,7 +227,7 @@ namespace ncbi
     {
         // key sets have known depths
         JSON :: Limits lim;
-        lim . recursion_depth = 11; // TBD - get real limit
+        lim . recursion_depth = 22; // TBD - get real limit
 
         JSONObjectRef props = JSON :: parseObject ( lim, json_text );
 

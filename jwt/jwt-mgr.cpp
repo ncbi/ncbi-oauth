@@ -28,6 +28,8 @@
 #include <ncbi/jws.hpp>
 #include "base64-priv.hpp"
 
+#include <cassert>
+
 #include <sys/time.h>
 #include <uuid/uuid.h>
 
@@ -149,6 +151,7 @@ namespace ncbi
         // prepare for restart on nested JWT
         JWT jwt ( _jwt );
         bool nested = false;
+        ( void ) nested;
 
         // restarted when JWT is nested
         while ( 1 )
@@ -264,7 +267,7 @@ namespace ncbi
                 // RFC7515 section 5.2 step 1 ( for compact serialization ).
 
                 // get the base64url-encoded payload
-                pay_base64 = jwt . substr ( pos, p );
+                pay_base64 = jwt . substr ( pos, p - pos );
                 pos = p + 1;
 
                 // take the whole header . payload as contents
@@ -487,7 +490,7 @@ namespace ncbi
             // RFC7515 section 5.2 step 1 ( for compact serialization ).
 
             // get the base64url-encoded payload
-            pay_base64 = jwt . substr ( pos, p );
+            pay_base64 = jwt . substr ( pos, p - pos );
             pos = p + 1;
 
             // take the whole header . payload as contents
@@ -529,6 +532,7 @@ namespace ncbi
         // prepare for restart on nested JWT
         JWT jwt ( _jwt );
         bool nested = false;
+        ( void ) nested;
 
         // restarted when JWT is nested
         while ( 1 )
@@ -643,7 +647,7 @@ namespace ncbi
                 // RFC7515 section 5.2 step 1 ( for compact serialization ).
 
                 // get the base64url-encoded payload
-                pay_base64 = jwt . substr ( pos, p );
+                pay_base64 = jwt . substr ( pos, p - pos );
                 pos = p + 1;
 
                 // take the whole header . payload as contents
@@ -746,6 +750,7 @@ namespace ncbi
         // prepare for restart on nested JWT
         JWT jwt ( _jwt );
         bool nested = false;
+        ( void ) nested;
 
         // restarted when JWT is nested
         while ( 1 )
@@ -861,7 +866,7 @@ namespace ncbi
                 // RFC7515 section 5.2 step 1 ( for compact serialization ).
 
                 // get the base64url-encoded payload
-                pay_base64 = jwt . substr ( pos, p );
+                pay_base64 = jwt . substr ( pos, p - pos );
                 pos = p + 1;
 
                 // take the whole header . payload as contents
@@ -1037,23 +1042,26 @@ namespace ncbi
     void JWTMgr :: finalizeClaims ( JSONObject & claims,
         long long int duration, long long int not_before )
     {
-        long long int cur = now ();
-
-        claims . addValue ( "iat", JSON :: makeInteger ( cur ) );
-
-        if ( not_before <= 0 )
-            not_before = cur;
-        else
+        if ( ! claims . exists ( "iat" ) )
         {
-            if ( not_before < cur )
+            long long int cur = now ();
+
+            claims . addValue ( "iat", JSON :: makeInteger ( cur ) );
+
+            if ( not_before <= 0 )
                 not_before = cur;
+            else
+            {
+                if ( not_before < cur )
+                    not_before = cur;
 
-            claims . addValue ( "nbf", JSON :: makeInteger ( not_before ) );
-        }
+                claims . addValue ( "nbf", JSON :: makeInteger ( not_before ) );
+            }
 
-        if ( duration >= 0 )
-        {
-            claims . addValue ( "exp", JSON :: makeInteger ( not_before + duration ) );
+            if ( duration >= 0 )
+            {
+                claims . addValue ( "exp", JSON :: makeInteger ( not_before + duration ) );
+            }
         }
     }
 
