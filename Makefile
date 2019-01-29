@@ -21,6 +21,20 @@ OBJDIR ?= $(CURDIR)/obj
 $(BINDIR) $(LIBDIR) $(OBJDIR):
 	mkdir -p $@
 
+# determine OS
+OS = unknown
+UNAME = $(shell uname -s)
+ifeq (Darwin, $(UNAME))
+	OS = mac
+	CFLAGS += -DMAC -DBSD -DUNIX
+	UUIDLIB =
+endif
+ifeq (Linux, $(UNAME))
+	OS = linux
+	CFLAGS += -DLINUX -DUNIX
+	UUIDLIB = -luuid
+endif
+
 # only for Linux and MacOS
 OBJX = o
 LOBX = pic.o
@@ -33,47 +47,47 @@ GPP ?= g++ -std=c++11
 
 # rule to build object files from source
 $(OBJDIR)/%.$(LOBX): base64/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -o $@ $(CFLAGS) $(CFLAGS) -Ibase64 -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(LOBX): json/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ijson -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -o $@ $(CFLAGS) -Ijson -Ibase64 -Iinc -fPIC -MD -Wall
 $(OBJDIR)/%.tst.$(LOBX): json/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -DJSON_TESTING -o $@ -Ijson -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -DJSON_TESTING -o $@ $(CFLAGS) -Ijson -Ibase64 -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(LOBX): jwa/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ijwa -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -o $@ $(CFLAGS) -Ijwa -Ibase64 -Iinc -fPIC -MD -Wall
 $(OBJDIR)/%.tst.$(LOBX): jwa/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -DJWA_TESTING -o $@ -Ijwa -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -DJWA_TESTING -o $@ $(CFLAGS) -Ijwa -Ibase64 -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(LOBX): jwk/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ijwk -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -o $@ $(CFLAGS) -Ijwk -Ibase64 -Iinc -fPIC -MD -Wall
 $(OBJDIR)/%.tst.$(LOBX): jwk/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -DJWK_TESTING -o $@ -Ijwk -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -DJWK_TESTING -o $@ $(CFLAGS) -Ijwk -Ibase64 -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(LOBX): jws/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ijws -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -o $@ $(CFLAGS) -Ijws -Ibase64 -Iinc -fPIC -MD -Wall
 $(OBJDIR)/%.tst.$(LOBX): jws/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -DJWS_TESTING -o $@ -Ijws -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -DJWS_TESTING -o $@ $(CFLAGS) -Ijws -Ibase64 -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(LOBX): jwe/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ijwe -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -o $@ $(CFLAGS) -Ijwe -Ibase64 -Iinc -fPIC -MD -Wall
 $(OBJDIR)/%.tst.$(LOBX): jwe/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -DJWE_TESTING -o $@ -Ijwe -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -DJWE_TESTING -o $@ $(CFLAGS) -Ijwe -Ibase64 -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(LOBX): jwt/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ijwt -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -o $@ $(CFLAGS) -Ijwt -Ibase64 -Iinc -fPIC -MD -Wall
 $(OBJDIR)/%.tst.$(LOBX): jwt/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -DJWT_TESTING -o $@ -Ijwt -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -DJWT_TESTING -o $@ $(CFLAGS) -Ijwt -Ibase64 -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(LOBX): token/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -o $@ -token -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -o $@ $(CFLAGS) -token -Ibase64 -Iinc -fPIC -MD -Wall
 $(OBJDIR)/%.tst.$(LOBX): token/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -DTOKEN_TESTING -o $@ -token -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -DTOKEN_TESTING -o $@ $(CFLAGS) -token -Ibase64 -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(OBJX): ncbi-oauth-test/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-oauth-test -Iinc -Igoogletest/googletest/include -MD -Wall
+	$(GPP) -g -c $< -o $@ $(CFLAGS) -Incbi-oauth-test -Iinc -Igoogletest/googletest/include -MD -Wall
 $(OBJDIR)/%.$(OBJX): googletest/googletest/src/%.cc
-	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-oauth-test -Iinc -Igoogletest/googletest -Igoogletest/googletest/include -MD
+	$(GPP) -g -c $< -o $@ $(CFLAGS) -Incbi-oauth-test -Iinc -Igoogletest/googletest -Igoogletest/googletest/include -MD
 
 # include dependencies
 include $(wildcard $(OBJDIR)/*.d)
@@ -250,7 +264,7 @@ OAUTHTESTLIB =     \
 	-lmbedcrypto   \
 	-lmbedx509     \
 	-lmbedtls      \
-	-luuid         \
+	$(UUIDLIB)     \
 	-lpthread
 
 ncbi-oauth-test: $(BINDIR) $(BINDIR)/ncbi-oauth-test
