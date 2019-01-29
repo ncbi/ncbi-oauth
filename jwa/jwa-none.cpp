@@ -25,104 +25,57 @@
  */
 
 #include <ncbi/jwa.hpp>
-#include <ncbi/jwt.hpp>
-
-#include <iostream>
-#include <cstring>
-#include <cassert>
+#include "jwa-registry.hpp"
 
 namespace ncbi
 {
+
     struct NONE_Signer : JWASigner
     {
-        virtual std :: string sign ( const void * data, size_t bytes ) const
+        virtual std :: string sign ( const JWK & key,
+            const void * data, size_t bytes ) const override
         {
             return "";
         }
-        
-        virtual JWASigner * clone () const
-        {
-            return new NONE_Signer ( alg, nam, key );
-        }
 
-        NONE_Signer ( const std :: string & name,
-                const std :: string & alg, const JWK * key )
-            : JWASigner ( name, alg, key )
+        NONE_Signer ()
         {
         }
     };
 
     struct NONE_Verifier : JWAVerifier
     {
-        virtual bool verify ( const void * data, size_t bytes, const std :: string & signature ) const
+        virtual bool verify ( const JWK & key, const void * data, size_t bytes,
+            const JWPayload & binary_signature ) const override
         {
             return true;
         }
-        
-        virtual JWAVerifier * clone () const
-        {
-            return new NONE_Verifier ( nam, alg, key );
-        }
 
-        NONE_Verifier ( const std :: string & name,
-                const std :: string & alg, const JWK * key )
-            : JWAVerifier ( name, alg, key )
+        NONE_Verifier ()
         {
-        }
-    };
-    
-    struct NONE_SignerFact : JWASignerFact
-    {
-        virtual JWASigner * make ( const std :: string & name,
-            const std :: string & alg, const JWK * key ) const
-        {
-            return new NONE_Signer ( name, alg, key );
-        }
-
-        NONE_SignerFact ( const std :: string & alg )
-        {
-            gJWAFactory . registerSignerFact ( alg, this );
-        }
-    };
-
-    struct NONE_VerifierFact : JWAVerifierFact
-    {
-        virtual JWAVerifier * make ( const std :: string & name,
-            const std :: string & alg, const JWK * key ) const
-        {
-            return new NONE_Verifier ( name, alg, key );
-        }
-
-        NONE_VerifierFact ( const std :: string & alg )
-        {
-            gJWAFactory . registerVerifierFact ( alg, this );
         }
     };
 
 
     static struct NONE_Registry
     {
-        NONE_Registry ( const std :: string & alg )
-            : signer_fact ( alg )
-            , verifier_fact ( alg )
+        NONE_Registry ()
         {
+            std :: string alg ( "none" );
+            gJWARegistry . registerSigner ( alg, new NONE_Signer () );
+            gJWARegistry . registerVerifier ( alg, new NONE_Verifier () );
         }
 
-        ~ NONE_Registry ()
+        void avoidDeadStrip ()
         {
+            gJWARegistry . doNothing ();
         }
         
-        NONE_SignerFact signer_fact;
-        NONE_VerifierFact verifier_fact;
-        
-    } none_registry ( "none" );
+    } none_registry;
 
     void includeJWA_none ( bool always_false )
     {
         if ( always_false )
-        {
-            std :: string empty;
-            none_registry . signer_fact . make ( empty, empty, nullptr );
-        }
+            none_registry . avoidDeadStrip ();
     }
 }

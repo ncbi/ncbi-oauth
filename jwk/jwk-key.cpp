@@ -59,7 +59,7 @@ namespace ncbi
         {
         }
 
-        return false;
+        return isSymmetric ();
     }
 
     bool JWK :: forVerifying () const noexcept
@@ -83,17 +83,16 @@ namespace ncbi
         {
             if ( props -> getValue ( "use" ) . toString () . compare ( "sig" ) == 0 )
             {
-                if ( isSymmetric () )
-                    return true;
-
-                return isPrivate () == false;
+                // symmetric keys are always dual use,
+                // public or private asymmetric JWKs can be used for verifying
+                return true;
             }
         }
         catch ( ... )
         {
         }
 
-        return false;
+        return isSymmetric ();
     }
 
     bool JWK :: forEncryption () const noexcept
@@ -117,10 +116,9 @@ namespace ncbi
         {
             if ( props -> getValue ( "use" ) . toString () . compare ( "enc" ) == 0 )
             {
-                if ( isSymmetric () )
-                    return true;
-
-                return isPrivate () == false;
+                // symmetric keys are always dual use,
+                // public or private asymmetric JWKs can be used for encryption
+                return true;
             }
         }
         catch ( ... )

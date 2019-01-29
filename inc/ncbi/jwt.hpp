@@ -27,16 +27,13 @@
 #ifndef _hpp_ncbi_jwt_
 #define _hpp_ncbi_jwt_
 
-#ifndef _hpp_ncbi_jwx_
-#include <ncbi/jwx.hpp>
-#endif
-
-#ifndef _hpp_ncbi_json_
-#include <ncbi/json.hpp>
+#ifndef _hpp_ncbi_jwk_
+#include <ncbi/jwk.hpp>
 #endif
 
 #include <atomic>
 #include <string>
+#include <set>
 
 /**
  * @file ncbi/jwt.hpp
@@ -48,7 +45,7 @@ namespace ncbi
     class JWK;
     class JWKSet;
     class JWTClaimSet;
-    class InvalidJWTClaimSet;
+    class UnverifiedJWTClaimSet;
 
     /**
      * @typedef JWT
@@ -63,6 +60,18 @@ namespace ncbi
      * if the string contains a ':', then it MUST be a URI [RFC3986]
      */
     typedef std :: string StringOrURI;
+
+    /**
+     * @typedef JWTClaimSetRef
+     * @brief a reference to a JWTClaimSet
+     */
+    typedef JWRH < JWTClaimSet > JWTClaimSetRef;
+
+    /**
+     * @typedef UnverifiedJWTClaimSetRef
+     * @brief a reference to an UnverifiedJWTClaimSet
+     */
+    typedef JWRH < UnverifiedJWTClaimSet > UnverifiedJWTClaimSetRef;
     
     /**
      * @class JWTMgr
@@ -76,37 +85,46 @@ namespace ncbi
         /**
          * @fn makeClaimSet
          * @brief create an empty JWTClaimSet object
-         * @return JWTClaimSet object
+         * @return JWTClaimSetRef object reference
          */
-        static JWTClaimSet makeClaimSet ();
+        static JWTClaimSetRef makeClaimSet ();
 
         /**
          * @fn sign
          * @brief sign a JWTClaimSet object
-         * @param claims C++ reference to a JWTClaimSet object
          * @param key C++ reference to the JWK signing key
+         * @param claims C++ reference to a JWTClaimSet object
          * @return JWT string
          */
-        static JWT sign ( const JWTClaimSet & claims, const JWK & key );
+        static JWT sign ( const JWK & key, const JWTClaimSet & claims );
+
+        /**
+         * @fn nestedSign
+         * @brief apply another signature to a JWT
+         * @param key C++ reference to the JWK signing key
+         * @param jwt an existing JWT
+         * @return JWT string
+         */
+        static JWT nestedSign ( const JWK & key, const JWT & jwt );
 
         /**
          * @fn decode
          * @overload decode a JWT into a JWTClaimSet object
-         * @param jwt the JWT to decode
          * @param keys set of keys to validate signature and potentially decrypt
+         * @param jwt the JWT to decode
          * @exception JWSInvalidSignature
          * @exception JWTExpired
          * @return JWTClaimSet object
          * there are many possible errors that can occur when decoding.
          * the method will only return if all validations pass.
          */
-        static JWTClaimSet decode ( const JWT & jwt, const JWKSet & keys );
+        static JWTClaimSetRef decode ( const JWKSet & keys, const JWT & jwt );
 
         /**
          * @fn decode
          * @overload decode a JWT into a JWTClaimSet object with timestamp and skew
-         * @param jwt the JWT to decode
          * @param keys set of keys to validate signature and potentially decrypt
+         * @param jwt the JWT to decode
          * @param cur_time an externally supplied timestamp for evaluating exiration
          * @param skew_secs an allowed margin of error between clock at origin and cur_time
          * @exception JWSInvalidSignature
@@ -115,22 +133,36 @@ namespace ncbi
          * there are many possible errors that can occur when decoding.
          * the method will only return if all validations pass.
          */
-        static JWTClaimSet decode ( const JWT & jwt, const JWKSet & val_keys,
-            long long cur_time, long long skew_secs = 0 );
+        static JWTClaimSetRef decode ( const JWKSet & keys, const JWT & jwt,
+            long long int cur_time, long long int skew_secs = 0 );
+
+        /**
+         * @fn nestedDecode
+         * @brief attempts to validate content and remove a layer of nesting
+         * @param keys set of keys to validate signature and potentially decrypt
+         * @param jwt an in/out parameter with the JWT to decode and returned inner JWT
+         * @return JWKRef of verification or decryption key
+         */
+        static JWKRef nestedDecode ( const JWKSet & keys, JWT & jwt );
 
         /**
          * @fn inspect
-         * @brief decode a JWT into an InvalidJWTClaimSet object without most validity checks
+         * @overload decode a JWT into an UnverifiedJWTClaimSet without any validity checks
          * @param jwt the JWT to decode
-         * @param keys set of keys to validate signature and potentially decrypt
-         * @param override_signature_check if true, inspect even after signature failure
-         * @exception JWSInvalidSignature
-         * @return InvalidJWTClaimSet object
-         * there are many possible errors that can occur when decoding.
-         * the method will only return if all validations pass.
+         * @return UnverifiedJWTClaimSet object
          */
-        static InvalidJWTClaimSet inspect ( const JWT & jwt, const JWKSet & keys,
-            bool override_signature_check = false );
+        static UnverifiedJWTClaimSetRef inspect ( const JWT & jwt );
+
+        /**
+         * @fn inspect
+         * @overload decode a JWT into an UnverifiedJWTClaimSet object with signature check
+         * @param keys set of keys to validate signature and potentially decrypt
+         * @param jwt the JWT to decode
+         * @exception JWSInvalidSignature
+         * @return UnverifiedJWTClaimSet object
+         */
+        static UnverifiedJWTClaimSetRef inspect ( const JWKSet & keys,
+            const JWT & jwt );
 
         /**
          * @fn validateStringOrURI
@@ -146,13 +178,42 @@ namespace ncbi
          * @param str a std::string to validate
          * @exception JWTInvalidStringOrURI
          */
-        static void validateStringOrURI ( const JSONValue * value );
+        static void validateStringOrURI ( const JSONValueRef & value );
 
         /**
          * @fn now
          * @return long long int timestamp in seconds since epoch
          */
         static long long int now ();
+
+        /**
+         * @fn makeID
+         * @return std :: string with new JWT id
+         */
+        static std :: string makeID ();
+
+        /**
+         * @fn setDefaultSkewAdjustment
+         * @brief set clock skew for timeout operations
+         * @param dflt_skew_seconds absolute value of skew adjustment
+         * in order to enable JWT interchange between hosts that are
+         * not perfectly synchronized to absolute time-of-day,
+         * an absolute value quantity will adjust for clock skew.
+         */
+        static void setDefaultSkewAdjustment ( long long int dflt_skew_seconds );
+
+    private:
+
+        static void finalizeClaims ( JSONObject & claims,
+            long long int duration, long long int not_before );
+
+        static void verifyJWSHeader ( const JSONObject & jose );
+        static void verifyPayload ( const JSONObject & jose, const JSONObject & payload,
+            long long int cur_time, long long int skew_secs );
+
+        static long long int dflt_skew;
+
+        friend class JWTClaimSet;
     };
 
     /**
@@ -210,36 +271,28 @@ namespace ncbi
 
         /**
          * @fn setIssuer
-         * @brief set "iss" claim value
+         * @brief set "iss" claim value (section 4.1.1)
          * @param iss a StringOrURI representing the issuer
          */
         void setIssuer ( const StringOrURI & iss );
 
         /**
          * @fn setSubject
-         * @brief set "sub" claim value
+         * @brief set "sub" claim value (section 4.1.2)
          * @param sub a StringOrURI representing the subject
          */
         void setSubject ( const StringOrURI & sub );
 
         /**
          * @fn addAudience
-         * @brief set or add to "aud" claim array
+         * @brief set or add to "aud" claim array (section 4.1.3)
          * @param aud a StringOrURI representing an audience
          */
         void addAudience ( const StringOrURI & aud );
 
         /**
-         * @fn setNotBefore
-         * @brief set "nbf" claim value
-         * @param nbf_seconds the absolute time at which token becomes valid
-         * if this value is not set, the token will become valid immediately
-         */
-        void setNotBefore ( long long int nbf_seconds );
-
-        /**
          * @fn setDuration
-         * @brief set token duration affecting "exp" claim value
+         * @brief set token duration affecting "exp" claim value (section 4.1.4)
          * @param dur_seconds the token duration in seconds
          * the "exp" claim will only be set upon signing,
          * at which time the absolute time at which the token
@@ -248,6 +301,22 @@ namespace ncbi
          */
         void setDuration ( long long int dur_seconds );
 
+        /**
+         * @fn setNotBefore
+         * @brief set "nbf" claim value (section 4.1.5)
+         * @param nbf_seconds the absolute time at which token becomes valid
+         * if this value is not set, the token will become valid immediately
+         */
+        void setNotBefore ( long long int nbf_seconds );
+
+        /**
+         * @fn setID
+         * @brief set "jti" claim value (section 4.1.7)
+         * @param nbf_seconds the absolute time at which token becomes valid
+         * if this value is not set, the token will become valid immediately
+         */
+        void setID ( const std :: string & unique_jti );
+
 
         /*=================================================*
          *            REGISTERED CLAIM GETTERS             *
@@ -255,35 +324,28 @@ namespace ncbi
 
         /**
          * @fn getIssuer
-         * @brief get "iss" claim value
+         * @brief get "iss" claim value (section 4.1.1)
          * @return StringOrURI representing the issuer
          */
         StringOrURI getIssuer () const;
 
         /**
          * @fn getSubject
-         * @brief get "sub" claim value
+         * @brief get "sub" claim value (section 4.1.2)
          * @return StringOrURI representing the subject
          */
         StringOrURI getSubject () const;
 
         /**
          * @fn getAudience
-         * @brief get "aud" claim array
+         * @brief get "aud" claim array (section 4.1.3)
          * @return std :: vector < StringOrURI > representing all audiences
          */
         std :: vector < StringOrURI > getAudience () const;
 
         /**
-         * @fn getNotBefore
-         * @brief get "nbf" claim value or current time if not set
-         * @return long long int representing the absolute time of token validity
-         */
-        long long int getNotBefore () const;
-
-        /**
          * @fn getExpiration
-         * @brief get "exp" claim value if set
+         * @brief get "exp" claim value if set (section 4.1.4)
          * @return long long int representing the absolute time of token expiration
          */
         long long int getExpiration () const;
@@ -294,6 +356,27 @@ namespace ncbi
          * @return long long int representing seconds between "exp" and token validity
          */
         long long int getDuration () const;
+
+        /**
+         * @fn getNotBefore
+         * @brief get "nbf" claim value if set (section 4.1.5)
+         * @return long long int representing the absolute time of token validity
+         */
+        long long int getNotBefore () const;
+
+        /**
+         * @fn getIssuedAt
+         * @brief get "iat" claim value if set (section 4.1.6)
+         * @return long long int representing the absolute time of token creation
+         */
+        long long int getIssuedAt () const;
+
+        /**
+         * @fn getID
+         * @brief get "jti" claim value if set (section 4.1.7)
+         * @return std::string with ticket id
+         */
+        std :: string getID () const;
 
 
         /*=================================================*
@@ -308,21 +391,7 @@ namespace ncbi
          * @exception JSONUniqueConstraintViolation if name exists
          * @exception JSONNullValue if val == nullptr
          */
-        void addClaim ( const std :: string & name, JSONValue * value );
-
-        /**
-         * @fn addClaimOrDeleteValue
-         * @brief calls addClaim() and deletes value upon exceptions
-         * @param name std::string with unique claim name
-         * @param value a non-null JSONValue pointer
-         * @exception JSONUniqueConstraintViolation if name exists
-         * @exception JSONNullValue if val == nullptr
-         * In C++, the temptation is to create JSONValue objects inline
-         * to the addClaim expression. When using addClaim() directly,
-         * this can lead to orphaned objects. Use this method instead to
-         * indicate that the value object should be deleted upon error.
-         */
-        void addClaimOrDeleteValue ( const std :: string & name, JSONValue * value );
+        void addClaim ( const std :: string & name, const JSONValueRef & value );
 
         /**
          * @fn getNames
@@ -338,6 +407,54 @@ namespace ncbi
          * @return const JSONValue reference to existing value
          */
         const JSONValue & getClaim ( const std :: string & name ) const;
+
+
+        /*=================================================*
+         *        APPLICATION JOSE HEADER MEMBERS          *
+         *=================================================*/
+
+        /**
+         * @fn addHeader
+         * @brief adds a JOSE header
+         * @param name std::string with unique header member name
+         * @param value a non-null JSONValue pointer
+         * @exception JSONUniqueConstraintViolation if name exists
+         * @exception JSONNullValue if val == nullptr
+         *
+         * the JOSE header is supposed to be generated ENTIRELY
+         * by the JWS or JWE component since its purpose is to
+         * describe the treatment given. Yet, we see that this is
+         * abused and requires some level of support to interface
+         * with existing implementations.
+         */
+        void addHeader ( const std :: string & name, const JSONValueRef & value );
+
+        /**
+         * @fn getHdrNames
+         * @return std::vector < std::string > of header names
+         */
+        std :: vector < std :: string > getHdrNames () const;
+
+        /**
+         * @fn getHeader
+         * @brief attempts to find a header by name and return its value
+         * @param name std::string with the header name
+         * @exception JSONNoSuchName if name is not a member of claims set
+         * @return const JSONValue reference to existing value
+         */
+        const JSONValue & getHeader ( const std :: string & name ) const;
+ 
+
+        /*=================================================*
+         *                VERIFICATION KEY                 *
+         *=================================================*/
+
+        /**
+         * @fn getVerificationKey
+         * @brief retrieve signing key used to deode JWT
+         * @return JWKRef to the signature verification key
+         */
+        JWKRef getVerificationKey () const;
 
 
         /*=================================================*
@@ -386,23 +503,40 @@ namespace ncbi
          */        
         virtual ~ JWTClaimSet ();
 
-    protected:
-
     private:
 
-        JSONObject * claims;              //!< claims are stored in a JSON object
-        long long duration;               //!< offset to produce "exp" from start
-        long long not_before;             //!< absolute time of "nbf"
+        JWTClaimSet ( const JSONObjectRef & jose, const JSONObjectRef & claims );
+        JWTClaimSet ( const JWKRef & key,
+            const JSONObjectRef & jose, const JSONObjectRef & claims );
+
+        struct Reserved
+        {
+            Reserved ();
+            ~ Reserved ();
+
+            std :: set < std :: string > claims;
+            std :: set < std :: string > hdrs;
+        };
+
+        static Reserved reserved;
+
+        JSONObjectRef jose;               //!< headers are stored in a JSON object
+        JSONObjectRef claims;             //!< claims are stored in a JSON object
+        JWKRef verification_key;          //!< key used to verify innermost signature
+        long long int duration;           //!< offset to produce "exp" from start
+        long long int not_before;         //!< absolute time of "nbf"
         JWTLock obj_lock;                 //!< busy lock to prevent modification
+
+        friend class JWTMgr;
      };
 
     /**
-     * @class InvalidJWTClaims
+     * @class UnverifiedJWTClaimSet
      * @brief an object with unvalidated claims
      * in order to inspect a JWT even when invalid,
      * this class exists to hold the contents.
      */
-    class InvalidJWTClaims
+    class UnverifiedJWTClaimSet
     {
     public:
 
@@ -412,38 +546,52 @@ namespace ncbi
 
         /**
          * @fn getIssuer
-         * @brief get "iss" claim value
+         * @brief get "iss" claim value (section 4.1.1)
          * @return StringOrURI representing the issuer
          */
         StringOrURI getIssuer () const;
 
         /**
          * @fn getSubject
-         * @brief get "sub" claim value
+         * @brief get "sub" claim value (section 4.1.2)
          * @return StringOrURI representing the subject
          */
         StringOrURI getSubject () const;
 
         /**
          * @fn getAudience
-         * @brief get "aud" claim array
+         * @brief get "aud" claim array (section 4.1.3)
          * @return std :: vector < StringOrURI > representing all audiences
          */
         std :: vector < StringOrURI > getAudience () const;
 
         /**
+         * @fn getExpiration
+         * @brief get "exp" claim value if set (section 4.1.4)
+         * @return long long int representing the absolute time of token expiration
+         */
+        long long int getExpiration () const;
+
+        /**
          * @fn getNotBefore
-         * @brief get "nbf" claim value or current time if not set
+         * @brief get "nbf" claim value if set (section 4.1.5)
          * @return long long int representing the absolute time of token validity
          */
         long long int getNotBefore () const;
 
         /**
-         * @fn getExpiration
-         * @brief get "exp" claim value if set
-         * @return long long int representing the absolute time of token expiration
+         * @fn getIssuedAt
+         * @brief get "iat" claim value if set (section 4.1.6)
+         * @return long long int representing the absolute time of token creation
          */
-        long long int getExpiration () const;
+        long long int getIssuedAt () const;
+
+        /**
+         * @fn getID
+         * @brief get "jti" claim value if set (section 4.1.7)
+         * @return long long int representing the absolute time of token creation
+         */
+        std :: string getID () const;
 
 
         /*=================================================*
@@ -465,9 +613,57 @@ namespace ncbi
          */
         const JSONValue & getClaim ( const std :: string & name ) const;
 
+
+        /*=================================================*
+         *        APPLICATION JOSE HEADER MEMBERS          *
+         *=================================================*/
+
+        /**
+         * @fn getHdrNames
+         * @return std::vector < std::string > of header names
+         */
+        std :: vector < std :: string > getHdrNames () const;
+
+        /**
+         * @fn getHeader
+         * @brief attempts to find a header by name and return its value
+         * @param name std::string with the header name
+         * @exception JSONNoSuchName if name is not a member of claims set
+         * @return const JSONValue reference to existing value
+         */
+        const JSONValue & getHeader ( const std :: string & name ) const;
+
+
+        /*=================================================*
+         *                VERIFICATION KEY                 *
+         *=================================================*/
+
+        /**
+         * @fn getVerificationKey
+         * @brief retrieve signing key used to deode JWT
+         * @return JWKRef to the signature verification key
+         */
+        JWKRef getVerificationKey () const;
+
+
+        ~ UnverifiedJWTClaimSet ();
+
     private:
 
-        const JSONObject * claims;        //!< claims are stored in a JSON object
+        // created in response to an inspection
+        UnverifiedJWTClaimSet ( const JSONObjectRef & jose, const JSONObjectRef & claims );
+        UnverifiedJWTClaimSet ( const JWKRef & key,
+           const JSONObjectRef & jose, const JSONObjectRef & claims );
+
+        // hidden from use
+        void operator = ( const UnverifiedJWTClaimSet & ignore );
+        UnverifiedJWTClaimSet ( const UnverifiedJWTClaimSet & ignore );
+
+        const JSONObjectRef jose;         //!< claims are stored in a JSON object
+        const JSONObjectRef claims;       //!< claims are stored in a JSON object
+        JWKRef verification_key;          //!< key used to verify innermost signature
+
+        friend class JWTMgr;
     };
 
 

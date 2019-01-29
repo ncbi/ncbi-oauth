@@ -27,7 +27,8 @@ namespace ncbi
     class JWTFixture_BasicConstruction : public :: testing :: Test
     {
     public:
-        void printClaims ( JWTClaims claims, bool recovered = false )
+
+        void printClaims ( const JWTClaimSet & claims, bool recovered = false )
         {
             if ( ! recovered )
             {
@@ -51,7 +52,7 @@ namespace ncbi
             }
         }
         
-        void printJWT ( JWT jwt )
+        void printJWT ( const JWT & jwt )
         {
             std :: cout
             << "---- JWT ----\n"
@@ -62,7 +63,7 @@ namespace ncbi
             ;
         }
         
-        void printJWTTransitionStack ( JWTClaims json, JWT jwt, JWTClaims decoded )
+        void printJWTTransitionStack ( const JWTClaimSet & json, const JWT & jwt, const JWTClaimSet & decoded )
         {
             std :: cout << "{" << std :: endl;
             printClaims ( json );
@@ -76,27 +77,21 @@ namespace ncbi
             // fix the current time to a known value
             jwt_setStaticCurrentTime ( 1540664164 );
 
-            // make a symmetric key
-            const HMAC_JWKey * key = HMAC_JWKey :: make ( 384, "sig", "HS284", "wonder-key-id" );
-            try
-            {
-                jws_fact = new JWSFactory ( "ncbi", "HS384", key );
-                jwt_fact = new JWTFactory ( * jws_fact );
-                jwt_fact -> setIssuer ( "ncbi" );
-                jwt_fact -> setDuration ( 15 );
-            }
-            catch ( ... )
-            {
-                key -> release ();
-                throw;
-            }
-            key -> release ();
+            const char jwk_json [] =
+                "{"
+                    "\"kty\":\"oct\","
+                    "\"kid\":\"12345\","
+                    "\"alg\":\"HS384\","
+                    "\"k\":\"wonder-key-id\","
+                "}";
+
+            key = JWKMgr :: parseJWK ( jwk_json );
         }
         
         void TearDown ()
         {
-            delete jwt_fact;
-            delete jws_fact;
+            key = nullptr;
+            key_set = nullptr;
 
             // restore timestamp behavior
             jwt_setStaticCurrentTime ( 0 );
@@ -104,21 +99,22 @@ namespace ncbi
         
     protected:
 
-        JWSFactory * jws_fact;
-        JWTFactory * jwt_fact;
+        JWKRef key;
+        JWKSetRef key_set;
+
     };
     
    
     TEST_F ( JWTFixture_BasicConstruction, JWT_Example )
     {
-        JWTClaims claims = jwt_fact -> make ();
-        claims . addClaimOrDeleteValue ( "example", JSONValue :: makeString ( "hello there" ) );
+        JWTClaimSetRef claims = JWTMgr :: makeClaimSet ();
+        claims -> addClaim ( "example", JSON :: makeString ( "hello there" ) );
         
-        JWT jwt = jwt_fact -> sign ( claims );
+        JWT jwt = JWTMgr :: sign ( * key, * claims );
 
-        JWTClaims decoded = jwt_fact -> decode ( jwt );
+        JWTClaimSetRef decoded = JWTMgr :: decode ( * key_set, jwt );
         
-        printJWTTransitionStack ( claims, jwt, decoded );
+        printJWTTransitionStack ( * claims, jwt, * decoded );
     }
 
 } // namespace

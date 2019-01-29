@@ -25,6 +25,7 @@
 */
 
 #include <ncbi/jwp.hpp>
+#include "memset-priv.hpp"
 
 #include <cstdint>
 #include <cstring>
@@ -36,11 +37,14 @@ namespace ncbi
     // JWPayload
     void JWPayload :: setSize ( size_t amt )
     {
-        if ( amt > cap || buff == nullptr )
-            throw JWPException ( __func__, __LINE__, "illegal payload size" );
+        if ( amt != 0 || buff != nullptr )
+        {
+            if ( amt > cap || buff == nullptr )
+                throw JWPException ( __func__, __LINE__, "illegal payload size" );
 
-        sz = amt;
-        buff [ amt ] = 0;
+            sz = amt;
+            buff [ amt ] = 0;
+        }
     }
     
     void JWPayload :: increaseCapacity ( size_t amt )
@@ -52,7 +56,21 @@ namespace ncbi
         buff = new_buff;
     }
 
-    JWPayload :: JWPayload ()
+    void JWPayload :: erase () noexcept
+    {
+        if ( buff != nullptr )
+        {
+            memset_while_respecting_language_semantics
+                ( buff, cap, 0, cap, ( const char * ) buff );
+
+            delete [] buff;
+            buff = nullptr;
+        }
+
+        sz = cap = 0;
+    }
+
+    JWPayload :: JWPayload () noexcept
         : buff ( nullptr )
         , sz ( 0 )
         , cap ( 0 )
@@ -67,7 +85,7 @@ namespace ncbi
         buff = new unsigned char [ cap + 1 ];
     }
 
-    JWPayload :: JWPayload ( const JWPayload & payload )
+    JWPayload :: JWPayload ( const JWPayload & payload ) noexcept
         : buff ( payload . buff )
         , sz ( payload . sz )
         , cap ( payload . cap )
@@ -76,7 +94,7 @@ namespace ncbi
         payload . sz = payload . cap = 0;
     }
 
-    JWPayload & JWPayload :: operator = ( const JWPayload & payload )
+    JWPayload & JWPayload :: operator = ( const JWPayload & payload ) noexcept
     {
         delete [] buff;
 
@@ -90,11 +108,9 @@ namespace ncbi
         return * this;
     }
 
-    JWPayload :: ~ JWPayload ()
+    JWPayload :: ~ JWPayload () noexcept
     {
-        delete [] buff;
-        buff = nullptr;
-        sz = cap = 0;
+        erase ();
     }
     
 }

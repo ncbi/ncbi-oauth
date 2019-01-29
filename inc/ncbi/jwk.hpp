@@ -267,6 +267,8 @@ namespace ncbi
 
         friend class JWKMgr;
         friend class JWKSet;
+        friend class JWASigner;
+        friend class JWAVerifier;
     };
 
 

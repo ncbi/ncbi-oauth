@@ -3,11 +3,11 @@ default: all
 ALL_LIBS =      \
 	ncbi-base64 \
 	ncbi-json   \
+	ncbi-jwa    \
 	ncbi-jwk    \
-#	ncbi-jwa    \
 	ncbi-jws    \
 	ncbi-jwt    \
-	ncbi-token  \
+#	ncbi-token  \
 #	ncbi-jwe
 
 all: $(ALL_LIBS) ncbi-oauth-test
@@ -37,19 +37,38 @@ $(OBJDIR)/%.$(LOBX): base64/%.cpp
 
 $(OBJDIR)/%.$(LOBX): json/%.cpp
 	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ijson -Ibase64 -Iinc -fPIC -MD -Wall
+$(OBJDIR)/%.tst.$(LOBX): json/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -DJSON_TESTING -o $@ -Ijson -Ibase64 -Iinc -fPIC -MD -Wall
+
+$(OBJDIR)/%.$(LOBX): jwa/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ijwa -Ibase64 -Iinc -fPIC -MD -Wall
+$(OBJDIR)/%.tst.$(LOBX): jwa/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -DJWA_TESTING -o $@ -Ijwa -Ibase64 -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(LOBX): jwk/%.cpp
 	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ijwk -Ibase64 -Iinc -fPIC -MD -Wall
+$(OBJDIR)/%.tst.$(LOBX): jwk/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -DJWK_TESTING -o $@ -Ijwk -Ibase64 -Iinc -fPIC -MD -Wall
 
-$(OBJDIR)/%.$(LOBX): ncbi-jwt/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-jwt -Iinc -fPIC -MD -Wall
-$(OBJDIR)/%.tst.$(LOBX): ncbi-jwt/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -DJWT_TESTING -o $@ -Incbi-jwt -Iinc -fPIC -MD -Wall
+$(OBJDIR)/%.$(LOBX): jws/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ijws -Ibase64 -Iinc -fPIC -MD -Wall
+$(OBJDIR)/%.tst.$(LOBX): jws/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -DJWS_TESTING -o $@ -Ijws -Ibase64 -Iinc -fPIC -MD -Wall
 
-$(OBJDIR)/%.$(LOBX): ncbi-token/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-token -Iinc -fPIC -MD -Wall
-$(OBJDIR)/%.tst.$(LOBX): ncbi-token/%.cpp
-	$(GPP) $(CFLAGS) -g -c $< -DTOKEN_TESTING -o $@ -Incbi-token -Iinc -fPIC -MD -Wall
+$(OBJDIR)/%.$(LOBX): jwe/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ijwe -Ibase64 -Iinc -fPIC -MD -Wall
+$(OBJDIR)/%.tst.$(LOBX): jwe/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -DJWE_TESTING -o $@ -Ijwe -Ibase64 -Iinc -fPIC -MD -Wall
+
+$(OBJDIR)/%.$(LOBX): jwt/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -o $@ -Ijwt -Ibase64 -Iinc -fPIC -MD -Wall
+$(OBJDIR)/%.tst.$(LOBX): jwt/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -DJWT_TESTING -o $@ -Ijwt -Ibase64 -Iinc -fPIC -MD -Wall
+
+$(OBJDIR)/%.$(LOBX): token/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -o $@ -token -Ibase64 -Iinc -fPIC -MD -Wall
+$(OBJDIR)/%.tst.$(LOBX): token/%.cpp
+	$(GPP) $(CFLAGS) -g -c $< -DTOKEN_TESTING -o $@ -token -Ibase64 -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(OBJX): ncbi-oauth-test/%.cpp
 	$(GPP) $(CFLAGS) -g -c $< -o $@ -Incbi-oauth-test -Iinc -Igoogletest/googletest/include -MD -Wall
@@ -60,8 +79,8 @@ $(OBJDIR)/%.$(OBJX): googletest/googletest/src/%.cc
 include $(wildcard $(OBJDIR)/*.d)
 
 OAUTHLIBS =                     \
-	$(LIBDIR)/libncbi-json.a    \
 	$(LIBDIR)/libncbi-jwt.a     \
+	$(LIBDIR)/libncbi-json.a    \
 	$(LIBDIR)/libncbi-tst-jwt.a
 
 ## ncbi-base64
@@ -96,6 +115,21 @@ ncbi-json: $(LIBDIR) $(LIBDIR)/libncbi-json.a
 $(LIBDIR)/libncbi-json.a: $(OBJDIR) $(LIBJSONOBJ) $(MAKEFILE)
 	ar -rc $@ $(LIBJSONOBJ)
 
+## ncbi-jwa
+LIBJWASRC =        \
+	jwa-mgr        \
+	jwa-none       \
+	jwa-hmac       \
+	jwa-registry   \
+
+LIBJWAOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .$(LOBX),$(LIBJWASRC)))
+
+ncbi-jwa: $(LIBDIR) $(LIBDIR)/libncbi-jwa.a
+
+$(LIBDIR)/libncbi-jwa.a: $(OBJDIR) $(LIBJWAOBJ) $(MAKEFILE)
+	ar -rc $@ $(LIBJWAOBJ)
+
 ## ncbi-jwk
 LIBJWKSRC =        \
 	jwk-mgr        \
@@ -110,26 +144,24 @@ ncbi-jwk: $(LIBDIR) $(LIBDIR)/libncbi-jwk.a
 $(LIBDIR)/libncbi-jwk.a: $(OBJDIR) $(LIBJWKOBJ) $(MAKEFILE)
 	ar -rc $@ $(LIBJWKOBJ)
 
-## ncbi-jwt
-#LIBJWTSRC =            \
-	jwt-factory        \
-	jwt-claims         \
-	jws-factory        \
-	jwk-hmac           \
-	jwk-rsa            \
-	jwk-ec             \
-	jwk-parse          \
-	jwk-cmn            \
-	jwa-none           \
-	jwa-hmac           \
-	jwa-rsa            \
-	jwa-factory        \
-	jwt-lock           \
-	jwt-exception      \
-	base64
+## ncbi-jws
+LIBJWSSRC =        \
+	jws-mgr
 
+LIBJWSOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .$(LOBX),$(LIBJWSSRC)))
+
+ncbi-jws: $(LIBDIR) $(LIBDIR)/libncbi-jws.a
+
+$(LIBDIR)/libncbi-jws.a: $(OBJDIR) $(LIBJWSOBJ) $(MAKEFILE)
+	ar -rc $@ $(LIBJWSOBJ)
+
+## ncbi-jwt
 LIBJWTSRC =            \
-	base64
+	jwt-mgr            \
+	jwt-claims         \
+	jwt-unverified     \
+	jwt-lock
 
 LIBJWTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .$(LOBX),$(LIBJWTSRC)))
@@ -141,21 +173,18 @@ $(LIBDIR)/libncbi-jwt.a: $(OBJDIR) $(LIBJWTOBJ) $(MAKEFILE)
 
 ## ncbi-test-jwt
 LIBTSTJWTSRC =         \
-	jwt-factory.tst    \
+	jwt-mgr.tst        \
 	jwt-claims         \
-	jws-factory.tst    \
-	jwk-hmac           \
-	jwk-rsa            \
-	jwk-ec             \
-	jwk-parse          \
-	jwk-cmn            \
+	jwt-unverified     \
+	jwt-lock           \
+	jws-mgr.tst        \
+	jwk-mgr            \
+	jwk-set            \
+	jwk-key            \
+	jwa-mgr            \
 	jwa-none           \
 	jwa-hmac           \
-	jwa-rsa            \
-	jwa-factory        \
-	jwt-lock           \
-	jwt-exception      \
-	base64
+	jwa-registry.tst   \
 
 LIBTSTJWTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .$(LOBX),$(LIBTSTJWTSRC)))
@@ -217,6 +246,7 @@ OAUTHTESTLIB =     \
 	-L$(LIBDIR)    \
 	-lncbi-tst-jwt \
 	-lncbi-json    \
+	-lncbi-base64  \
 	-lmbedcrypto   \
 	-lmbedx509     \
 	-lmbedtls      \

@@ -24,29 +24,53 @@
  *
  */
 
-#ifndef _hpp_ncbi_base64_priv_
-#define _hpp_ncbi_base64_priv_
+#include <ncbi/jwa.hpp>
+#include <ncbi/jwk.hpp>
+#include "jwa-registry.hpp"
 
-#ifndef _hpp_ncbi_jwp_
-#include <ncbi/jwp.hpp>
-#endif
-
-#include <string>
+#include <cassert>
 
 namespace ncbi
 {
-    const std :: string encodeBase64 ( const void * data, size_t bytes, unsigned int line_wrap = 0 );
-    const JWPayload decodeBase64 ( const std :: string & encoding, bool allow_whitespace );
-    const std :: string decodeBase64String ( const std :: string & encoding, bool allow_whitespace );
-    
-    const std :: string encodeBase64URL ( const void * data, size_t bytes, unsigned int line_wrap = 0 );
-    const JWPayload decodeBase64URL ( const std :: string & encoding, bool allow_whitespace );
-    const std :: string decodeBase64URLString ( const std :: string & encoding, bool allow_whitespace );
-    
-    /*=================================================*
-     *                   EXCEPTIONS                    *
-     *=================================================*/
-    DECLARE_JWX_MSG_EXCEPTION ( B64Exception, JWX );
-}
 
-#endif // _hpp_ncbi_base64_priv_
+    bool JWAMgr :: acceptJWKAlgorithm ( const std :: string & kty, const std :: string & alg ) noexcept
+    {
+        return gJWARegistry . acceptJWKAlgorithm ( kty, alg );
+    }
+
+    JWASignerRef JWAMgr :: getSigner ( const std :: string & alg )
+    {
+        return gJWARegistry . getSigner ( alg );
+    }
+
+    JWAVerifierRef JWAMgr :: getVerifier ( const std :: string & alg )
+    {
+        return gJWARegistry . getVerifier ( alg );
+    }
+
+    std :: string JWASigner :: getKeyProp ( const JWK & key, const std :: string & name )
+    {
+        return key . props -> getValue ( name ) . toString ();
+    }
+
+    JWASigner :: JWASigner ()
+    {
+    }
+
+    JWASigner :: ~ JWASigner ()
+    {
+    }
+
+    std :: string JWAVerifier :: getKeyProp ( const JWK & key, const std :: string & name )
+    {
+        return key . props -> getValue ( name ) . toString ();
+    }
+
+    JWAVerifier :: JWAVerifier ()
+    {
+    }
+
+    JWAVerifier :: ~ JWAVerifier ()
+    {
+    }
+}

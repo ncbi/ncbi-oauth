@@ -53,7 +53,7 @@ namespace ncbi
          * @overload non-const version
          * @return non-const pointer to buffer
          */
-        unsigned char * data ()
+        unsigned char * data () noexcept
         { return buff; }
 
         /**
@@ -61,21 +61,21 @@ namespace ncbi
          * @overload const version
          * @return const pointer to buffer
          */
-        const unsigned char * data () const
+        const unsigned char * data () const noexcept
         { return buff; }
 
         /**
          * @fn size
          * @return size of data in bytes
          */
-        size_t size () const
+        size_t size () const noexcept
         { return sz; }
 
         /**
          * @fn capacity
          * @return size of buffer in bytes
          */
-        size_t capacity () const
+        size_t capacity () const noexcept
         { return cap; }
 
         /**
@@ -93,10 +93,16 @@ namespace ncbi
         void increaseCapacity ( size_t amt = 256 );
 
         /**
+         * @fn erase
+         * @brief deletes buffer space and forgets everything
+         */
+        void erase () noexcept;
+
+        /**
          * @fn JWPayload
          * @overload default constructor
          */
-        JWPayload ();
+        JWPayload () noexcept;
 
         /**
          * @fn JWPayload
@@ -111,7 +117,7 @@ namespace ncbi
          * @param payload source from which contents are STOLEN
          * source object will be empty afterward
          */
-        JWPayload ( const JWPayload & payload );
+        JWPayload ( const JWPayload & payload ) noexcept;
 
         /**
          * @fn operator =
@@ -120,13 +126,13 @@ namespace ncbi
          * @return C++ self-reference for use in idiomatic C++ expressions
          * source object will be empty afterward
          */
-        JWPayload & operator = ( const JWPayload & payload );
+        JWPayload & operator = ( const JWPayload & payload ) noexcept;
 
         /**
          * @fn ~JWPayload
          * @brief delete buffer if present
          */
-        ~ JWPayload ();
+        ~ JWPayload () noexcept;
 
     private:
 

@@ -25,300 +25,184 @@
  */
 
 #include <ncbi/jwa.hpp>
-#include <ncbi/jwk.hpp>
-#include <ncbi/jwt.hpp>
-
-#include <iostream>
-#include <cstring>
-#include <cassert>
-
-/*
-  This unit implements a global singleton algorithm factory.
-
-  The factory will be constructed at static construction time,
-  i.e. before running "main".
-
-  Specific algorithms, defined in other units, will ALSO be
-  constructed at static construction time, and will register
-  themselves with the global singleton.
-
-  The specific algorithms may be constructed BEFORE the factory,
-  making for a little bit of a tricky case solved as usual by
-  depending upon clearing of BSS.
-
-  The factory is used to create an algorithm that is bound to
-  its parameters, e.g. a signing or verification key.
- */
+#include "jwa-registry.hpp"
 
 namespace ncbi
 {
 
-    /* JWAKeyHolder
-     *  holds a key
-     *  performs a brute force overwrite of key memory when destroyed
-     */
+    JWARegistry gJWARegistry;
 
-    const std :: string & JWAKeyHolder :: authority_name () const
+    bool JWARegistry :: acceptJWKAlgorithm ( const std :: string & kty, const std :: string & alg ) const noexcept
     {
-        return nam;
-    }
-
-    const std :: string & JWAKeyHolder :: algorithm () const
-    {
-        return alg;
-    }
-
-    std :: string JWAKeyHolder :: keyID () const
-    {
-        return key -> getID ();
-    }
-    
-    JWAKeyHolder :: JWAKeyHolder ( const std :: string & _nam,
-            const std :: string & _alg, const JWK * _key )
-        : nam ( _nam )
-        , alg ( _alg )
-        , key ( nullptr )
-    {
-        key = _key -> duplicate ();
-    }
-
-    JWAKeyHolder :: ~ JWAKeyHolder ()
-    {
-        key -> release ();
-        key = nullptr;
-    }
-
-    /* JWASigner
-     *  bound to a key
-     *  holds the algorithm for reporting
-     *  performs the operation of generating a signature
-     */
-
-    JWASigner :: JWASigner ( const std :: string & name,
-            const std :: string & alg, const JWK * key )
-        : JWAKeyHolder ( name, alg, key )
-    {
-    }
-
-    /* JWAVerifier
-     *  bound to a key
-     *  holds the algorithm for reporting
-     *  performs the operation of verifying a signature
-     */
-
-    JWAVerifier :: JWAVerifier ( const std :: string & name,
-            const std :: string & alg, const JWK * key )
-        : JWAKeyHolder ( name, alg, key )
-    {
-    }
-
-    /* JWASignerFact
-     *  creates a JWASigner
-     *  binds the signer to a key
-     */
-
-    JWASignerFact :: ~ JWASignerFact ()
-    {
-    }
-
-    /* JWAVerifierFact
-     *  creates a JWAVerifier
-     *  binds the verifier to a key
-     */
-
-    JWAVerifierFact :: ~ JWAVerifierFact ()
-    {
-    }
-
-    /* JWAFactory
-     *  makes JWAs, which are algorithms of some sort
-     *  these are basically interface objects
-     *  with polymorphic implementations
-     */
-
-    JWASigner * JWAFactory :: makeSigner ( const std :: string & name,
-            const std :: string & alg, const JWK * key ) const
-    {
-        // NB - expect this to be called after static constructors run
-        assert ( maps != nullptr );
-
-        // check the key
-        if ( key == nullptr )
-            throw JWTException ( __func__, __LINE__, "NULL key reference" );
-        if ( ! key -> forSigning () )
-            throw JWTException ( __func__, __LINE__, "invalid key for signing" );
-        if ( ! key -> isSymmetric () && ! key -> isPrivate () )
-            throw JWTException ( __func__, __LINE__, "invalid key for signing" );
-
-        // find factory factory
-        auto it = const_cast < const Maps * > ( maps ) -> signer_facts . find ( alg );
-        if ( it == const_cast < const Maps * > ( maps ) -> signer_facts . cend () )
-        {
-            std :: string msg ( "signing algorithm '" );
-            msg += alg;
-            msg += "' not registered.";
-            throw JWTException ( __func__, __LINE__, msg . c_str () );
-        }
-
-        // pull out the factory factory
-        const JWASignerFact * fact = it -> second;
-        assert ( fact != nullptr );
-
-        // create the signer
-        return fact -> make ( name, alg, key );
-    }
-    
-    JWAVerifier * JWAFactory :: makeVerifier ( const std :: string & name,
-            const std :: string & alg, const JWK * key ) const
-    {
-        // NB - expect this to be called after static constructors run
-        assert ( maps != nullptr );
-
-        // check the key
-        if ( key == nullptr )
-            throw JWTException ( __func__, __LINE__, "NULL key reference" );
-        if ( ! key -> forSigning () )
-            throw JWTException ( __func__, __LINE__, "invalid key for signature verification" );
-
-        // find factory factory
-        auto it = const_cast < const Maps * > ( maps ) -> verifier_facts . find ( alg );
-        if ( it == const_cast < const Maps * > ( maps ) -> verifier_facts . cend () )
-        {
-            std :: string msg ( "signing algorithm '" );
-            msg += alg;
-            msg += "' not registered.";
-            throw JWTException ( __func__, __LINE__, msg . c_str () );
-        }
-
-        // pull out the factory factory
-        const JWAVerifierFact * fact = it -> second;
-        assert ( fact != nullptr );
-
-        // create the verifier
-        return fact -> make ( name, alg, key );
-    }
-
-    void JWAFactory :: registerSignerFact ( const std :: string & alg, JWASignerFact * fact )
-    {
-        // NB - can be called BEFORE constructor runs
         makeMaps ();
 
-        // test algorithm for known/acceptable
-        auto ok = maps -> sign_accept . find ( alg );
-        assert ( ok != maps -> sign_accept . end () );
-        if ( ok != maps -> sign_accept . end () )
+        try
         {
-            // factory should be alright...
-            assert ( fact != nullptr );
-            if ( fact != nullptr )
+            const Maps * cmaps = maps;
+            auto it1 = cmaps -> key_accept . find ( kty );
+            if ( it1 != cmaps -> key_accept . cend () )
             {
-                auto it = maps -> signer_facts . find ( alg );
-                if ( it == maps -> signer_facts . end () )
-                {
-                    maps -> signer_facts . emplace ( alg, fact );
-                }
-                else if ( it -> second != fact )
-                {
-                    delete it -> second;
-                    it -> second = fact;
-                }
+                const std :: set < std :: string > & accept = it1 -> second;
+                auto it2 = accept . find ( alg );
+                if ( it2 != accept . cend () )
+                    return true;
             }
         }
-    }
+        catch ( ... )
+        {
+        }
 
-    bool JWAFactory :: acceptJWKAlgorithm ( const std :: string & alg ) const
-    {
-        {
-            auto found = maps -> verifier_facts . find ( alg );
-            if ( found != maps -> verifier_facts . end () )
-                return true;
-        }
-        {
-            auto found = maps -> signer_facts . find ( alg );
-            if ( found != maps -> signer_facts . end () )
-                return true;
-        }
         return false;
     }
-    
-    void JWAFactory :: registerVerifierFact ( const std :: string & alg, JWAVerifierFact * fact )
+
+    JWASignerRef JWARegistry :: getSigner ( const std :: string & alg ) const
     {
-        // NB - can be called BEFORE constructor runs
         makeMaps ();
 
-        auto ok = maps -> sign_accept . find ( alg );
-        assert ( ok != maps -> sign_accept . end () );
-        if ( ok != maps -> sign_accept . end () )
-        {
-            // factory should be alright...
-            assert ( fact != nullptr );
-            if ( fact != nullptr )
-            {
-                auto it = maps -> verifier_facts . find ( alg );
-                if ( it == maps -> verifier_facts . end () )
-                {
-                    maps -> verifier_facts . emplace ( alg, fact );
-                }
-                else if ( it -> second != fact )
-                {
-                    delete it -> second;
-                    it -> second = fact;
-                }
-            }
-        }
+        const Maps * cmaps = maps;
+        auto it = cmaps -> signers . find ( alg );
+        if ( it == cmaps -> signers . cend () )
+            throw JWAException ( __func__, __LINE__, "signer for '%s' is not supported", alg . c_str () );
+
+        return it -> second;
     }
 
-    JWAFactory :: JWAFactory ()
+    JWAVerifierRef JWARegistry :: getVerifier ( const std :: string & alg ) const
     {
-        // NB - may already be constructed BEFORE this constructor runs
-        // depends upon zeroed out static data
         makeMaps ();
 
-        // include algorithms for static linking
-        //includeJWA_none ( false );
+        const Maps * cmaps = maps;
+        auto it = cmaps -> verifiers . find ( alg );
+        if ( it == cmaps -> verifiers . cend () )
+            throw JWAException ( __func__, __LINE__, "verifier for '%s' is not supported", alg . c_str () );
+
+        return it -> second;
+    }
+
+    void JWARegistry :: registerSigner ( const std :: string & alg, const JWASignerRef & signer ) noexcept
+    {
+        makeMaps ();
+
+        const Maps * cmaps = maps;
+        auto it = cmaps -> sign_accept . find ( alg );
+        if ( it != cmaps -> sign_accept . cend () )
+            maps -> signers . emplace ( alg, signer );
+    }
+
+    void JWARegistry :: registerVerifier ( const std :: string & alg, const JWAVerifierRef & verifier ) noexcept
+    {
+        makeMaps ();
+
+        const Maps * cmaps = maps;
+        auto it = cmaps -> verify_accept . find ( alg );
+        if ( it != cmaps -> verify_accept . cend () )
+            maps -> verifiers . emplace ( alg, verifier );
+    }
+
+    void JWARegistry :: doNothing () noexcept
+    {
+        includeJWA_none ( false );
         includeJWA_hmac ( false );
-        includeJWA_rsa  ( false );
-    }
-    
-    JWAFactory :: ~ JWAFactory ()
-    {
-        delete maps;
-        maps = nullptr;
     }
 
-    void JWAFactory :: makeMaps ()
+    void JWARegistry :: makeMaps () const noexcept
     {
         if ( maps == nullptr )
         {
-            maps = new Maps;
+            try
+            {
+                Maps * tmp = new Maps ();
+                maps = tmp;
+            }
+            catch ( ... )
+            {
+            }
         }
     }
 
-    JWAFactory :: Maps :: Maps ()
+    JWARegistry :: JWARegistry () noexcept
     {
-        // TEMPORARY - for initial testing
-        sign_accept . emplace ( "none" );
-        
-        // don't accept registration of ANY other algorithms by name
-        sign_accept . emplace ( "HS256" );
-        sign_accept . emplace ( "HS384" );
-        sign_accept . emplace ( "HS512" );
-        sign_accept . emplace ( "RS256" );
-        sign_accept . emplace ( "RS384" );
-        sign_accept . emplace ( "RS512" );
-        sign_accept . emplace ( "ES256" );
-        sign_accept . emplace ( "ES384" );
-        sign_accept . emplace ( "ES512" );
-        sign_accept . emplace ( "PS256" );
-        sign_accept . emplace ( "PS384" );
-        sign_accept . emplace ( "PS512" );
+        makeMaps ();
     }
 
-    JWAFactory :: Maps :: ~ Maps ()
+    JWARegistry :: ~ JWARegistry () noexcept
     {
+        try
+        {
+            delete maps;
+            maps = nullptr;
+        }
+        catch ( ... )
+        {
+        }
     }
 
-    // global singleton
-    JWAFactory gJWAFactory;
-    
+    JWARegistry :: Maps :: Maps ()
+    {
+        size_t i;
+
+        const char * sign_accept_algs [] =
+        {
+#if JWA_TESTING
+            "none",
+            "HS256", "HS384", "HS512",
+#endif
+            "RS256", "RS384", "RS512",
+            "ES256", "ES384", "ES512",
+            "PS256", "PS384", "PS512"
+        };
+
+        const char * verify_accept_algs [] =
+        {
+#if JWA_TESTING
+            "none",
+#endif
+            "HS256", "HS384", "HS512",
+            "RS256", "RS384", "RS512",
+            "ES256", "ES384", "ES512",
+            "PS256", "PS384", "PS512"
+        };
+
+        const char * oct_key_accept_algs [] =
+        {
+            "HS256", "HS384", "HS512"
+        };
+
+        const char * RSA_key_accept_algs [] =
+        {
+            "RS256", "RS384", "RS512"
+        };
+
+        const char * EC_key_accept_algs [] =
+        {
+            "ES256", "ES384", "ES512"
+        };
+
+        for ( i = 0; i < sizeof sign_accept_algs / sizeof sign_accept_algs [ 0 ]; ++ i )
+            sign_accept . emplace ( std :: string ( sign_accept_algs [ i ] ) );
+
+        for ( i = 0; i < sizeof verify_accept_algs / sizeof verify_accept_algs [ 0 ]; ++ i )
+            verify_accept . emplace ( std :: string ( verify_accept_algs [ i ] ) );
+
+        std :: set < std :: string > oct_set;
+        for ( i = 0; i < sizeof oct_key_accept_algs / sizeof oct_key_accept_algs [ 0 ]; ++ i )
+            oct_set . emplace ( std :: string ( oct_key_accept_algs [ i ] ) );
+
+        std :: set < std :: string > RSA_set;
+        for ( i = 0; i < sizeof RSA_key_accept_algs / sizeof RSA_key_accept_algs [ 0 ]; ++ i )
+            RSA_set . emplace ( std :: string ( RSA_key_accept_algs [ i ] ) );
+
+        std :: set < std :: string > EC_set;
+        for ( i = 0; i < sizeof EC_key_accept_algs / sizeof EC_key_accept_algs [ 0 ]; ++ i )
+            EC_set . emplace ( std :: string ( EC_key_accept_algs [ i ] ) );
+
+        key_accept . emplace ( "oct", oct_set );
+        key_accept . emplace ( "RSA", RSA_set );
+        key_accept . emplace ( "EC",  EC_set  );
+
+    }
+
+    JWARegistry :: Maps :: ~ Maps ()
+    {
+    }
 }
