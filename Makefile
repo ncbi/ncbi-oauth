@@ -80,14 +80,14 @@ $(OBJDIR)/%.tst.$(LOBX): jwt/%.cpp
 	$(GPP) -g -c $< -DJWT_TESTING -o $@ $(CFLAGS) -Ijwt -Ibase64 -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(LOBX): token/%.cpp
-	$(GPP) -g -c $< -o $@ $(CFLAGS) -token -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -o $@ $(CFLAGS) -Itoken -Ibase64 -Iinc -fPIC -MD -Wall
 $(OBJDIR)/%.tst.$(LOBX): token/%.cpp
-	$(GPP) -g -c $< -DTOKEN_TESTING -o $@ $(CFLAGS) -token -Ibase64 -Iinc -fPIC -MD -Wall
+	$(GPP) -g -c $< -DTOKEN_TESTING -o $@ $(CFLAGS) -Itoken -Ibase64 -Iinc -fPIC -MD -Wall
 
 $(OBJDIR)/%.$(OBJX): ncbi-oauth-test/%.cpp
-	$(GPP) -g -c $< -o $@ $(CFLAGS) -Incbi-oauth-test -Iinc -Igoogletest/googletest/include -MD -Wall
+	$(GPP) -g -c $< -o $@ $(CFLAGS) -Incbi-oauth-test -Ibase64 -Iinc -Igoogletest/googletest/include -MD -Wall
 $(OBJDIR)/%.$(OBJX): googletest/googletest/src/%.cc
-	$(GPP) -g -c $< -o $@ $(CFLAGS) -Incbi-oauth-test -Iinc -Igoogletest/googletest -Igoogletest/googletest/include -MD
+	$(GPP) -g -c $< -o $@ $(CFLAGS) -Incbi-oauth-test -Ibase64 -Iinc -Igoogletest/googletest -Igoogletest/googletest/include -MD
 
 # include dependencies
 include $(wildcard $(OBJDIR)/*.d)
