@@ -189,7 +189,7 @@ namespace ncbi
         , recursion_depth ( 32 )
         , numeral_length ( 256 )
         , string_size ( 64 * 1024 )
-        , array_elem_count ( 4 * 1024 )
+        , array_elem_count ( 16 * 1024 )
         , object_mbr_count ( 256 )
     {
     }
