@@ -611,8 +611,14 @@ namespace ncbi
 
         if ( pos < json . size () )
         {
-            delete obj;
-            throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" );
+            // ignore trailing whitespace
+            skip_whitespace ( json, pos );
+            
+            if ( pos < json . size () )
+            {
+                delete obj;
+                throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" );
+            }
         }
 
         return obj;
@@ -734,8 +740,14 @@ namespace ncbi
 
         if ( pos < json . size () )
         {
-            delete val;
-            throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" );
+            // ignore trailing whitespace
+            skip_whitespace ( json, pos );
+            
+            if ( pos < json . size () )
+            {
+                delete val;
+                throw JSONException ( __func__, __LINE__, "Trailing byes in JSON text" );
+            }
         }
 
         return val;

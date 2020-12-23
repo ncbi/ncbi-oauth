@@ -93,6 +93,14 @@ namespace ncbi
     {
         make_and_verify_eq ( Object , "{\"name\":\"value\"}", "{\"name\":\"value\"}" );
     }
+    TEST_F ( JSONFixture_WhiteBox, JSONObject_String_Member_Trailing_Whitespace )
+    {
+        make_and_verify_eq ( Object , "{\"name\":\"value\"} ", "{\"name\":\"value\"}" );
+    }
+    TEST_F ( JSONFixture_WhiteBox, JSONObject_String_Member_Mangled_Linefeed )
+    {
+        make_and_verify_eq ( Object , "{\n\r\r\"name\":  \"value\"} \r", "{\"name\":\"value\"}" );
+    }
     
     // JSONObject Exceptions
     TEST_F ( JSONFixture_WhiteBox, JSONObject_Throw_Empty )
@@ -131,6 +139,10 @@ namespace ncbi
     TEST_F ( JSONFixture_WhiteBox, JSONArray_String_Elems )
     {
         make_and_verify_eq( Array , "[\"name\",\"value\"]", "[\"name\",\"value\"]" );
+    }
+    TEST_F ( JSONFixture_WhiteBox, JSONArray_String_Elems_Leading_Trailing_Whitespace )
+    {
+        make_and_verify_eq( Array , "\r\r   [\"name\",\"value\"] \r \n\n \r\r", "[\"name\",\"value\"]" );
     }
     
     // JSONArray Exceptions
