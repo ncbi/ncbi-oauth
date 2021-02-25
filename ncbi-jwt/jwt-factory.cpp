@@ -30,6 +30,7 @@
 #include "base64-priv.hpp"
 
 #include <iostream>
+#include <fstream>
 #include <climits>
 
 namespace ncbi
@@ -141,6 +142,9 @@ namespace ncbi
         if ( claims . duration > 0 )
             exp = nbf + claims . duration;
 
+        // test for "jti"
+        bool has_jti = json -> exists ( "jti" );
+
         // set "iat" if required or if either of the other timestamps are there
         if ( require_iat_on_generate || claims . duration > 0 || claims . not_before > 0 )
             claims . setValueOrDelete ( "iat", JSONValue :: makeInteger ( iat ) );
@@ -156,8 +160,21 @@ namespace ncbi
                     claims . setValueOrDelete ( "nbf", JSONValue :: makeInteger ( nbf ) );
                 try
                 {
-                    // at this point, we can convert the claims object to a string
-                    payload = json -> toJSON ();
+                    // potentially set "jti"
+                    if ( ! has_jti )
+                        json -> addFinalNameValuePair ( "jti", JSONValue :: makeString ( newJTI () ) );
+
+                    try
+                    {
+                        // at this point, we can convert the claims object to a string
+                        payload = json -> toJSON ();
+                    }
+                    catch ( ... )
+                    {
+                        if ( ! has_jti )
+                            json -> removeValue ( "jti" );
+                        throw;
+                    }
                 }
                 catch ( ... )
                 {
@@ -539,7 +556,10 @@ namespace ncbi
     {
         // TBD - generate from something involving id_seq
         // or some other source of unique numbers
-        return "";
+        std :: ifstream uuid_file ( "/proc/sys/kernel/random/uuid" );
+        char uuid [ 4096 ];
+        uuid_file . getline ( uuid, sizeof uuid );
+        return uuid;
     }
 
 #if JWT_TESTING
