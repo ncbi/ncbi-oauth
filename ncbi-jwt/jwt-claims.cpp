@@ -66,7 +66,7 @@ namespace ncbi
         if ( ! claims -> exists ( "aud" ) )
             setFinalValueOrDelete ( "aud", JSONArray :: make () );
         
-        JSONArray & array = claims -> getValue ( "aud " ) . toArray ();
+        JSONArray & array = claims -> getValue ( "aud" ) . toArray ();
         JSONValue * value = JSONValue :: makeString ( aud );
         try
         {
@@ -119,7 +119,7 @@ namespace ncbi
                     validateStringOrURI ( value );
                     if ( ! claims -> exists ( "aud" ) )
                         setFinalValueOrDelete ( "aud", JSONArray :: make () );
-                    JSONArray & array = claims -> getValue ( "aud " ) . toArray ();
+                    JSONArray & array = claims -> getValue ( "aud" ) . toArray ();
                     array . appendValue ( value );
                     return;
                 }
